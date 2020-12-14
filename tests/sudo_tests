@@ -1,0 +1,1714 @@
+#!/data/data/com.termux/files/usr/bin/bash
+
+#title:         sudo_tests
+#description:   a script to run automated tests for the sudo command types
+#author:        agnostic-apollo
+#usage:         run "sudo_tests --help" for detailed list of usages
+#date:          14-Dec-2020
+#bash version:  4.1 or higher
+#credits:       
+
+
+
+SUDO_TESTS_HELP="$(cat<<'SUDO_TESTS_HELP_EOF'
+sudo_tests is a script that run tests for the sudo script.
+
+
+Usage:
+  sudo_tests [command_options]
+  sudo_tests [command_options] <su|asu|path|script>
+  sudo_tests [command_options] <su|asu|path|script> <shell> <test_number>
+
+
+Available command_options:
+  [ -h | --help ]    display this help screen
+  [ -v | -vv ]       set verbose level to 1 or 2
+  [ --help-extra ]   display more help about how sudo_tests command works
+
+
+Enabling verbose mode will fail test validation for tests that match
+the output, its mainly for debugging.
+SUDO_TESTS_HELP_EOF
+)"
+
+SUDO_TESTS_HELP_EXTRA="$(cat<<'SUDO_TESTS_HELP_EXTRA'
+
+### Install and Usage Instructions For Termux In Android:
+
+#Install sudo and sudo_tests scripts and set ownership and executable permission
+curl -L 'https://github.com/agnostic-apollo/sudo/raw/master/sudo' -o "/data/data/com.termux/files/usr/bin/sudo"
+curl -L 'https://github.com/agnostic-apollo/sudo/raw/master/tests/sudo_tests' -o ~/sudo_tests
+or
+cat "/storage/emulated/0/Download/sudo" > "/data/data/com.termux/files/usr/bin/sudo"
+cat "/storage/emulated/0/Download/sudo_tests" > ~/sudo_tests
+
+export termux_bin_path="/data/data/com.termux/files/usr/bin"; export owner="$(stat -c "%u" "$termux_bin_path")"; chown "$owner:$owner" "$termux_bin_path/sudo" && chmod 700 "$termux_bin_path/sudo"; chown "$owner:$owner" ~/sudo_tests && chmod 700 ~/sudo_tests;
+
+
+#Install shells used by sudo_tests script
+pkg install bash zsh dash fish python ruby nodejs perl lua52 lua53 lua54 php rlwrap
+
+
+#Install termux_tasker_basic_bash_test and termux_tasker_basic_python_test script and set permissions
+mkdir -p /data/data/com.termux/files/home/.termux/tasker
+chmod 700 -R /data/data/com.termux/files/home/.termux
+
+curl -L 'https://github.com/termux/termux-tasker/raw/master/templates/scripts/termux_tasker_basic_bash_test' -o "/data/data/com.termux/files/home/.termux/tasker/termux_tasker_basic_bash_test"
+curl -L 'https://github.com/termux/termux-tasker/raw/master/templates/scripts/termux_tasker_basic_python_test' -o "/data/data/com.termux/files/home/.termux/tasker/termux_tasker_basic_python_test"
+or
+cat "/storage/emulated/0/Download/termux_tasker_basic_bash_test" > "/data/data/com.termux/files/home/.termux/tasker/termux_tasker_basic_bash_test"
+cat "/storage/emulated/0/Download/termux_tasker_basic_python_test" > "/data/data/com.termux/files/home/.termux/tasker/termux_tasker_basic_python_test"
+
+chmod 700 "/data/data/com.termux/files/home/.termux/tasker/termux_tasker_basic_bash_test"
+chmod 700 "/data/data/com.termux/files/home/.termux/tasker/termux_tasker_basic_python_test"
+
+
+#Install youtube-dl
+
+apt install curl ffmpeg python
+curl -L https://yt-dl.org/downloads/latest/youtube-dl -o /data/data/com.termux/files/usr/bin/youtube-dl
+chmod 700 /data/data/com.termux/files/usr/bin/youtube-dl
+
+#Fix shebang, must be run on install and on each update
+#otherwise will get "bad interpreter: /usr/bin/env" errors when running with root shell, plugin or TermuxCommand,
+#because termux-exec doesn't work for those cases and LD_PRELOAD isn't set
+#but its not required for usage with sudo since it sets the LD_PRELOAD
+termux-fix-shebang /data/data/com.termux/files/usr/bin/youtube-dl
+#
+#Update youtube-dl
+youtube-dl -U
+
+
+#Install bandcamp-dl
+pip3 install bandcamp-downloader
+#
+#Update bandcamp-dl
+pkg install git
+pip install git+https://github.com/iheanyi/bandcamp-dl --upgrade
+
+
+
+#Following are not required for the tests currently
+
+#Install pry, the ruby interactive shell alternative
+gem install pry
+
+#Install python2
+pkg install python2
+
+#Install ksh
+apt install unstable-repo
+pkg intsall loksh
+
+
+
+#Follow instructions in `RC File Variables` section of README.md to fix `rc` files.
+
+#Finally run tests
+
+#Run all tests
+bash ~/sudo_tests
+
+#Run only script command type tests
+bash ~/sudo_tests script
+
+#Run only script command type bash shell test 1
+bash ~/sudo_tests script bash 1
+
+#Run only script command type bash shell test 1 with verbose level 2
+bash ~/sudo_tests -vv script bash 1
+
+#For some tests **sometimes** where *-stdin-string option is used to pass a string to an interactive shell using stdin,
+#the stdout is returned in an unsynchronized manner which fails the validation, possibly due to magisk su or maybe an android 10 issue
+#The tests run fine with SuperSU v2.82 on android 7 without issues. Currently not sure of the real reason
+#If that happens, just rerun the test and it should ideally work
+#This is also the reason why su and asu tests use matches instead of equality checks, some script type tests still use exact matches
+
+SUDO_TESTS_HELP_EXTRA
+)"
+
+
+
+### Set Default Variables Start
+sudo_tests_verbose_level=2 #default to log level 2
+sudo_tests_args_verbose_level=0 #set this to 1 manually, if you want to debug arguments received
+
+SUDO_TESTS_TEMP_DIRECTORY_SUFFIX="" #default to none
+
+declare -ga SUDO_TESTS_DIRECTORIES=()
+declare -ga sudo_v_args=()
+
+#set regexes for validation
+valid_number_regex='^[0-9]+$'
+valid_absolute_path_regex='^(/[^/]+)+$'
+
+### Set Default Variables
+
+
+[[ x"${BASH_SOURCE[0]}" == x"$0" ]] && sudo_tests_exit_command="exit" || sudo_tests_exit_command="return"
+
+function sudo_tests_log () { local log_level="${1}"; shift; if [[ $sudo_tests_verbose_level -ge $log_level ]]; then echo "$@"; fi }
+function sudo_tests_log_literal() { local log_level="${1}"; shift; if [[ $sudo_tests_verbose_level -ge $log_level ]]; then echo -e "$@"; fi }
+function sudo_tests_log_errors () { echo "$@" 1>&2; }
+function sudo_tests_log_args() { if [[ $sudo_tests_args_verbose_level -ge "1" ]]; then echo "$@"; fi }
+function sudo_tests_log_arg_errors() { echo "$@" 1>&2; }
+
+#stdin in closed for some tests as a patch to SuperSU automatic redirection of stderr to stdout when running in interactive mode
+function close_stdin () {  if [ -t 0 ]; then exec <&-; fi }
+function reopen_stdin () {  if [[ "$tty_path" == "/dev/"* ]]; then exec <$tty_path; fi }
+
+
+sudo_tests_main() {
+
+	local return_value
+
+	#source the sudo script
+	if [ ! -x /data/data/com.termux/files/usr/bin/sudo ]; then
+		sudo_tests_log_errors "Failed to find \"/data/data/com.termux/files/usr/bin/sudo\""
+		$sudo_tests_exit_command 1
+	else
+		source /data/data/com.termux/files/usr/bin/sudo
+		sudo_set_default_variables
+	fi
+
+	local -a SUDO_TESTS_REQUIRED_VARIABLES_ARRAY=(
+		TERMUX_FILES
+		TERMUX_PREFIX
+		TERMUX_HOME
+		TERMUX_PATH
+		TERMUX_LD_LIBRARY_PATH
+		ANDROID_PATH
+	)
+
+	local var
+
+	for var in "${SUDO_TESTS_REQUIRED_VARIABLES_ARRAY[@]}"; do
+		#if var is not set
+		if [ -z "${!var}" ]; then
+			sudo_tests_log_errors "The required variable \"$var\" for sudo_tests is not set"
+			$sudo_tests_exit_command 1
+		fi
+	done
+
+
+	#process the command or options passed to sudo_tests
+	process_sudo_tests_parameters "$@"
+
+
+	sudo_tests_run
+	$sudo_tests_exit_command $?
+
+}
+
+sudo_tests_run() {
+
+	local return_value
+
+	#set SUDO_TESTS_WORKING_DIR to use for tests
+	SUDO_TESTS_WORKING_DIR="$TERMUX_HOME"
+
+	cd "$SUDO_TESTS_WORKING_DIR"
+
+	if [ -t 0 ]; then
+		tty_path="$(tty 2>/dev/null)"
+	fi
+
+	#find machine arch
+	ARCH="$(uname -m)"
+	return_value=$?
+	if [ $return_value -ne 0 ]; then
+		sudo_tests_log_errors "Failed to find machine arch"
+		return $return_value
+	fi
+
+	#find android sdk/os version
+	ANDROID_SDK_VERSION="$(getprop "ro.build.version.sdk")"
+	return_value=$?
+	if [ $return_value -ne 0 ] || [[ ! "$ANDROID_SDK_VERSION" =~ $valid_number_regex ]]; then
+		sudo_tests_log_errors "Failure while finding \"ro.build.version.sdk\" property"
+		sudo_tests_log_errors "ANDROID_SDK_VERSION = \"$ANDROID_SDK_VERSION\""
+		if [ $return_value -eq 0 ]; then
+			return_value=1
+		fi
+		return $return_value
+	fi
+
+
+
+	#generate unique suffix to use for sudo_tests directories
+	SUDO_TESTS_TEMP_DIRECTORY_SUFFIX="$(mktemp -d --dry-run sudo.XXXXXX)"
+	return_value=$?
+	if [ $return_value -ne 0 ] || [[ ! "$SUDO_TESTS_TEMP_DIRECTORY_SUFFIX" =~  ^sudo\.......$ ]]; then
+		sudo_tests_log_errors "Failure while running mktemp to create SUDO_TESTS_TEMP_DIRECTORY_SUFFIX"
+		sudo_tests_log_errors "SUDO_TESTS_TEMP_DIRECTORY_SUFFIX=\"$SUDO_TESTS_TEMP_DIRECTORY_SUFFIX\""
+		if [ $return_value -eq 0 ]; then
+			return_value=1
+		fi
+		return $return_value
+	fi
+
+	export SUDO_SHELL_HOME="$SUDO_TESTS_WORKING_DIR/.shell_home.$SUDO_TESTS_TEMP_DIRECTORY_SUFFIX"
+	export SUDO_POST_SHELL_HOME="$SUDO_TESTS_WORKING_DIR/.post_shell_home.$SUDO_TESTS_TEMP_DIRECTORY_SUFFIX"
+
+	SUDO_SHELL_HOME_BASENAME="${SUDO_SHELL_HOME##*/}" #strip longest match of */ from start
+	SUDO_POST_SHELL_HOME_BASENAME="${SUDO_POST_SHELL_HOME##*/}" #strip longest match of */ from start
+
+	SUDO_TESTS_DIRECTORIES+=("$SUDO_SHELL_HOME")
+	SUDO_TESTS_DIRECTORIES+=("$SUDO_POST_SHELL_HOME")
+
+
+
+	#set traps to run commands before exiting sudo_tests
+	trap 'sudo_tests_cleanup' EXIT
+	trap 'sudo_tests_cleanup TERM' TERM
+	trap 'sudo_tests_cleanup INT' INT
+	trap 'sudo_tests_cleanup HUP' HUP
+	trap 'sudo_tests_cleanup QUIT' QUIT
+
+
+
+	#run tests
+	if [ -z "$sudo_tests_command_type" ]; then
+		sudo_tests_log 0 "Running 'sudo' tests"
+		sudo_tests_log 0 $'\n\n'; sudo_tests_run_su_tests ||  return $?
+		sudo_tests_log 0 $'\n\n'; sudo_tests_run_asu_tests ||  return $?
+		sudo_tests_log 0 $'\n\n'; sudo_tests_run_path_tests ||  return $?
+		sudo_tests_log 0 $'\n\n'; sudo_tests_run_script_tests ||  return $?
+	elif [[ "$sudo_tests_command_type" != *,* ]] && [[ ",su,asu,path,script," == *",$sudo_tests_command_type,"* ]]; then
+		sudo_tests_run_"$sudo_tests_command_type"_tests ||  return $?
+	else
+		sudo_tests_log_errors "Unknown tests command type $sudo_tests_command_type"
+		show_sudo_tests_help
+		return 1
+	fi
+
+	sudo_tests_log 0 $'\n\n'"All 'sudo' tests successful"
+
+	return 0
+
+}
+
+sudo_tests_run_su_tests() {
+
+	local return_value
+
+	sudo_tests_command_type="su"
+	sudo_tests_log 0 "Running '$sudo_tests_command_type' command type tests"
+
+
+
+	#Run bash tests
+
+	set_sudo_tests_current_test_shell "bash"
+	shell="bash"
+
+	run_sudo_test 1 && \
+	output="$(sudo "${sudo_v_args[@]}" --dry-run --shell-stdin-string='cd "$HOME"; pwd; exit;' su)"
+	validate_sudo_test 0 $? "$output" ""
+
+	run_sudo_test 2 && \
+	output="$(sudo "${sudo_v_args[@]}" --shell-stdin-string='cd "$HOME"; pwd; exit;' su)"
+	validate_sudo_test 0 $? "$output" "*" "$SUDO_SHELL_HOME" "*"
+
+	run_sudo_test 3 && \
+	output="$(sudo "${sudo_v_args[@]}" --shell-stdin-string='echo "$PATH"; exit;' su)"
+	validate_sudo_test 0 $? "$output" "*" "$TERMUX_PATH" "*"
+
+	run_sudo_test 4 && \
+	output="$(sudo "${sudo_v_args[@]}" --shell-stdin-string='echo "$LD_LIBRARY_PATH"; exit;' su)"
+	validate_sudo_test 0 $? "$output" "*" "$TERMUX_LD_LIBRARY_PATH" "*"
+
+
+
+	sudo_tests_log 0 $'\n\n'"All 'su' command type tests successful"
+
+	return 0
+
+}
+
+sudo_tests_run_asu_tests() {
+
+	local return_value
+
+	sudo_tests_command_type="asu"
+	sudo_tests_log 0 "Running '$sudo_tests_command_type' command type tests"
+
+
+
+	#Run bash tests
+
+	set_sudo_tests_current_test_shell "bash"
+	shell="bash"
+
+	run_sudo_test 1 && \
+	output="$(sudo "${sudo_v_args[@]}" --dry-run --shell-stdin-string='cd "$HOME"; pwd; exit;' asu)"
+	validate_sudo_test 0 $? "$output" ""
+
+	run_sudo_test 2 && \
+	output="$(sudo "${sudo_v_args[@]}" --shell-stdin-string='cd "$HOME"; pwd; exit;' asu)"
+	validate_sudo_test 0 $? "$output" "*" "$SUDO_SHELL_HOME" "*"
+
+	run_sudo_test 3 && \
+	output="$(sudo "${sudo_v_args[@]}" --shell-stdin-string='echo "$PATH"; exit;' asu)"
+	validate_sudo_test 0 $? "$output" "*" "$ANDROID_PATH" "*"
+
+	run_sudo_test 4 && \
+	output="$(sudo "${sudo_v_args[@]}" --shell-stdin-string='echo "$LD_LIBRARY_PATH"; exit;' asu)"
+	return_value=$?
+	#if ARCH is 64 bit
+	if [[ "$ARCH" == *64 ]]; then
+		validate_sudo_test 0 $return_value "$output" "*" "/system/lib64:/system/lib:" "*"
+	else
+		validate_sudo_test 0 $return_value "$output" "*" "/system/lib:" "*"
+	fi
+
+
+
+	sudo_tests_log 0 $'\n\n'"All 'asu' command type tests successful"
+
+	return 0
+}
+
+sudo_tests_run_path_tests() {
+
+	local return_value
+
+	sudo_tests_command_type="path"
+	sudo_tests_log 0 "Running '$sudo_tests_command_type' command type tests"
+
+
+
+	#Run bash tests
+
+	set_sudo_tests_current_test_shell "bash"
+	shell="bash"
+
+	if [ -x "$TERMUX_HOME/.termux/tasker/termux_tasker_basic_bash_test" ]; then
+		run_sudo_test 1 && \
+		output="$(sudo "${sudo_v_args[@]}" "$TERMUX_HOME/.termux/tasker/termux_tasker_basic_bash_test" "$shell" "shell")"
+		validate_sudo_test 0 $? "$output" "\$1=\`$shell\`"$'\n'"\$2=\`shell\`"
+	else
+		skip_sudo_test 1
+	fi
+
+	if [ -x "$TERMUX_HOME/.termux/tasker/termux_tasker_basic_bash_test" ]; then
+		run_sudo_test 2 && \
+		output="$(sudo "${sudo_v_args[@]}" '~/.termux/tasker/termux_tasker_basic_bash_test' "$shell" "shell")"
+		validate_sudo_test 0 $? "$output" "\$1=\`$shell\`"$'\n'"\$2=\`shell\`"
+	else
+		skip_sudo_test 2
+	fi
+
+	if [ -x "$TERMUX_HOME/.termux/tasker/termux_tasker_basic_bash_test" ]; then
+		run_sudo_test 3 && \
+		output="$(cd "$TERMUX_HOME"; sudo "${sudo_v_args[@]}" './.termux/tasker/termux_tasker_basic_bash_test' "$shell" "shell")"
+		validate_sudo_test 0 $? "$output" "\$1=\`$shell\`"$'\n'"\$2=\`shell\`"
+	else
+		skip_sudo_test 3
+	fi
+
+	if [ -x "$TERMUX_HOME/.termux/tasker/termux_tasker_basic_bash_test" ]; then
+		run_sudo_test 4 && \
+		output="$(cd "$TERMUX_HOME/.termux/tasker"; sudo "${sudo_v_args[@]}" 'termux_tasker_basic_bash_test' "$shell" "shell")"
+		validate_sudo_test 0 $? "$output" "\$1=\`$shell\`"$'\n'"\$2=\`shell\`"
+	else
+		skip_sudo_test 4
+	fi
+
+
+
+	run_sudo_test 5 && \
+	output="$(sudo "${sudo_v_args[@]}" ps -e -o cmd | grep "$TERMUX_PREFIX/bin/ps")"
+	validate_sudo_test 0 $? "$output" "*" "$TERMUX_PREFIX/bin/ps -e -o cmd" "*"
+
+
+
+	run_sudo_test 6 && \
+	output="$(sudo "${sudo_v_args[@]}" dumpsys activity services | grep -E 'ServiceRecord\{.*com\.termux\/.*\.app\.TermuxService\}')"
+	validate_sudo_test 0 $? "$output" "*" "com.termux/.app.TermuxService" "*"
+
+
+
+	run_sudo_test 7 && \
+	output="$(sudo "${sudo_v_args[@]}" -r echo "$COMMA_ALTERNATIVE")"
+	validate_sudo_test 0 $? "$output" ","
+
+
+
+	sudo_tests_log 0 $'\n\n'"All 'path' command type tests successful"
+
+	return 0
+
+}
+
+sudo_tests_run_script_tests() {
+
+	local return_value
+
+	sudo_tests_command_type="script"
+	sudo_tests_log 0 "Running '$sudo_tests_command_type' command type tests"
+
+
+
+	### Run bash tests
+
+	set_sudo_tests_current_test_shell "bash"
+	shell="bash"
+
+
+	run_sudo_test 1 && \
+	output="$(sudo "${sudo_v_args[@]}" -s --dry-run 'cd "$HOME"; pwd;')"
+	validate_sudo_test 0 $? "$output" ""
+
+	run_sudo_test 2 && \
+	output="$(sudo "${sudo_v_args[@]}" -s 'cd "$HOME"; pwd;')"
+	validate_sudo_test 0 $? "$output" "$SUDO_SHELL_HOME"
+
+	run_sudo_test 3 && \
+	output="$(cd "$SUDO_TESTS_WORKING_DIR"; sudo "${sudo_v_args[@]}" -s --shell-home="./$SUDO_SHELL_HOME_BASENAME" 'cd "$HOME"; pwd;')"
+	validate_sudo_test 0 $? "$output" "$SUDO_SHELL_HOME"
+
+	run_sudo_test 4 && \
+	output="$(cd "$SUDO_TESTS_WORKING_DIR"; sudo "${sudo_v_args[@]}" -s --shell-home="$SUDO_SHELL_HOME_BASENAME" 'cd "$HOME"; pwd;')"
+	validate_sudo_test 0 $? "$output" "$SUDO_SHELL_HOME"
+
+	run_sudo_test 5 && \
+	output="$(sudo "${sudo_v_args[@]}" -si --post-shell-home="$SUDO_POST_SHELL_HOME" --post-shell-stdin-string='exit' --post-shell-pre-commands='cd "$HOME"; pwd;')"
+	validate_sudo_test 0 $? "$output" "" "$SUDO_POST_SHELL_HOME" "*"
+
+
+
+	run_sudo_test 6 && \
+	output="$(sudo "${sudo_v_args[@]}" -s 'readlink -f /proc/$$/exe')"
+	validate_sudo_test 0 $? "$output" "$TERMUX_PREFIX/bin/bash"
+
+	run_sudo_test 7 && \
+	output="$(sudo "${sudo_v_args[@]}" -s --shell="$TERMUX_PREFIX/bin/bash" 'readlink -f /proc/$$/exe')"
+	validate_sudo_test 0 $? "$output" "$TERMUX_PREFIX/bin/bash"
+
+	run_sudo_test 8 && \
+	output="$(sudo "${sudo_v_args[@]}" -si --post-shell-stdin-string='readlink -f /proc/$$/exe; exit;')"
+	validate_sudo_test 0 $? "$output" '# readlink -f /proc/$$/exe; exit;'$'\n'"$TERMUX_PREFIX/bin/bash"$'\n'"exit"
+
+	run_sudo_test 9 && \
+	output="$(sudo "${sudo_v_args[@]}" -si --post-shell="$TERMUX_PREFIX/bin/bash" --post-shell-stdin-string='readlink -f /proc/$$/exe; exit;')"
+	validate_sudo_test 0 $? "$output" '# readlink -f /proc/$$/exe; exit;'$'\n'"$TERMUX_PREFIX/bin/bash"$'\n'"exit"
+
+
+
+	run_sudo_test 10 && \
+	output="$(sudo "${sudo_v_args[@]}" -s --shell="$shell" <(cat <<'SUDO_EOF'
+echo "Hi, $1 $2."
+SUDO_EOF
+) "$shell" "shell"
+	)"
+	validate_sudo_test 0 $? "$output" "Hi, $shell shell."
+
+
+
+	run_sudo_test 11 && \
+	output="$(sudo "${sudo_v_args[@]}" -s --shell="$shell" --shell-stdin-string="$shell" '
+echo '\''What is your name?'\''
+read name
+echo "Hi, $name."
+'
+	)"
+	validate_sudo_test 0 $? "$output" "What is your name?"$'\n'"Hi, $shell."
+
+
+
+	run_sudo_test 12 && \
+	output="$(sudo "${sudo_v_args[@]}" -sd --shell="$shell" '
+echo '\''What is your name?'\''
+read name
+echo "Hi, $name."
+'
+	)"
+	validate_sudo_test 0 $? "$output" "What is your name?"$'\n'"Hi, ."
+
+
+
+	run_sudo_test 13 && \
+	output="$(sudo "${sudo_v_args[@]}" -so --shell="$shell" --shell-stdin-string="$shell" '
+echo '\''What is your name?'\''
+read name
+echo "Hi, $name." 1>&2
+'
+	)"
+	validate_sudo_test 0 $? "$output" "What is your name?"$'\n'"Hi, $shell."
+
+
+
+	run_sudo_test 14 && \
+	output="$(sudo "${sudo_v_args[@]}" -sf 'echo "Running $1 $2 script: $(basename "$0")"' "$shell" "shell")"
+	validate_sudo_test 0 $? "$output" "Running $shell shell script: sudo_core_script"
+
+
+	run_sudo_test 15 && \
+	output="$(sudo "${sudo_v_args[@]}" -sf --script-name="sudo_core_script_custom" 'echo "Running $1 $2 script: $(basename "$0")"' "$shell" "shell")"
+	validate_sudo_test 0 $? "$output" "Running $shell shell script: sudo_core_script_custom"
+
+
+
+	if [ -x "$TERMUX_HOME/.termux/tasker/termux_tasker_basic_bash_test" ]; then
+		run_sudo_test 16 && \
+		output="$(sudo "${sudo_v_args[@]}" -sF '~/.termux/tasker/termux_tasker_basic_bash_test' "$shell" "shell")"
+		validate_sudo_test 0 $? "$output" "\$1=\`$shell\`"$'\n'"\$2=\`shell\`"
+	else
+		skip_sudo_test 16
+	fi
+
+
+	if [ -x "$TERMUX_PREFIX/bin/tasker_config_utils" ]; then
+		run_sudo_test 17 && \
+		output="$(sudo "${sudo_v_args[@]}" -s --script-name="tasker_config_utils" <(cat "$TERMUX_PREFIX/bin/tasker_config_utils") --help 1>/dev/null)"
+		validate_sudo_test 0 $? "$output"
+	else
+		skip_sudo_test 17
+	fi
+
+
+	if [ -x "$TERMUX_PREFIX/bin/tasker_config_utils" ]; then
+		run_sudo_test 18 && \
+		output="$(sudo "${sudo_v_args[@]}" -sf --script-name="tasker_config_utils" <(cat "$TERMUX_PREFIX/bin/tasker_config_utils") --help 1>/dev/null)"
+		validate_sudo_test 0 $? "$output"
+	else
+		skip_sudo_test 18
+	fi
+
+
+
+
+
+	run_sudo_test 19 && \
+	output="$(sudo "${sudo_v_args[@]}" -s --shell-pre-commands='
+export VARIABLE_1="VARIABLE_VALUE_1"
+export VARIABLE_2="VARIABLE_VALUE_2"
+' '
+echo "Hi, $1 $2."
+echo "VARIABLE_1=\`$VARIABLE_1\`"
+echo "VARIABLE_2=\`$VARIABLE_2\`"
+' "$shell" "shell"
+	)"
+	validate_sudo_test 0 $? "$output" "Hi, $shell shell."$'\n'"VARIABLE_1=\`VARIABLE_VALUE_1\`"$'\n'"VARIABLE_2=\`VARIABLE_VALUE_2\`"
+
+
+
+	run_sudo_test 20 && \
+	output="$(sudo "${sudo_v_args[@]}" -si --post-shell-stdin-string='exit' --shell-pre-commands='echo "Start script"' --shell-post-commands='echo "Exited script"' --post-shell-pre-commands='echo "Starting interactive shell"' --post-shell-post-commands='echo "Exited interactive shell"' 'echo "Hi, $1 $2."' "$shell" "shell")"
+	validate_sudo_test 0 $? "$output" "Start script"$'\n'"Hi, $shell shell."$'\n'"Exited script"$'\n'"Starting interactive shell"$'\n'"# exit"$'\n'"exit"$'\n'"Exited interactive shell"
+
+
+
+
+
+	sudo_test_temp_shell_home="/shell_home.$SUDO_TESTS_TEMP_DIRECTORY_SUFFIX"
+	SUDO_TESTS_DIRECTORIES+=("$sudo_test_temp_shell_home")
+	run_sudo_test 21 && \
+	output="$(sudo "${sudo_v_args[@]}" -s --shell-home="$sudo_test_temp_shell_home" 'cd "$HOME"; pwd;' 2>&1)"
+	return_value=$?
+	# If android >= 10
+	if [ "$ANDROID_SDK_VERSION" -ge 29 ]; then
+		validate_sudo_test 1 $return_value "$output" "" "The rootfs \"/\" partition cannot be mounted as rw to be used for SUDO_SHELL_HOME \"$sudo_test_temp_shell_home\"" "*"
+	else
+		validate_sudo_test 0 $return_value "$output" "$sudo_test_temp_shell_home"
+	fi
+
+
+
+	sudo_test_temp_post_shell_home="/post_shell_home.$SUDO_TESTS_TEMP_DIRECTORY_SUFFIX"
+	SUDO_TESTS_DIRECTORIES+=("$sudo_test_temp_post_shell_home")
+	run_sudo_test 22 && \
+	output="$(sudo "${sudo_v_args[@]}" -si --post-shell-home="$sudo_test_temp_post_shell_home" --post-shell-stdin-string='exit' --post-shell-pre-commands='cd "$HOME"; pwd;' 2>&1)"
+	return_value=$?
+	# If android >= 10
+	if [ "$ANDROID_SDK_VERSION" -ge 29 ]; then
+		validate_sudo_test 1 $return_value "$output" "" "The rootfs \"/\" partition cannot be mounted as rw to be used for SUDO_POST_SHELL_HOME \"$sudo_test_temp_post_shell_home\"" "*"
+	else
+		validate_sudo_test 0 $return_value "$output" "$sudo_test_temp_post_shell_home"$'\n'"# exit"$'\n'"exit"
+	fi
+
+
+
+	sudo_test_temp_shell_home="/system/shell_home.$SUDO_TESTS_TEMP_DIRECTORY_SUFFIX"
+	SUDO_TESTS_DIRECTORIES+=("$sudo_test_temp_shell_home")
+	run_sudo_test 23 && \
+	output="$(sudo "${sudo_v_args[@]}" -s --shell-home="$sudo_test_temp_shell_home" 'cd "$HOME"; pwd;' 2>&1)"
+	return_value=$?
+	# If android >= 10
+	if [ "$ANDROID_SDK_VERSION" -ge 29 ]; then
+		validate_sudo_test 1 $return_value "$output" "" "The system \"/system\" partition cannot be mounted as rw to be used for SUDO_SHELL_HOME \"$sudo_test_temp_shell_home\"" "*"
+	else
+		validate_sudo_test 0 $return_value "$output" "$sudo_test_temp_shell_home"
+	fi
+
+
+
+	sudo_test_temp_post_shell_home="/system/post_shell_home.$SUDO_TESTS_TEMP_DIRECTORY_SUFFIX"
+	SUDO_TESTS_DIRECTORIES+=("$sudo_test_temp_post_shell_home")
+	run_sudo_test 24 && \
+	output="$(sudo "${sudo_v_args[@]}" -si --post-shell-home="$sudo_test_temp_post_shell_home" --post-shell-stdin-string='exit' --post-shell-pre-commands='cd "$HOME"; pwd;' 2>&1)"
+	return_value=$?
+	# If android >= 10
+	if [ "$ANDROID_SDK_VERSION" -ge 29 ]; then
+		validate_sudo_test 1 $return_value "$output" "" "The system \"/system\" partition cannot be mounted as rw to be used for SUDO_POST_SHELL_HOME \"$sudo_test_temp_post_shell_home\"" "*"
+	else
+		validate_sudo_test 0 $return_value "$output" "$sudo_test_temp_post_shell_home"$'\n'"# exit"$'\n'"exit"
+	fi
+
+
+
+
+	sudo_test_temp_work_dir="$SUDO_TESTS_WORKING_DIR/work_dir.$SUDO_TESTS_TEMP_DIRECTORY_SUFFIX"
+	SUDO_TESTS_DIRECTORIES+=("$sudo_test_temp_work_dir")
+
+	run_sudo_test 25 && \
+	output="$(sudo "${sudo_v_args[@]}" -s --work-dir="$sudo_test_temp_work_dir" 'pwd' 2>&1)"
+	return_value=$?
+	validate_sudo_test 0 $return_value "$output" "$sudo_test_temp_work_dir"
+
+	run_sudo_test 26 && \
+	output="$(sudo "${sudo_v_args[@]}" -s --work-dir='~/work_dir.'"$SUDO_TESTS_TEMP_DIRECTORY_SUFFIX" 'pwd' 2>&1)"
+	return_value=$?
+	validate_sudo_test 0 $return_value "$output" "$sudo_test_temp_work_dir"
+
+	run_sudo_test 27 && \
+	output="$(cd "$SUDO_TESTS_WORKING_DIR"; sudo "${sudo_v_args[@]}" -s --work-dir="./work_dir.$SUDO_TESTS_TEMP_DIRECTORY_SUFFIX" 'pwd' 2>&1)"
+	return_value=$?
+	validate_sudo_test 0 $return_value "$output" "$sudo_test_temp_work_dir"
+
+	run_sudo_test 28 && \
+	output="$(cd "$SUDO_TESTS_WORKING_DIR"; sudo "${sudo_v_args[@]}" -s --work-dir="work_dir.$SUDO_TESTS_TEMP_DIRECTORY_SUFFIX" 'pwd' 2>&1)"
+	return_value=$?
+	validate_sudo_test 0 $return_value "$output" "$sudo_test_temp_work_dir"
+
+
+
+
+
+	#redirect stderr to stdout, same as `--script-redirect=0`
+	close_stdin
+	run_sudo_test 29 && \
+	sudo_tests_run_subshell_command stdout stderr sudo "${sudo_v_args[@]}" -so --shell="$shell" 'echo stdout; echo stderr 1>&2'
+	return_value=$?
+	reopen_stdin
+	validate_sudo_test 0 $return_value "$stdout" "stdout"$'\n'"stderr"
+	validate_sudo_test 0 $return_value "$stderr" ""
+
+	#redirect stdout to stderr, same as `--script-redirect=1`
+	close_stdin
+	run_sudo_test 30 && \
+	sudo_tests_run_subshell_command stdout stderr sudo "${sudo_v_args[@]}" -sO --shell="$shell" 'echo stdout; echo stderr 1>&2'
+	return_value=$?
+	reopen_stdin
+	validate_sudo_test 0 $return_value "$stdout" ""
+	validate_sudo_test 0 $return_value "$stderr" "stdout"$'\n'"stderr"
+
+	#redirect redirect stdout to /dev/null
+	close_stdin
+	run_sudo_test 31 && \
+	sudo_tests_run_subshell_command stdout stderr sudo "${sudo_v_args[@]}" -s --script-redirect=2 --shell="$shell" 'echo stdout; echo stderr 1>&2'
+	return_value=$?
+	reopen_stdin
+	validate_sudo_test 0 $return_value "$stdout" ""
+	validate_sudo_test 0 $return_value "$stderr" "stderr"
+
+	#redirect stderr to /dev/null for core_script, same as `--script-redirect=3`
+	close_stdin
+	run_sudo_test 32 && \
+	sudo_tests_run_subshell_command stdout stderr sudo "${sudo_v_args[@]}" -sn --shell="$shell" 'echo stdout; echo stderr 1>&2'
+	return_value=$?
+	reopen_stdin
+	validate_sudo_test 0 $return_value "$stdout" "stdout"
+	validate_sudo_test 0 $return_value "$stderr" ""
+
+	#redirect both stdout and stderr to /dev/null, same as `--script-redirect=4`
+	close_stdin
+	run_sudo_test 33 && \
+	sudo_tests_run_subshell_command stdout stderr sudo "${sudo_v_args[@]}" -sN --shell="$shell" 'echo stdout; echo stderr 1>&2'
+	return_value=$?
+	reopen_stdin
+	validate_sudo_test 0 $return_value "$stdout" ""
+	validate_sudo_test 0 $return_value "$stderr" ""
+
+	#redirect stderr to stdout and redirect stdout to stderr
+	close_stdin
+	run_sudo_test 34 && \
+	sudo_tests_run_subshell_command stdout stderr sudo "${sudo_v_args[@]}" -s --script-redirect=5 --shell="$shell" 'echo stdout; echo stderr 1>&2'
+	return_value=$?
+	reopen_stdin
+	validate_sudo_test 0 $return_value "$stdout" "stderr"
+	validate_sudo_test 0 $return_value "$stderr" "stdout"
+
+	#redirect stderr to stdout and redirect stdout to /dev/null
+	close_stdin
+	run_sudo_test 35 && \
+	sudo_tests_run_subshell_command stdout stderr sudo "${sudo_v_args[@]}" -s --script-redirect=6 --shell="$shell" 'echo stdout; echo stderr 1>&2'
+	return_value=$?
+	reopen_stdin
+	validate_sudo_test 0 $return_value "$stdout" "stderr"
+	validate_sudo_test 0 $return_value "$stderr" ""
+
+
+
+	close_stdin
+	run_sudo_test 36 && \
+	sudo_tests_run_subshell_command stdout stderr sudo "${sudo_v_args[@]}" -sie --post-shell-stdin-string='exit' --shell="$shell" <(cat <<'SUDO_EOF'
+#if parameter count is not 2
+if [ $# -ne 2 ]; then
+    echo "Invalid parameter count '$#' to 'termux_tasker_basic_bash_test'" 1>&2
+    echo "$*" 1>&2
+    exit 1
+fi
+
+echo "\$1=\`$1\`"
+echo "\$2=\`$2\`"
+
+exit 0
+SUDO_EOF
+) "$shell"
+	return_value=$?
+	reopen_stdin
+	validate_sudo_test 1 $return_value "$stdout" ""
+	validate_sudo_test 1 $return_value "$stderr" "Invalid parameter count '1' to 'termux_tasker_basic_bash_test'"$'\n'"$shell"
+
+
+
+
+
+	run_sudo_test 37 && \
+	output="$(sudo "${sudo_v_args[@]}" -s --shell=bas 'echo "Hi, $1 $2."' "$shell" "shell" 2>&1)"
+	validate_sudo_test 1 $? "$output" "" "The SUDO_SHELL \"bas\" is not supported. It must be one of" "*"
+
+
+
+	run_sudo_test 38 && \
+	output="$(sudo "${sudo_v_args[@]}" -si --post-shell=bas 'echo "Hi, $1 $2."' "$shell" "shell" 2>&1)"
+	validate_sudo_test 1 $? "$output" "" "The SUDO_POST_SHELL \"bas\" is not supported. It must be one of" "*"
+
+
+
+	run_sudo_test 39 && \
+	output="$(sudo "${sudo_v_args[@]}" -s --shell-home='~/.config' 'echo "Hi, $1 $2."' "$shell" "shell" 2>&1)"
+	validate_sudo_test 1 $? "$output" "" "The \"$TERMUX_HOME/.config\" cannot be used as SUDO_SHELL_HOME" "*"
+
+
+
+	run_sudo_test 40 && \
+	output="$(sudo "${sudo_v_args[@]}" -s --shell-home='$PREFIX/' 'echo "Hi, $1 $2."' "$shell" "shell" 2>&1)"
+	validate_sudo_test 1 $? "$output" "" "The \"$TERMUX_PREFIX\" cannot be used as SUDO_SHELL_HOME" "*"
+
+
+
+	run_sudo_test 41 && \
+	output="$(sudo "${sudo_v_args[@]}" -s --shell-home='$PREFIX/home' 'echo "Hi, $1 $2."' "$shell" "shell" 2>&1)"
+	validate_sudo_test 1 $? "$output" "" "The \"$TERMUX_PREFIX/home\" cannot be used as SUDO_SHELL_HOME" "*"
+
+
+
+	run_sudo_test 42 && \
+	output="$(sudo "${sudo_v_args[@]}" -si --post-shell-home='~/.config' 'echo "Hi, $1 $2."' "$shell" "shell" 2>&1)"
+	validate_sudo_test 1 $? "$output" "" "The \"$TERMUX_HOME/.config\" cannot be used as SUDO_POST_SHELL_HOME" "*"
+
+
+
+	run_sudo_test 43 && \
+	output="$(sudo "${sudo_v_args[@]}" -si --post-shell-home='$PREFIX/' 'echo "Hi, $1 $2."' "$shell" "shell" 2>&1)"
+	validate_sudo_test 1 $? "$output" "" "The \"$TERMUX_PREFIX\" cannot be used as SUDO_POST_SHELL_HOME" "*"
+
+
+
+	run_sudo_test 44 && \
+	output="$(sudo "${sudo_v_args[@]}" -si --post-shell-home='$PREFIX/home' 'echo "Hi, $1 $2."' "$shell" "shell" 2>&1)"
+	validate_sudo_test 1 $? "$output" "" "The \"$TERMUX_PREFIX/home\" cannot be used as SUDO_POST_SHELL_HOME" "*"
+
+
+
+
+
+	run_sudo_test 45 && \
+	output="$(sudo "${sudo_v_args[@]}" -sr "[[ \",\" == \"$COMMA_ALTERNATIVE\" ]] && [[ "\$1" == \"$COMMA_ALTERNATIVE\" ]] && echo \"arg1 equals simple comma\"" "$COMMA_ALTERNATIVE")"
+	validate_sudo_test 0 $? "$output" "arg1 equals simple comma"
+
+
+
+	run_sudo_test 46 && \
+	output="$(sudo "${sudo_v_args[@]}" -si --post-shell="python" --post-shell-stdin-string='exit(0)' 2>&1)"
+	validate_sudo_test 0 $? "$output" "*" "Python" "*"
+
+
+
+
+
+	### Run zsh tests
+	if [ -x "$TERMUX_PREFIX/bin/zsh" ]; then
+
+		set_sudo_tests_current_test_shell "zsh"
+		shell="zsh"
+
+
+		run_sudo_test 1 && \
+		output="$(sudo "${sudo_v_args[@]}" -s --shell="$shell" 'readlink -f /proc/$$/exe')"
+		validate_sudo_test 0 $? "$output" "$TERMUX_PREFIX/bin/zsh"
+
+
+
+		run_sudo_test 2 && \
+		output="$(sudo "${sudo_v_args[@]}" -s --shell="$shell" <(cat <<'SUDO_EOF'
+echo "Hi, $1 $2."
+SUDO_EOF
+) "$shell" "shell"
+		)"
+		validate_sudo_test 0 $? "$output" "Hi, $shell shell."
+
+
+
+		run_sudo_test 3 && \
+		output="$(sudo "${sudo_v_args[@]}" -s --shell="$shell" --shell-stdin-string="$shell" <(cat <<'SUDO_EOF'
+echo "What is your name?"
+read name
+echo "Hi, $name."
+SUDO_EOF
+)
+		)"
+		validate_sudo_test 0 $? "$output" "What is your name?"$'\n'"Hi, $shell."
+
+	else
+		sudo_tests_log 1 "Skipping zsh tests since its not installed"
+	fi
+
+
+
+
+
+	### Run dash tests
+	if [ -x "$TERMUX_PREFIX/bin/dash" ]; then
+
+		set_sudo_tests_current_test_shell "dash"
+		shell="dash"
+
+
+		run_sudo_test 1 && \
+		output="$(sudo "${sudo_v_args[@]}" -s --shell="$shell" <(cat <<'SUDO_EOF'
+echo "Hi, $1 $2."
+SUDO_EOF
+) "$shell" "shell"
+		)"
+		validate_sudo_test 0 $? "$output" "Hi, $shell shell."
+
+
+
+		run_sudo_test 2 && \
+		output="$(sudo "${sudo_v_args[@]}" -s --shell="$shell" --shell-stdin-string="$shell" <(cat <<'SUDO_EOF'
+echo "What is your name?"
+read name
+echo "Hi, $name."
+SUDO_EOF
+)
+		)"
+		validate_sudo_test 0 $? "$output" "What is your name?"$'\n'"Hi, $shell."
+
+	else
+		sudo_tests_log 1 "Skipping dash tests since its not installed"
+	fi
+
+
+
+
+
+	### Run sh tests
+	if [ -x "$TERMUX_PREFIX/bin/sh" ]; then
+
+		set_sudo_tests_current_test_shell "sh"
+		shell="sh"
+
+
+		run_sudo_test 1 && \
+		output="$(sudo "${sudo_v_args[@]}" -s --shell="$shell" <(cat <<'SUDO_EOF'
+echo "Hi, $1 $2."
+SUDO_EOF
+) "$shell" "shell"
+		)"
+		validate_sudo_test 0 $? "$output" "Hi, $shell shell."
+
+
+
+		run_sudo_test 2 && \
+		output="$(sudo "${sudo_v_args[@]}" -s --shell="$shell" --shell-stdin-string="$shell" <(cat <<'SUDO_EOF'
+echo "What is your name?"
+read name
+echo "Hi, $name."
+SUDO_EOF
+)
+		)"
+		validate_sudo_test 0 $? "$output" "What is your name?"$'\n'"Hi, $shell."
+
+	else
+		sudo_tests_log 1 "Skipping sh tests since its not installed"
+	fi
+
+
+
+
+
+	### Run fish tests
+	if [ -x "$TERMUX_PREFIX/bin/fish" ]; then
+
+		set_sudo_tests_current_test_shell "fish"
+		shell="fish"
+
+		run_sudo_test 1 && \
+		output="$(sudo "${sudo_v_args[@]}" -s --shell="$shell" 'readlink -f /proc/$fish_pid/exe')"
+		validate_sudo_test 0 $? "$output" "$TERMUX_PREFIX/bin/fish"
+
+
+		run_sudo_test 2 && \
+		output="$(sudo "${sudo_v_args[@]}" -s --shell="$shell" <(cat <<'SUDO_EOF'
+echo "Hi, $argv[1] $argv[2]."
+SUDO_EOF
+) "$shell" "shell"
+		)"
+		validate_sudo_test 0 $? "$output" "Hi, $shell shell."
+
+
+
+		run_sudo_test 3 && \
+		output="$(sudo "${sudo_v_args[@]}" -s --shell="$shell" --shell-stdin-string="$shell" <(cat <<'SUDO_EOF'
+echo "What is your name?"
+read -p "" name
+echo "Hi, $name."
+SUDO_EOF
+)
+		)"
+		validate_sudo_test 0 $? "$output" "What is your name?"$'\n'"Hi, $shell."
+
+	else
+		sudo_tests_log 1 "Skipping fish tests since its not installed"
+	fi
+
+
+
+
+
+	### Run python tests
+	if [ -x "$TERMUX_PREFIX/bin/python" ]; then
+
+		set_sudo_tests_current_test_shell "python"
+		shell="python"
+
+
+		run_sudo_test 1 && \
+		output="$(sudo "${sudo_v_args[@]}" -s --shell="$shell" <(cat <<'SUDO_EOF'
+import sys
+print("Hi, %s %s." % (sys.argv[1], sys.argv[2]))
+SUDO_EOF
+) "$shell" "shell"
+		)"
+		validate_sudo_test 0 $? "$output" "Hi, $shell shell."
+
+
+
+		run_sudo_test 2 && \
+		output="$(sudo "${sudo_v_args[@]}" -s --shell="$shell" --shell-stdin-string="$shell" <(cat <<'SUDO_EOF'
+name = input("What is your name?\n")
+print("Hi, %s." % name)
+SUDO_EOF
+)
+		)"
+		validate_sudo_test 0 $? "$output" "What is your name?"$'\n'"Hi, $shell."
+
+
+		if [ -x "$TERMUX_HOME/.termux/tasker/termux_tasker_basic_python_test" ]; then
+			run_sudo_test 3 && \
+			output="$(sudo "${sudo_v_args[@]}" '~/.termux/tasker/termux_tasker_basic_python_test' "$shell" "shell")"
+			validate_sudo_test 0 $? "$output" "\$1=\`$shell\`"$'\n'"\$2=\`shell\`"
+		else
+			skip_sudo_test 3
+		fi
+
+		if [ -x "$TERMUX_PREFIX/bin/youtube-dl" ]; then
+			run_sudo_test 4 && \
+			output="$(sudo "${sudo_v_args[@]}" -s --shell=python --script-name="youtube-dl" <(cat "$TERMUX_PREFIX/bin/youtube-dl") --help 1>/dev/null)"
+			validate_sudo_test 0 $? "$output"
+		else
+			skip_sudo_test 4
+		fi
+
+		if [ -x "$TERMUX_PREFIX/bin/youtube-dl" ]; then
+			run_sudo_test 5 && \
+			output="$(sudo "${sudo_v_args[@]}" -sF --shell=python "$TERMUX_PREFIX/bin/youtube-dl" --help 1>/dev/null)"
+			validate_sudo_test 0 $? "$output"
+		else
+			skip_sudo_test 5
+		fi
+
+		if [ -x "$TERMUX_PREFIX/bin/bandcamp-dl" ]; then
+			run_sudo_test 6 && \
+			output="$(sudo "${sudo_v_args[@]}" -s --shell=python "$(cat "$TERMUX_PREFIX/bin/bandcamp-dl")" --help)"
+			validate_sudo_test 0 $? "$output"
+		else
+			skip_sudo_test 6
+		fi
+
+		if [ -x "$TERMUX_PREFIX/bin/bandcamp-dl" ]; then
+			run_sudo_test 7 && \
+			output="$(sudo "${sudo_v_args[@]}" -s --script-decode --shell=python "$(cat "$TERMUX_PREFIX/bin/bandcamp-dl" | base64)" --help)"
+			validate_sudo_test 0 $? "$output"
+		else
+			skip_sudo_test 7
+		fi
+
+	else
+		sudo_tests_log 1 "Skipping python tests since its not installed"
+	fi
+
+
+
+
+
+	### Run ruby tests
+	if [ -x "$TERMUX_PREFIX/bin/ruby" ]; then
+
+		set_sudo_tests_current_test_shell "ruby"
+		shell="ruby"
+
+
+		run_sudo_test 1 && \
+		output="$(sudo "${sudo_v_args[@]}" -s --shell="$shell" <(cat <<'SUDO_EOF'
+puts "Hi, " + ARGV[0] + " " + ARGV[1] + "."
+SUDO_EOF
+) "$shell" "shell"
+		)"
+		validate_sudo_test 0 $? "$output" "Hi, $shell shell."
+
+
+
+		run_sudo_test 2 && \
+		output="$(sudo "${sudo_v_args[@]}" -s --shell="$shell" --shell-stdin-string="$shell" <(cat <<'SUDO_EOF'
+puts "What is your name?"
+name = STDIN.gets
+name = '' if name.nil?
+puts "Hi, " + name.chomp.to_s + "."
+SUDO_EOF
+)
+		)"
+		validate_sudo_test 0 $? "$output" "What is your name?"$'\n'"Hi, $shell."
+
+	else
+		sudo_tests_log 1 "Skipping ruby tests since its not installed"
+	fi
+
+
+
+
+
+	### Run node tests
+	if [ -x "$TERMUX_PREFIX/bin/node" ]; then
+
+		set_sudo_tests_current_test_shell "node"
+		shell="node"
+
+
+		run_sudo_test 1 && \
+		output="$(sudo "${sudo_v_args[@]}" -s --shell="$shell" <(cat <<'SUDO_EOF'
+console.log(`Hi, ${process.argv[2]} ${process.argv[3]}.`)
+SUDO_EOF
+) "$shell" "shell"
+		)"
+		validate_sudo_test 0 $? "$output" "Hi, $shell shell."
+
+
+
+		run_sudo_test 2 && \
+		output="$(sudo "${sudo_v_args[@]}" -s --shell="$shell" --shell-stdin-string="$shell" <(cat <<'SUDO_EOF'
+const readline = require('readline').createInterface({
+    input: process.stdin,
+    output: process.stdout
+})
+
+readline.question(`What is your name?\n`, (name) => {
+    console.log(`Hi, ${name}.`)
+    readline.close()
+})
+SUDO_EOF
+)
+		)"
+		validate_sudo_test 0 $? "$output" "*" "Hi, $shell." ""
+
+	else
+		sudo_tests_log 1 "Skipping node tests since its not installed"
+	fi
+
+
+
+
+
+	### Run perl tests
+	if [ -x "$TERMUX_PREFIX/bin/perl" ]; then
+
+		set_sudo_tests_current_test_shell "perl"
+		shell="perl"
+
+
+		run_sudo_test 1 && \
+		output="$(sudo "${sudo_v_args[@]}" -s --shell="$shell" <(cat <<'SUDO_EOF'
+print "Hi, ", $ARGV[0], " ", $ARGV[1], ".\n";
+SUDO_EOF
+) "$shell" "shell"
+		)"
+		validate_sudo_test 0 $? "$output" "Hi, $shell shell."
+
+
+
+		run_sudo_test 2 && \
+		output="$(sudo "${sudo_v_args[@]}" -s --shell="$shell" --shell-stdin-string="$shell" <(cat <<'SUDO_EOF'
+print "What is your name?\n";
+$name = <STDIN>;
+chomp($name);
+print "Hi, ", $name, ".\n";
+SUDO_EOF
+)
+		)"
+		validate_sudo_test 0 $? "$output" "What is your name?"$'\n'"Hi, $shell."
+
+	else
+		sudo_tests_log 1 "Skipping perl tests since its not installed"
+	fi
+
+
+
+
+
+	### Run lua5.2 tests
+	if [ -x "$TERMUX_PREFIX/bin/lua5.2" ]; then
+
+		set_sudo_tests_current_test_shell "lua5.2"
+		shell="lua5.2"
+
+
+		run_sudo_test 1 && \
+		output="$(sudo "${sudo_v_args[@]}" -s --shell="$shell" <(cat <<'SUDO_EOF'
+io.write('Hi, ', arg[1], ' ', arg[2], '.\n')
+SUDO_EOF
+) "$shell" "shell"
+		)"
+		validate_sudo_test 0 $? "$output" "Hi, $shell shell."
+
+
+
+		run_sudo_test 2 && \
+		output="$(sudo "${sudo_v_args[@]}" -s --shell="$shell" --shell-stdin-string="$shell" <(cat <<'SUDO_EOF'
+io.write('What is your name?\n')
+local name = io.read()
+io.write('Hi, ', name, '.\n')
+SUDO_EOF
+)
+		)"
+		validate_sudo_test 0 $? "$output" "What is your name?"$'\n'"Hi, $shell."
+
+	else
+		sudo_tests_log 1 "Skipping lua5.2 tests since its not installed"
+	fi
+
+
+
+
+
+	### Run lua5.3 tests
+	if [ -x "$TERMUX_PREFIX/bin/lua5.3" ]; then
+
+		set_sudo_tests_current_test_shell "lua5.3"
+		shell="lua5.3"
+
+
+		run_sudo_test 1 && \
+		output="$(sudo "${sudo_v_args[@]}" -s --shell="$shell" <(cat <<'SUDO_EOF'
+io.write('Hi, ', arg[1], ' ', arg[2], '.\n')
+SUDO_EOF
+) "$shell" "shell"
+		)"
+		validate_sudo_test 0 $? "$output" "Hi, $shell shell."
+
+
+
+		run_sudo_test 2 && \
+		output="$(sudo "${sudo_v_args[@]}" -s --shell="$shell" --shell-stdin-string="$shell" <(cat <<'SUDO_EOF'
+io.write('What is your name?\n')
+local name = io.read()
+io.write('Hi, ', name, '.\n')
+SUDO_EOF
+)
+		)"
+		validate_sudo_test 0 $? "$output" "What is your name?"$'\n'"Hi, $shell."
+
+	else
+		sudo_tests_log 1 "Skipping lua5.3 tests since its not installed"
+	fi
+
+
+
+
+
+	### Run lua5.4 tests
+	if [ -x "$TERMUX_PREFIX/bin/lua5.4" ]; then
+
+		set_sudo_tests_current_test_shell "lua5.4"
+		shell="lua5.4"
+
+
+		run_sudo_test 1 && \
+		output="$(sudo "${sudo_v_args[@]}" -s --shell="$shell" <(cat <<'SUDO_EOF'
+io.write('Hi, ', arg[1], ' ', arg[2], '.\n')
+SUDO_EOF
+) "$shell" "shell"
+		)"
+		validate_sudo_test 0 $? "$output" "Hi, $shell shell."
+
+
+
+		run_sudo_test 1 && \
+		output="$(sudo "${sudo_v_args[@]}" -s --shell="$shell" --shell-stdin-string="$shell" <(cat <<'SUDO_EOF'
+io.write('What is your name?\n')
+local name = io.read()
+io.write('Hi, ', name, '.\n')
+SUDO_EOF
+)
+		)"
+		validate_sudo_test 0 $? "$output" "What is your name?"$'\n'"Hi, $shell."
+
+	else
+		sudo_tests_log 1 "Skipping lua5.4 tests since its not installed"
+	fi
+
+
+
+
+
+	### Run php tests
+	if [ -x "$TERMUX_PREFIX/bin/php" ]; then
+
+		set_sudo_tests_current_test_shell "php"
+		shell="php"
+
+
+		run_sudo_test 1 && \
+		output="$(sudo "${sudo_v_args[@]}" -s --shell="$shell" <(cat <<'SUDO_EOF'
+<?php
+echo "Hi, " . $argv[1] . " " . $argv[2] . ".\n";
+SUDO_EOF
+) "$shell" "shell"
+		)"
+		validate_sudo_test 0 $? "$output" "Hi, $shell shell."
+
+
+
+		run_sudo_test 2 && \
+		output="$(sudo "${sudo_v_args[@]}" -s --shell="$shell" --shell-stdin-string="$shell" <(cat <<'SUDO_EOF'
+<?php
+echo "What is your name?\n";
+$name = readline();
+echo "Hi, " . $name . ".\n";
+SUDO_EOF
+)
+		)"
+		validate_sudo_test 0 $? "$output" "What is your name?"$'\n'"php"$'\n'"Hi, $shell."
+
+	else
+		sudo_tests_log 1 "Skipping php tests since its not installed"
+	fi
+
+
+
+	sudo_tests_log 0 $'\n\n'"All 'script' command type tests successful"
+
+	return 0
+
+}
+
+#capture stdout and stderr of command in separate variables
+#sudo_tests_run_subshell_command stdout_variable_name stderr_variable_name command [arguments]
+sudo_tests_run_subshell_command() {
+
+	local return_value
+
+	local stdout_variable_name="$1";
+	local stderr_variable_name="$2"
+	shift 2
+
+	local valid_bash_variable_name_regex='^[a-zA-Z][a-zA-Z0-9_]*(\[[0-9]+\])?$'
+
+	#if stdout_variable_name does equals "stdout_variable_name" and or is not a valid bash variable_name
+	if [[ "$stdout_variable_name" == "stdout_variable_name" ]]|| [[ ! "$stdout_variable_name" =~ $valid_bash_variable_name_regex ]]; then
+		sudo_tests_log_errors "stdout_variable_name \"$1\" passed to \"sudo_tests_run_subshell_command\" equals \"stdout_variable_name\" or is not a valid bash variable name"
+		return 1
+	fi
+
+	#if stderr_variable_name does equals "stderr_variable_name" and or is not a valid bash variable_name
+	if [[ "$stderr_variable_name" == "stderr_variable_name" ]]|| [[ ! "$stderr_variable_name" =~ $valid_bash_variable_name_regex ]]; then
+		sudo_tests_log_errors "stderr_variable_name \"$1\" passed to \"sudo_tests_run_subshell_command\" equals \"stderr_variable_name\" or is not a valid bash variable name"
+		return 1
+	fi
+
+	unset "$stdout_variable_name"
+	unset "$stderr_variable_name"
+
+	#credits madmurphy https://stackoverflow.com/a/59592881/14686958
+
+	#some_command is launched
+
+	#we then have some_command's stdout on the descriptor 1,
+	#some_command's stderr on the descriptor 2 and
+	#some_command's exit code redirected to the descriptor 3
+
+	#stdout is piped to tr (sanitization) to remove NUL
+
+	#stderr is swapped with stdout (using temporarily the descriptor 4) and piped to tr (sanitization)
+
+	#the exit code (descriptor 3) is swapped with stderr (now descriptor 1) and piped to exit $(cat)
+
+	#stderr (now descriptor 3) is redirected to the descriptor 1, end expanded as the second argument of printf
+
+	#the exit code of exit $(cat) is captured by the third argument of printf
+
+	#the output of printf is redirected to the descriptor 2, where stdout was already present
+
+	#the concatenation of stdout and the output of printf is piped to read
+
+	{
+		IFS=$'\n' read -r -d '' "$stdout_variable_name";
+		IFS=$'\n' read -r -d '' "$stderr_variable_name";
+		(IFS=$'\n' read -r -d '' return_value; return $return_value);
+	} < <((printf '\0%s\0%d\0' "$(((({ "$@"; echo "$?" 1>&3-; } | tr -d '\0' 1>&4-) 4>&2- 2>&1- | tr -d '\0' 1>&4-) 3>&1- | exit "$(cat)") 4>&1-)" "$?" 1>&2) 2>&1)
+
+}
+
+set_sudo_tests_current_test_shell () {
+
+	sudo_tests_previous_temp_test_shell="$sudo_tests_current_test_shell";
+	sudo_tests_current_test_shell="$1"
+
+}
+
+set_sudo_tests_current_test_number () {
+
+	#to handle the case when sudo_tests_user_test_number was the last test of a shell
+	if [[ ! -z "$sudo_tests_previous_temp_test_shell" ]]; then
+		sudo_tests_previous_test_shell="$sudo_tests_previous_temp_test_shell"
+		sudo_tests_previous_temp_test_shell=""
+	else
+		sudo_tests_previous_test_shell="$sudo_tests_current_test_shell"
+	fi
+
+	sudo_tests_previous_test_number="$sudo_tests_current_test_number";
+	sudo_tests_current_test_number="$1";
+
+	#if sudo_tests_user_test_shell and sudo_tests_user_test_number are set
+	#and
+	#sudo_tests_previous_test_shell equals sudo_tests_user_test_shell
+	#and
+	#sudo_tests_previous_test_number equals sudo_tests_user_test_number
+	#then exit
+	if [ ! -z "$sudo_tests_user_test_shell" ] && [ ! -z "$sudo_tests_user_test_number" ] && \
+			[[ "$sudo_tests_previous_test_shell" == "$sudo_tests_user_test_shell" ]] && \
+				[[ "$sudo_tests_previous_test_number" == "$sudo_tests_user_test_number" ]]; then
+		$sudo_tests_exit_command 0
+	fi
+
+	#if sudo_tests_user_test_shell and sudo_tests_user_test_number are set
+	#and
+	#sudo_tests_current_test_shell does not equal sudo_tests_user_test_shell
+	#     or
+	#sudo_tests_current_test_number does not equal sudo_tests_user_test_number
+	#then skip the current test
+	if [ ! -z "$sudo_tests_user_test_shell" ] && [ ! -z "$sudo_tests_user_test_number" ] && \
+			([[ "$sudo_tests_current_test_shell" != "$sudo_tests_user_test_shell" ]] || \
+				[[ "$sudo_tests_current_test_number" != "$sudo_tests_user_test_number" ]]); then
+		return 112
+	else
+		sudo_tests_run_test=1
+		return 0
+	fi
+
+}
+
+#run_sudo_test current_test_number
+run_sudo_test () {
+
+	set_sudo_tests_current_test_number "$1" || return $?
+	sudo_tests_log 1 $'\n\n'"Running $sudo_tests_current_test_shell shell test $sudo_tests_current_test_number";
+
+}
+
+#skip_sudo_test current_test_number
+skip_sudo_test () {
+
+	set_sudo_tests_current_test_number "$1" || return $?
+	sudo_tests_log 1 $'\n\n'"Skipping $sudo_tests_current_test_shell shell test $sudo_tests_current_test_number";
+
+}
+
+#validate_sudo_test expected_result_value actual_result_value actual_output expected_output
+#validate_sudo_test expected_result_value actual_result_value actual_output expected_output_prefix_glob expected_output expected_output_suffix_glob
+validate_sudo_test () {
+
+	local return_value
+
+	if [[ "$sudo_tests_run_test" != "1" ]]; then
+		return 0
+	fi
+
+	local expected_result_value="$1"
+	local actual_result_value="$2"
+
+	#remove all escape sequences and strip all characters except tab(11), linefeed(12) and characters in range 40-176
+	local actual_output="$(sed 's/\x1b\[[0-9;]*[a-zA-Z]//g' <<< "$3" | tr -cd '\11\12\40-\176')"
+
+	local expected_output
+	local output_match_test_failed=0
+
+	#if actual_output is set
+	if [ ! -z "$actual_output" ]; then
+		cat -v <<<"$actual_output"
+	fi
+
+	#if parameter count equals 4 and actual_output does not exactly match $4
+	if [ $# -eq 4 ] && [[  "$actual_output" != "$4" ]]; then
+		output_match_test_failed=1
+		expected_output="$4"
+	fi
+
+	#if parameter count greater than 4 and actual_output does not exactly match $5 with $4 and $6 as optional globs
+	if [ $# -gt 4 ] && [[  "$actual_output" != $4"$5"$6 ]]; then
+		output_match_test_failed=1
+		expected_output="$4$5$6"
+	fi
+
+	#if output_match_test_failed is enabled
+	if [[  "$output_match_test_failed" == "1" ]]; then
+		sudo_tests_log_errors $'\n'"$sudo_tests_current_test_shell shell test $sudo_tests_current_test_number for '$sudo_tests_command_type' command type failed since expected_output does not match actual_output"
+		sudo_tests_log_errors $'\n'"expected_output=\`$expected_output\`"
+		sudo_tests_log_errors $'\n'"actual_output=\`$actual_output\`"
+		$sudo_tests_exit_command 1
+	fi
+
+	#if actual_result_value is not a valid exit code
+	if [[ ! "$actual_result_value" =~ $valid_number_regex ]]; then
+		sudo_tests_log_errors $'\n'"$sudo_tests_current_test_shell shell test $sudo_tests_current_test_number for '$sudo_tests_command_type' command type exit code '$actual_result_value' is invalid"
+		$sudo_tests_exit_command 1
+	fi
+
+	#if expected_result_value is not a valid exit code
+	if [[ ! "$expected_result_value" =~ $valid_number_regex ]]; then
+		sudo_tests_log_errors $'\n'"$sudo_tests_current_test_shell shell test $sudo_tests_current_test_number for '$sudo_tests_command_type' command type exit code '$expected_result_value' is invalid"
+		$sudo_tests_exit_command 1
+	fi
+
+	#if actual_result_value does not equal expected_result_value
+	if [[ "$actual_result_value" != "$expected_result_value" ]]; then
+		sudo_tests_log_errors $'\n'"$sudo_tests_current_test_shell shell test $sudo_tests_current_test_number for '$sudo_tests_command_type' command type failed with exit code $actual_result_value but expected exit code was $expected_result_value"
+		$sudo_tests_exit_command "$actual_result_value"
+	fi
+
+	sudo_tests_log 1 $'\n'"Test successful";
+
+	return 0
+
+}
+
+sudo_tests_cleanup() {
+
+	#the sudo_tests_cleanup will do the following:
+	#remove the EXIT trap so its not called again
+	#remove temp_directory if set
+	#if a signal argument was passed, then remove its trap and
+	#then exit with the same signal
+	#so that parent processes can be notified if necessary
+
+	local sudo_tests_exit_code=$?
+	trap - EXIT
+	sudo_tests_remove_sudo_tests_temp_directories
+	[ -n "$1" ] && trap - $1; exit $sudo_tests_exit_code;
+
+}
+
+sudo_tests_remove_sudo_tests_temp_directories() {
+
+	#set SU and SU_BIN_PATH
+	#redirecting stderr to /dev/null since the following would ideally also fail on the first test run
+	sudo_set_su_variables &>/dev/null || return $?
+
+	#if SU, SUDO_TESTS_DIRECTORIES and SUDO_TESTS_TEMP_DIRECTORY_SUFFIX are set
+	if [ ! -z "$SU" ] && [ ${#SUDO_TESTS_DIRECTORIES[@]} -ne 0 ] && [ ! -z "$SUDO_TESTS_TEMP_DIRECTORY_SUFFIX" ]; then
+
+		sudo_tests_log 2 $'\n\n'"Running sudo_tests_remove_sudo_tests_temp_directories"
+
+		rootfs_partition_dependent_paths=""
+		system_partition_dependent_paths=""
+
+		#set rootfs_partition_dependent_paths and system_partition_dependent_paths
+		#which are required by the sudo_set_su_env_command function to add '--mount-master option' to SU_ENV_COMMAND
+
+		for i in "${!SUDO_TESTS_DIRECTORIES[@]}"; do
+			SUDO_TESTS_DIRECTORY="${SUDO_TESTS_DIRECTORIES[$i]}"
+
+			#find the parent directory of the SUDO_TESTS_DIRECTORY
+			SUDO_TESTS_DIRECTORY_BASENAME="${SUDO_TESTS_DIRECTORY##*/}" #strip longest match of */ from start
+			SUDO_TESTS_DIRECTORY_PARENT_DIR="${SUDO_TESTS_DIRECTORY:0:${#SUDO_TESTS_DIRECTORY} - ${#SUDO_TESTS_DIRECTORY_BASENAME}}" #substring from 0 to position of basename
+			case $SUDO_TESTS_DIRECTORY_PARENT_DIR in *[!/]*/) SUDO_TESTS_DIRECTORY_PARENT_DIR=${SUDO_TESTS_DIRECTORY_PARENT_DIR%"${SUDO_TESTS_DIRECTORY_PARENT_DIR##*[!/]}"};; *[/]) SUDO_TESTS_DIRECTORY_PARENT_DIR="/";; esac #remove trailing slashes if not root
+
+			#if SUDO_TESTS_DIRECTORY_PARENT_DIR is in rootfs "/" partition
+			if [[ "$SUDO_TESTS_DIRECTORY_PARENT_DIR" =~ $valid_path_in_rootfs_partition_regex ]]; then
+				rootfs_partition_dependent_paths+=" \"$SUDO_TESTS_DIRECTORY\""
+			fi
+
+			#if SUDO_TESTS_DIRECTORY is in system "/system" partition
+			if [[ "$SUDO_TESTS_DIRECTORY" =~ $valid_path_in_system_partition_regex ]]; then
+				system_partition_dependent_paths+=" \"$SUDO_TESTS_DIRECTORY\""
+			fi
+		done
+
+
+		# If android < 10
+		if [[ "$ANDROID_SDK_VERSION" =~ $valid_number_regex ]] && [ "$ANDROID_SDK_VERSION" -lt 29 ]; then
+			#if rootfs_partition_dependent_paths is set
+			if [ ! -z "$rootfs_partition_dependent_paths" ]; then
+				#remount android rootfs partition as rw
+				sudo_tests_log 2 "Remounting rootfs \"/\" partition as rw to be used for$rootfs_partition_dependent_paths"
+				sudo_remount_partition "rootfs" "rw" 0
+				return_value=$?
+				if [ $return_value -ne 0 ] && [ $return_value -ne 112 ]; then
+					sudo_tests_log_errors "Failed to mount rootfs \"/\" partition as rw to be used for$rootfs_partition_dependent_paths"
+					return $return_value
+				fi
+			fi
+
+			#if system_partition_dependent_paths is set
+			if [ ! -z "$system_partition_dependent_paths" ]; then
+				#remount android system partition as rw
+				sudo_tests_log 2 "Remounting system \"/system\" partition as rw to be used for$system_partition_dependent_paths"
+				sudo_remount_partition "system" "rw" 0
+				return_value=$?
+				if [ $return_value -ne 0 ] && [ $return_value -ne 112 ]; then
+					sudo_tests_log_errors "Failed to mount system \"/system\" partition as rw to be used for$system_partition_dependent_paths"
+					return $return_value
+				fi
+			fi
+		fi
+
+
+		#remove all directories in SUDO_TESTS_DIRECTORIES if they match the SUDO_TESTS_TEMP_DIRECTORY_SUFFIX
+		for i in "${!SUDO_TESTS_DIRECTORIES[@]}"; do
+			if [[ "${SUDO_TESTS_DIRECTORIES[$i]}" == *"$SUDO_TESTS_TEMP_DIRECTORY_SUFFIX" ]]; then
+				"$SU" --mount-master -c "[ -d \"${SUDO_TESTS_DIRECTORIES[$i]}\" ] && rm -rf \"${SUDO_TESTS_DIRECTORIES[$i]}\""
+			fi
+		done
+
+
+		# If android < 10
+		if [[ "$ANDROID_SDK_VERSION" =~ $valid_number_regex ]] && [ "$ANDROID_SDK_VERSION" -lt 29 ]; then
+			#if rootfs_partition_dependent_paths is set
+			if [ ! -z "$rootfs_partition_dependent_paths" ]; then
+				sudo_remount_partition "rootfs" "ro" "0"
+			fi
+
+			#if system_partition_dependent_paths is set
+			if [ ! -z "$system_partition_dependent_paths" ]; then
+				sudo_remount_partition "system" "ro" "0"
+			fi
+		fi
+
+	fi
+
+	return 0
+
+}
+
+process_sudo_tests_parameters() {
+
+	#parse options to sudo_tests command
+	while getopts ":hv-:" opt; do
+		case ${opt} in
+			-)
+				long_optargs="${OPTARG#*=}"
+				case "${OPTARG}" in
+					help-extra)
+						sudo_tests_log_args "Parsing option: '--${OPTARG%=*}'"
+						show_sudo_tests_help_extra
+						$sudo_tests_exit_command 0
+						;;
+					help-extra*)
+						sudo_tests_log_arg_errors "Invalid option or parameters not allowed for option: '--${OPTARG%=*}'"
+						exit_sudo_tests_on_error
+						;;
+					help)
+						sudo_tests_log_args "Parsing option: '--${OPTARG%=*}'"
+						show_sudo_tests_help
+						$sudo_tests_exit_command 0
+						;;
+					help*)
+						sudo_tests_log_arg_errors "Invalid option or parameters not allowed for option: '--${OPTARG%=*}'"
+						exit_sudo_tests_on_error
+						;;
+					'' ) #"--" terminates argument processing to support non-options that start with dashes
+						sudo_tests_log_args "Parsing option: '--'"
+						break
+						;;
+					*)
+						sudo_tests_log_arg_errors "Unknown option '--${OPTARG%=*}'"
+						exit_sudo_tests_on_error
+						;;
+				esac
+				;;
+			h)
+				sudo_tests_log_args "Parsing option: '-${opt}'"
+				show_sudo_tests_help
+				$sudo_tests_exit_command 0
+				;;
+			v)
+				sudo_tests_log_args "Parsing option: '-${opt}'"
+				#sudo_verbose_level would have been sourced from the sudo script
+				if [ "$sudo_verbose_level" -lt "2" ]; then
+					sudo_verbose_level=$((sudo_verbose_level+1));
+					sudo_v_args+=("-v")
+				else
+					sudo_tests_log_arg_errors "Invalid Option, max verbose level is 2"
+					exit_sudo_tests_on_error
+				fi
+				;;
+			\?)
+				sudo_tests_log_arg_errors "Unknown option: '-${OPTARG}'"
+				exit_sudo_tests_on_error
+				;;
+		esac
+	done
+	shift $((OPTIND -1)) #remove already processed arguments from argument list
+
+	sudo_tests_command_type="$1"
+	sudo_tests_user_test_shell="$2"
+	sudo_tests_user_test_number="$3"
+
+}
+
+show_sudo_tests_help() {
+
+	cat<<<"$SUDO_TESTS_HELP"
+
+}
+
+show_sudo_tests_help_extra() {
+
+	show_sudo_tests_help
+
+	cat<<<"$SUDO_TESTS_HELP_EXTRA"
+
+}
+
+exit_sudo_tests_on_error() {
+
+	show_sudo_tests_help
+	$sudo_tests_exit_command 1
+
+}
+
+#call sudo_tests_main function
+[[ x"${BASH_SOURCE[0]}" == x"$0" ]] && sudo_tests_main "$@"; $sudo_tests_exit_command 0;
