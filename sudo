@@ -234,7 +234,7 @@ valid_path_in_rootfs_partition_regex='^/[^/]*/?$'
 valid_path_in_system_partition_regex='^/system/.*'
 valid_su_mount_master_option_prefixed_string='^[ \t]*(--mount-master|-mm)[ \t]*'
 
-### Set Default Variables
+### Set Default Variables End
 
 }
 
