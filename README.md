@@ -1292,15 +1292,15 @@ SUDO_EOF
 
 #### Tasker
 
-- `Tasks`
-    - `XML`
+- `Tasks`  
+    - `XML`  
         Download the [Termux Tasker Plugin Sudo Templates Task XML](templates/plugin_hosts/tasker/Termux_Tasker_Plugin_Sudo_Templates.tsk.xml) and [Termux RUN_COMMAND Intent Sudo Templates Task XML](templates/plugin_hosts/tasker/Termux_RUN_COMMAND_Intent_Sudo_Templates.tsk.xml) files to the android download directory. To download, right-click or hold the `Raw` button at the top after opening a file link and select `Download/Save link` or use `curl` from a termux shell. Then import the downloaded task files into Tasker by long pressing the `Task` tab button in Tasker home and selecting `Import Task`.  
 
-        `curl -L 'https://github.com/termux/termux-tasker/raw/master/templates/plugin_hosts/tasker/Termux_Tasker_Plugin_Sudo_Templates.tsk.xml' -o "/storage/emulated/0/Download/Termux_Tasker_Plugin_Sudo_Templates.tsk.xml"`  
+        `curl -L 'https://github.com/agnostic-apollo/sudo/raw/master/templates/plugin_hosts/tasker/Termux_Tasker_Plugin_Sudo_Templates.tsk.xml' -o "/storage/emulated/0/Download/Termux_Tasker_Plugin_Sudo_Templates.tsk.xml"`  
 
-        `curl -L 'https://github.com/termux/termux-tasker/raw/master/templates/plugin_hosts/tasker/Termux_RUN_COMMAND_Intent_Sudo_Templates.tsk.xml' -o "/storage/emulated/0/Download/Termux_RUN_COMMAND_Intent_Sudo_Templates.tsk.xml"`  
+        `curl -L 'https://github.com/agnostic-apollo/sudo/raw/master/templates/plugin_hosts/tasker/Termux_RUN_COMMAND_Intent_Sudo_Templates.tsk.xml' -o "/storage/emulated/0/Download/Termux_RUN_COMMAND_Intent_Sudo_Templates.tsk.xml"`  
 
-    - `Taskernet`
+    - `Taskernet`  
         Import `Termux Tasker Plugin Sudo Templates Task` from `Taskernet` from [here](https://taskernet.com/shares/?user=AS35m8mXdvaT1Vj8TwkSaCaoMUv220IIGtHe3pG4MymrCUhpgzrat6njEOnDVVulhAIHLi6BPUt1&id=Task%3ATermux+Tasker+Plugin+Sudo+Templates).  
         Import `Termux RUN_COMMAND Intent Sudo Templates Task` from `Taskernet` from [here](https://taskernet.com/shares/?user=AS35m8mXdvaT1Vj8TwkSaCaoMUv220IIGtHe3pG4MymrCUhpgzrat6njEOnDVVulhAIHLi6BPUt1&id=Task%3ATermux+RUN_COMMAND+Intent+Sudo+Templates).  
 
