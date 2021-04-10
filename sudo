@@ -10,7 +10,7 @@
 #bash version:  4.1 or higher
 #credits:       https://gitlab.com/st42/termux-sudo
 #               https://github.com/cswl/tsu
-version=0.1.0
+version=0.2.0
 
 
 
