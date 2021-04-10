@@ -214,7 +214,7 @@ sudo_tests_run() {
 	fi
 
 	#find machine arch
-	ARCH="$(uname -m)"
+	ARCH="$(dpkg --print-architecture)"
 	return_value=$?
 	if [ $return_value -ne 0 ]; then
 		sudo_tests_log_errors "Failed to find machine arch"
