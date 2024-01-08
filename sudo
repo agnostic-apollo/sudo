@@ -2682,7 +2682,7 @@ function export
     end
 end
 
-funcsave export
+funcsave -q export
 '
 
 		#define unset helper function for fish shell that allows export command in bash to be used
@@ -2691,7 +2691,7 @@ function unset
     set --erase $argv
 end
 
-funcsave unset
+funcsave -q unset
 '
 
 	#define tpath helper function for fish shell that sets priority to termux paths
