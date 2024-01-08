@@ -1625,7 +1625,7 @@ Check [CHANGELOG.md](CHANGELOG.md) file for the **Changelog**.
 
 ### Donations
 
-- To donate money to support me, you can visit [here](https://github.com/agnostic-apollo/rand/blob/master/General/Donations.md) for more info.
+- To donate money to support me, you can visit [here](https://github.com/agnostic-apollo/agnostic-apollo/blob/main/Donations.md) for more info.
 ##
 
 [Tasker App]: https://play.google.com/store/apps/details?id=net.dinglisch.android.taskerm
