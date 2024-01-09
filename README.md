@@ -1,12 +1,12 @@
 # sudo
 
-`sudo` is a wrapper script to drop to any [supported shell](#Supported-Shells) or execute shell script files or their text passed as an argument with `superuser (root)` context in [Termux App]. Check the [Usage](#Usage) and [Command Types](#Command-Types) sections for more info on what type of commands can be run. `sudo` stands for *superuser do*.
+`sudo` is a wrapper script to drop to any [supported shell](#supported-shells) or execute shell script files or their text passed as an argument with `superuser (root)` context in [Termux App]. Check the [Usage](#usage) and [Command Types](#command-types) sections for more info on what type of commands can be run. `sudo` stands for *superuser do*.
 
 The device must be rooted and ideally `Termux` must have been granted root permissions by your root manager app like [SuperSU] or [Magisk] for the `sudo` script to work.
 
-Make sure to read the [Worthy Of Note](#Worthy-Of-Note) section, **specially the [RC File Variables](#rc-file-variables) section. This is very important, specially if you were previously using [termux-sudo by st42]**.
+Make sure to read the [Worthy Of Note](#worthy-of-note) section, **specially the [RC File Variables](#rc-file-variables) section. This is very important, specially if you were previously using [termux-sudo by st42]**.
 
-To use `sudo` with [Termux:Tasker] plugin and [RUN_COMMAND Intent], check [Termux:Tasker] `Setup Instructions` section for details on how to set them up. The [Tasker App] or your plugin host app must be granted `com.termux.permission.RUN_COMMAND` permission. The `sudo` script must be installed at `$PREFIX/bin/sudo`. The `allow-external-apps` property must also be set to `true` in `~/.termux/termux.properties` file since the `$PREFIX/bin/sudo` absolute path is outside the `~/.termux/tasker/` directory. For android `>= 10`, the [Termux App] should also be granted `Draw Over Apps` permission so that foreground commands automatically start executing without the user having to manually click the `Termux` notification in the status bar dropdown notifications list for the commands to start. Check [Templates](#Templates) section for template tasks that can be run used to run `sudo` from `Termux:Tasker` plugin and `RUN_COMMAND Intent`.
+To use `sudo` with [Termux:Tasker] plugin and [RUN_COMMAND Intent], check [Termux:Tasker] `Setup Instructions` section for details on how to set them up. The [Tasker App] or your plugin host app must be granted `com.termux.permission.RUN_COMMAND` permission. The `sudo` script must be installed at `$PREFIX/bin/sudo`. The `allow-external-apps` property must also be set to `true` in `~/.termux/termux.properties` file since the `$PREFIX/bin/sudo` absolute path is outside the `~/.termux/tasker/` directory. For android `>= 10`, the [Termux App] should also be granted `Draw Over Apps` permission so that foreground commands automatically start executing without the user having to manually click the `Termux` notification in the status bar dropdown notifications list for the commands to start. Check [Templates](#templates) section for template tasks that can be run used to run `sudo` from `Termux:Tasker` plugin and `RUN_COMMAND Intent`.
 
 Note that this `sudo by agnostic-apollo`, [termux-sudo by st42] and [tsu by cswl] are competing packages/scripts and ideally only one of them should be used. Also note that when you install or update `tsu`, it creates a symlink at `$PREFIX/bin/sudo` for its own `sudo` command. So installing or updating `tsu` after installing `sudo by agnostic-apollo` will replace the `sudo by agnostic-apollo` script file with the `tsu` symlink and installing `sudo by agnostic-apollo` if you have already installed `tsu` will break its own `sudo` command.
 
@@ -16,30 +16,30 @@ If you want to run commands in `termux` user context, check [tudo].
 
 
 ### Contents
-- [Dependencies](#Dependencies)
-- [Downloads](#Downloads)
-- [Install Instructions For Termux In Android](#Install-Instructions-For-Termux-In-Android)
-- [Current Features](#Current-Features)
-- [Planned Features](#Planned-Features)
-- [Usage](#Usage)
-- [Command Types](#Command-Types)
-- [Supported Shells](#Supported-Shells)
-- [Command Options](#Command-Options)
-- [Shell Home](#Shell-Home)
-- [Shell RC Files](#Shell-RC-Files)
-- [Shell History Files](#Shell-History-Files)
-- [Modifying Default Values](#Modifying-Default-Values)
-- [Examples](#Examples)
-- [Templates](#Templates)
-- [Passing Arguments](#Passing-Arguments)
-- [Issues](#Issues)
-- [Worthy Of Note](#Worthy-Of-Note)
-- [Tests](#Tests)
-- [FAQs And FUQs](#FAQs-And-FUQs)
-- [Changelog](#Changelog)
-- [Contributions](#Contributions)
-- [Credits](#Credits)
-- [Donations](#Donations)
+- [Dependencies](#dependencies)
+- [Downloads](#downloads)
+- [Install Instructions For Termux In Android](#install-instructions-for-termux-in-android)
+- [Current Features](#current-features)
+- [Planned Features](#planned-features)
+- [Usage](#usage)
+- [Command Types](#command-types)
+- [Supported Shells](#supported-shells)
+- [Command Options](#command-options)
+- [Shell Home](#shell-home)
+- [Shell RC Files](#shell-rc-files)
+- [Shell History Files](#shell-history-files)
+- [Modifying Default Values](#modifying-default-values)
+- [Examples](#examples)
+- [Templates](#templates)
+- [Passing Arguments](#passing-arguments)
+- [Issues](#issues)
+- [Worthy Of Note](#worthy-of-note)
+- [Tests](#tests)
+- [FAQs And FUQs](#faqs-and-fuqs)
+- [Changelog](#changelog)
+- [Contributions](#contributions)
+- [Credits](#credits)
+- [Donations](#donations)
 ##
 
 
@@ -49,7 +49,7 @@ If you want to run commands in `termux` user context, check [tudo].
 - [Termux App]
 
 Using `sudo` directly from inside `termux` terminal session does not have any specific version requirements, other than `bash` version `>= 4.1`.
-However, to use `sudo` with [Termux:Tasker] plugin and [RUN_COMMAND Intent] requires the following versions to be installed. Check [Passing Arguments](#Passing-Arguments) section and [Termux:Tasker] `Setup Instructions` section for details.
+However, to use `sudo` with [Termux:Tasker] plugin and [RUN_COMMAND Intent] requires the following versions to be installed. Check [Passing Arguments](#passing-arguments) section and [Termux:Tasker] `Setup Instructions` section for details.
 
 - [Termux App] version `>= 0.100`
 - [Tasker App] version `>= 5.9.4.beta`
@@ -116,12 +116,12 @@ It should have `termux` `uid:gid` ownership and have executable `700` permission
 
 ### Current Features
 
-- Allows dropping to an interactive shell in `termux` user context for any of the supported [Interactive Shells](#Interactive-Shells) with priority to either termux or android binary and library paths.
+- Allows dropping to an interactive shell in `termux` user context for any of the supported [Interactive Shells](#interactive-shells) with priority to either termux or android binary and library paths.
 - Allows running single commands in `superuser (root)` context without having to start an interactive shell.
-- Allows passing of script file paths or script text as arguments for any of the supported [Script Shells](#Script-Shells) to have them executed in `termux` user context without having to create physical script files first for the later case, like in `~/.termux/tasker/` directory for [Termux:Tasker].
+- Allows passing of script file paths or script text as arguments for any of the supported [Script Shells](#script-shells) to have them executed in `termux` user context without having to create physical script files first for the later case, like in `~/.termux/tasker/` directory for [Termux:Tasker].
 - Automatic setup of home directories, `rc` files, `history` files and working directories with proper ownership and permissions.
 - Automatic setup of the shell environment and exporting of all required variables including `LD_PRELOAD` so that termux commands work properly, specifically if being run from [Termux:Tasker] or [RUN_COMMAND Intent].
-- Provides a lot of [Command Options](Command-Options) that are specifically designed for usage with [Termux:Tasker] and the [RUN_COMMAND Intent].
+- Provides a lot of [Command Options](#command-options) that are specifically designed for usage with [Termux:Tasker] and the [RUN_COMMAND Intent].
 ##
 
 
@@ -345,7 +345,7 @@ to the termux shell.
 
 #### `su`
 
-The `su` command type drops to an interactive shell in `superuser (root)` context for any of the supported [Interactive Shells](#Interactive-Shells). `su` stands for *substitute user* which in this case will be the `superuser (root)`. To drop to a root `bash` shell, just run `sudo su`. The priority will be set to termux bin and library paths in `$PATH` and `$LD_LIBRARY_PATH` variables. Check the [PATH and LD_LIBRARY_PATH Priorities](#path-and-ld_library_path-priorities) section for more info.
+The `su` command type drops to an interactive shell in `superuser (root)` context for any of the supported [Interactive Shells](#interactive-shells). `su` stands for *substitute user* which in this case will be the `superuser (root)`. To drop to a root `bash` shell, just run `sudo su`. The priority will be set to termux bin and library paths in `$PATH` and `$LD_LIBRARY_PATH` variables. Check the [PATH and LD_LIBRARY_PATH Priorities](#path-and-ld_library_path-priorities) section for more info.
 
 Note that `su` is just a command type and does not represent the `su` binary itself. Use the `path` command type to run the `sudo -p su [user]` command instead for calling the `su` binary.
 &nbsp;&nbsp;
@@ -354,7 +354,7 @@ Note that `su` is just a command type and does not represent the `su` binary its
 
 #### `asu`
 
-The `asu` command type is the same as `su` command type but instead the priority will be set to android bin and library paths in `$PATH` and `$LD_LIBRARY_PATH` variables. Check the [PATH and LD_LIBRARY_PATH Priorities](path-and-ld_library_path-priorities) section for more info.
+The `asu` command type is the same as `su` command type but instead the priority will be set to android bin and library paths in `$PATH` and `$LD_LIBRARY_PATH` variables. Check the [PATH and LD_LIBRARY_PATH Priorities](#path-and-ld_library_path-priorities) section for more info.
 &nbsp;&nbsp;
 
 
@@ -378,7 +378,7 @@ Check the `-a` and `-r` command options that can be specifically used with the `
 
 #### `script`
 
-The `script` command type takes any script text or path to a script file for any of the supported [Script Shells](#Script-Shells) referred as `sudo shell`, and executes the script with any optional arguments with the desired script shell. This can be done by running the `sudo -s <core_script> [core_script_args]` command. The `core_script` will be considered a `bash` script by default.
+The `script` command type takes any script text or path to a script file for any of the supported [Script Shells](#script-shells) referred as `sudo shell`, and executes the script with any optional arguments with the desired script shell. This can be done by running the `sudo -s <core_script> [core_script_args]` command. The `core_script` will be considered a `bash` script by default.
 
 The `script` command type is incredibly useful for usage with termux plugins like [Termux:Tasker] or [RUN_COMMAND Intent]. Currently, any script files that need to be run need to be created in `~/.termux/tasker/` directory, at least for `Termux:Tasker`. It may get inconvenient to create physical script files for each type of command you want to run. These script files are also neither part of backups of plugin host apps like Tasker and require separate backup methods and nor are part of project configs shared with other people or even between your own devices, and so the scripts need to be added manually to the `~/.termux/tasker/` directory on each device. To solve such issues and to dynamically define scripts of different interpreted languages inside your plugin host app like `Tasker` in local variables (all lowercase `%core_script`) of a task and to pass them to `Termux` as arguments instead of creating script files, the `script` command type can be used. The termux environment will also be properly loaded like setting `LD_PRELOAD` etc before running the commands.
 
@@ -390,7 +390,7 @@ The `-F` option can be passed so that the `core_script` is considered as a path 
 
 The `core_script` can optionally not be passed or passed as an empty string so that other "features" of the `script` command type can still be used without calling the script shell.
 
-It may also be important to automatically open an interactive shell after the `core_script` completes. This can be done by using the  `-i` option along with `--post-shell*` options. The `sudo post shell` can be any of the supported [Interactive Shells](#Interactive-Shells) and defaults to `bash`. The same shell as the script `sudo shell` can also be used for `sudo post shell` by passing the `-S` option as long as the `sudo shell` exists in the list of supported interactive shells. The environment variable `$SUDO_SCRIPT_EXIT_CODE` will be exported containing the exit code of the `core_script` before the interactive shell is started. Running an interactive shell will also keep the terminal session open after commands complete which is normally closed automatically when commands are run with the plugin or intents, although the `--hold` option can also be used for this.
+It may also be important to automatically open an interactive shell after the `core_script` completes. This can be done by using the  `-i` option along with `--post-shell*` options. The `sudo post shell` can be any of the supported [Interactive Shells](#interactive-shells) and defaults to `bash`. The same shell as the script `sudo shell` can also be used for `sudo post shell` by passing the `-S` option as long as the `sudo shell` exists in the list of supported interactive shells. The environment variable `$SUDO_SCRIPT_EXIT_CODE` will be exported containing the exit code of the `core_script` before the interactive shell is started. Running an interactive shell will also keep the terminal session open after commands complete which is normally closed automatically when commands are run with the plugin or intents, although the `--hold` option can also be used for this.
 
 You can define your own exit traps inside the `core_script`, but **DO NOT** define them outside it with the `--*shell-*-commands` options since `sudo` defines its own trap function `sudo_script_trap` for cleanup, killing child processes and to exit with the trap signal exit code. If you want to handle traps outside the `core_script`, then define a function named `sudo_script_custom_trap` which will automatically be called by `sudo_script_trap`. The function will be sent `TERM`, `INT`, `HUP`, `QUIT` as `$1` for the respective trap signals. For the `EXIT` signal the `$1` will not be passed. Do not `exit` inside the `sudo_script_custom_trap` function. If the `sudo_script_custom_trap` function exits with exit code `0`, then the `sudo_script_trap` will continue to exit with the original trap signal exit code. If it exits with exit code `125` `ECANCELED`, then `sudo_script_trap` will consider that as a cancellation and will just return without running any other trap commands. If any other exit code is returned, then the `sudo_script_trap` will use that as exit code instead of the original trap signal exit code.
 
@@ -403,7 +403,7 @@ Check the `-b`, `-B`, `-c`, `-d`, `-e`, `-E`, `-f`, `-F`, `-l`, `-n`, `N`, `-o`,
 
 The `bash` shell is the default interactive and script shell and must exist at `$PREFIX/bin/bash` with ownership and permissions allowing `termux` user to read and execute it. The `--shell` and `--post-shell` options can be used to change the default shells. The `path` command type always uses the `bash` shell and command options are ignored. Normally, shells are not validated as the root user unless `-R` is passed so they must have proper ownership or executable permissions set that allows `termux` user to read and execute them.
 
-The exported environmental variables `$SUDO_SHELL_PS1` and `$SUDO_POST_SHELL_PS1` can be used to change the default `$PS1` values of the shell, provided that the shell uses it. Check the [Modifying Default Values](#Modifying-Default-Values) section for more info on `sudo` environmental variables and modifying default values.
+The exported environmental variables `$SUDO_SHELL_PS1` and `$SUDO_POST_SHELL_PS1` can be used to change the default `$PS1` values of the shell, provided that the shell uses it. Check the [Modifying Default Values](#modifying-default-values) section for more info on `sudo` environmental variables and modifying default values.
 
 
 #### Interactive Shells
@@ -435,7 +435,7 @@ The `$PREFIX/` and `~/` prefixes are supported for all command options that take
 
 It's the users responsibility to properly quote all arguments passed to command options and also for any values like paths passed inside the arguments, specifically the `*-commands` and `*-options` options, so that whitespace splitting does not occur.
 
-Check [Arguments and Result Data Limits](#Arguments-and-Result-Data-Limits) for details on the max size of arguments that you can pass to `sudo` script, specifically the size of `core_script` and its arguments for the `script` command type.
+Check [Arguments and Result Data Limits](#arguments-and-result-data-limits) for details on the max size of arguments that you can pass to `sudo` script, specifically the size of `core_script` and its arguments for the `script` command type.
 
 
 - `-v | -vv` options can be used to increase the log level of the `sudo` command. Useful to see script progress and what commands will actually be run. You can also use log level `>= DEBUG` with the `--dry-run` option to see what commands will be run without actually executing them. `sudo` uses log levels (`OFF=0`, `NORMAL=1`, `DEBUG=2`, `VERBOSE=3`) and defaults to `NORMAL=1`, but currently does not log anything at `OFF=0` or `NORMAL=1`. Log level can also be set by exporting an `int` in `$SUDO_LOG_LEVEL` between `0-3`, like `SUDO_LOG_LEVEL=3` to set log level to `VERBOSE=3`.
@@ -504,7 +504,7 @@ Check [Arguments and Result Data Limits](#Arguments-and-Result-Data-Limits) for 
 - `-P` option will export all the additional paths that already exist in the `$PATH` variable at the moment `sudo` command is run while running shells, The default paths exported by `sudo` command will still be exported and prefixed before the additional paths. You can also use the `--shell-pre-commands` and `--post-shell-pre-commands` options to manually export the `$PATH` variable with a different priority as long as it doesn't break execution of the shells.
 
 
-- `-r` option will parse arguments as per `RUN_COMMAND` intent rules. This will by default replace any comma alternate characters `‚` (`#U+201A`, `&sbquo;`, `&#8218;`, `single low-9 quotation mark`) with simple commas `,` (`U+002C`, `&comma;`, `&#44;`, `comma`) found in any `command_args` for the `path` command type and in `core_script` and any `core_script_args` for the `script` command type. They will also be replaced in the `--hold`, `--post-shell-home`, `--post-shell-pre-commands`, `--post-shell-options`, `--shell-home`, `--shell-pre-commands`, `--shell-post-commands`, `--shell-options`, `--script-name`, `--su-env-options`, `--su-run-options`, `--title` and `--work-dir` command options passed **after** the `-r` option, so ideally `-r` option should be passed before any of them. You can use a different character that should be replaced using the `--comma-alternative` option. Check [Passing Arguments Using RUN_COMMAND Intent](#Passing-Arguments-Using-RUN_COMMAND-Intent) section for why this is may be required.
+- `-r` option will parse arguments as per `RUN_COMMAND` intent rules. This will by default replace any comma alternate characters `‚` (`#U+201A`, `&sbquo;`, `&#8218;`, `single low-9 quotation mark`) with simple commas `,` (`U+002C`, `&comma;`, `&#44;`, `comma`) found in any `command_args` for the `path` command type and in `core_script` and any `core_script_args` for the `script` command type. They will also be replaced in the `--hold`, `--post-shell-home`, `--post-shell-pre-commands`, `--post-shell-options`, `--shell-home`, `--shell-pre-commands`, `--shell-post-commands`, `--shell-options`, `--script-name`, `--su-env-options`, `--su-run-options`, `--title` and `--work-dir` command options passed **after** the `-r` option, so ideally `-r` option should be passed before any of them. You can use a different character that should be replaced using the `--comma-alternative` option. Check [Passing Arguments Using RUN_COMMAND Intent](#passing-arguments-using-run_command-intent) section for why this is may be required.
 
 
 - `-R` option can be use to enable usage of `root` for searching and validating paths. This can be useful for cases where the `termux` user does not have the read or execute permissions to shell or other paths. Starting new `su` shells for validating paths increases execution time and hence is not done by default.
@@ -537,10 +537,10 @@ Check [Arguments and Result Data Limits](#Arguments-and-Result-Data-Limits) for 
 - `--hold-if-fail` option can be used with the `--hold` option to only hold if exit code of `sudo` does not equal `0`.
 
 
-- `--list-interactive-shells` option can be used to display the list of supported [Interactive Shells](#Interactive-Shells) and exit.
+- `--list-interactive-shells` option can be used to display the list of supported [Interactive Shells](#interactive-shells) and exit.
 
 
-- `--list-script-shells` option can be used to display the list of supported [Script Shells](#Script-Shells) and exit.
+- `--list-script-shells` option can be used to display the list of supported [Script Shells](#script-shells) and exit.
 
 
 - `--no-create-rc` option will disable automatic creation of `rc` files for `sudo shell` and `sudo post shell` if they are missing.
@@ -653,7 +653,7 @@ Check [Arguments and Result Data Limits](#Arguments-and-Result-Data-Limits) for 
 
 The default `$HOME` directory for `sudo shell` and `sudo post shell` is `/data/data/com.termux/files/home/.suroot`. The `--shell-home` and `--post-shell-home` options or the exported environmental variables `$SUDO_SHELL_HOME` and `$SUDO_POST_SHELL_HOME` can be used to change the default directory. The home directory should ideally be different from the termux home directory to keep `config`, `rc` and `history` files separate for the `root` user and the `termux` user. The home directory should also be owned by the `root` user and have `0700` permission so that `non-root` users cannot access it for security reasons and hence termux home should ideally not be used.
 
-Check the [Modifying Default Values](#Modifying-Default-Values) section for more info on `sudo` environmental variables and modifying default values.
+Check the [Modifying Default Values](#modifying-default-values) section for more info on `sudo` environmental variables and modifying default values.
 
 If the home directory is under the termux files directory, then it must not be one of the following directories: `~/.{cache,config,local,termux}` and `$PREFIX/*`.
 
@@ -1062,7 +1062,7 @@ SUDO_EOF
 
 The `youtube-dl` file is actually not a single python script text file but is a [binary file](https://github.com/ytdl-org/youtube-dl/blob/9fe50837c3e8f6c40b7bed8bf7105a868a7a678f/Makefile#L70) containing multiple python files.
 
-- Read `python` script text from a file using `cat` and pass it with process substitution. Passing the data of the `youtube-dl` file to `sudo` script using process substitution will engage automatic `base64` encoding of the data and creation of temp script file. The `youtube-dl` generates its help output based on the named of the its own file, hence `--script-name` is passed, otherwise help with contain `sudo_core_script` entries instead. The current size of the `youtube-dl` binary is over `1MB` and so its data cannot be passed as an argument directly (after `base64` encoding) since [Arguments Data Limits](#Arguments-and-Result-Data-Limits) will cross.  
+- Read `python` script text from a file using `cat` and pass it with process substitution. Passing the data of the `youtube-dl` file to `sudo` script using process substitution will engage automatic `base64` encoding of the data and creation of temp script file. The `youtube-dl` generates its help output based on the named of the its own file, hence `--script-name` is passed, otherwise help with contain `sudo_core_script` entries instead. The current size of the `youtube-dl` binary is over `1MB` and so its data cannot be passed as an argument directly (after `base64` encoding) since [Arguments Data Limits](#arguments-and-result-data-limits) will cross.  
 
 ```
 sudo -s --shell=python --script-name="youtube-dl" <(cat "$PREFIX/bin/youtube-dl") --help
@@ -1076,7 +1076,7 @@ sudo -sF --shell=python '$PREFIX/bin/youtube-dl' --help
 ```
 
 
-- Read `python` script text from a file using `cat` in a subshell and pass it as an argument. The script size must not cross [Arguments Data Limits](#Arguments-and-Result-Data-Limits). If the script contains binary or non `UTF-8` data, then pipe the output of `cat` to `base64` and also pass the `--script-decode` option.  
+- Read `python` script text from a file using `cat` in a subshell and pass it as an argument. The script size must not cross [Arguments Data Limits](#arguments-and-result-data-limits). If the script contains binary or non `UTF-8` data, then pipe the output of `cat` to `base64` and also pass the `--script-decode` option.  
 
 ```
 sudo -s --shell=python "$(cat "$PREFIX/bin/bandcamp-dl")" --help
@@ -1326,19 +1326,19 @@ The `core_script` or any other arguments passed for all the command types must b
 This can be done in two ways, either using single quotes to surround the `core_script` and arguments or passing them with process substitution with a literal `cat` `heredoc`.
 &nbsp;
 
-If you are using [Termux:Tasker] plugin to run `sudo` commands, you would need to use single quotes to pass arguments, since it doesn't support process substitution. You would need to install [Termux:Tasker] version `>= 0.5` since argument parsing is broken in older versions. Check the [Passing Arguments Surrounded With Single Quotes](#Passing-Arguments-Surrounded-With-Single-Quotes) section for more details. Check the `Template 2` and `Template 3` of the [Termux Tasker Plugin Sudo Templates Task](#Templates) task for templates on how to use single quotes to pass arguments with Tasker. Basically, just set your script text to the `%core_script` variable with the `Variable Set` action and add any additional command options or arguments to the `%arguments` variable.  
+If you are using [Termux:Tasker] plugin to run `sudo` commands, you would need to use single quotes to pass arguments, since it doesn't support process substitution. You would need to install [Termux:Tasker] version `>= 0.5` since argument parsing is broken in older versions. Check the [Passing Arguments Surrounded With Single Quotes](#passing-arguments-surrounded-with-single-quotes) section for more details. Check the `Template 2` and `Template 3` of the [Termux Tasker Plugin Sudo Templates Task](#templates) task for templates on how to use single quotes to pass arguments with Tasker. Basically, just set your script text to the `%core_script` variable with the `Variable Set` action and add any additional command options or arguments to the `%arguments` variable.  
 &nbsp;
 
-If you are using a foreground terminal session or scripts to run `sudo` commands, you can use single quotes to pass arguments or use process substitution. If you are using a foreground terminal session, then you must disable the `bash` command completion and history expansion for the current terminal session before running `sudo` command to pass multi-line arguments by running `bind 'set disable-completion on'; set +H`. Check the [Passing Arguments Using Process Substitution](#Passing-Arguments-Using-Process-Substitution) section for more details. Check the [Examples](#Examples) section for templates on how to use process substitution to pass arguments.
+If you are using a foreground terminal session or scripts to run `sudo` commands, you can use single quotes to pass arguments or use process substitution. If you are using a foreground terminal session, then you must disable the `bash` command completion and history expansion for the current terminal session before running `sudo` command to pass multi-line arguments by running `bind 'set disable-completion on'; set +H`. Check the [Passing Arguments Using Process Substitution](#passing-arguments-using-process-substitution) section for more details. Check the [Examples](#examples) section for templates on how to use process substitution to pass arguments.
 &nbsp;
 
-If you are using [RUN_COMMAND Intent] to run `sudo` commands with Tasker using the `TermuxCommand()` function in `Tasker Function` action, you don't need to surround the `core_script` or arguments with single quotes, since arguments are split on a simple comma `,` instead. If your arguments themselves contain simple commas `,` (`U+002C`, `&comma;`, `&#44;`, `comma`), then you must replace them with the comma alternate character `‚` (`#U+201A`, `&sbquo;`, `&#8218;`, `single low-9 quotation mark`) for each argument separately before passing them to the intent action and would also need to pass the `-r` command option to `sudo`. Check the [Passing Arguments Using RUN_COMMAND Intent](#Passing-Arguments-Using-RUN_COMMAND-Intent) section for more details. Check the `Template 2` of the [Termux RUN_COMMAND Intent Sudo Templates Task](#Templates) task for a template on how to replace commas in each argument separately with Tasker.
+If you are using [RUN_COMMAND Intent] to run `sudo` commands with Tasker using the `TermuxCommand()` function in `Tasker Function` action, you don't need to surround the `core_script` or arguments with single quotes, since arguments are split on a simple comma `,` instead. If your arguments themselves contain simple commas `,` (`U+002C`, `&comma;`, `&#44;`, `comma`), then you must replace them with the comma alternate character `‚` (`#U+201A`, `&sbquo;`, `&#8218;`, `single low-9 quotation mark`) for each argument separately before passing them to the intent action and would also need to pass the `-r` command option to `sudo`. Check the [Passing Arguments Using RUN_COMMAND Intent](#passing-arguments-using-run_command-intent) section for more details. Check the `Template 2` of the [Termux RUN_COMMAND Intent Sudo Templates Task](#templates) task for a template on how to replace commas in each argument separately with Tasker.
 &nbsp;
 
-If you are using [RUN_COMMAND Intent] to run `sudo` commands with Tasker or other apps using the `am` command, like using the `Run Shell` action in Tasker, you need to surround all your arguments, like the `core_script` and all other arguments with single quotes when passing them to the `com.termux.RUN_COMMAND_ARGUMENTS` string array extra after you have escaped all the single quotes in the final value, since otherwise it may result in incorrect quoting if the arguments themselves contain single quotes. However, due to the string array extra, the arguments are still split on a simple comma `,` so if your arguments themselves contain simple commas `,` (`U+002C`, `&comma;`, `&#44;`, `comma`), then you would also have to replace them with the comma alternate character `‚` (`#U+201A`, `&sbquo;`, `&#8218;`, `single low-9 quotation mark`) for each argument separately before passing them as the argument to the extra and would also need to pass the `-r` command option to `sudo`. Check the [Passing Arguments Using RUN_COMMAND Intent](#Passing-Arguments-Using-RUN_COMMAND-Intent) section for more details. Check the `Template 3` of the [Termux RUN_COMMAND Intent Sudo Templates Task](#Templates) task for a template on how to replace commas in each argument separately and also escape single quotes in all the arguments with Tasker.
+If you are using [RUN_COMMAND Intent] to run `sudo` commands with Tasker or other apps using the `am` command, like using the `Run Shell` action in Tasker, you need to surround all your arguments, like the `core_script` and all other arguments with single quotes when passing them to the `com.termux.RUN_COMMAND_ARGUMENTS` string array extra after you have escaped all the single quotes in the final value, since otherwise it may result in incorrect quoting if the arguments themselves contain single quotes. However, due to the string array extra, the arguments are still split on a simple comma `,` so if your arguments themselves contain simple commas `,` (`U+002C`, `&comma;`, `&#44;`, `comma`), then you would also have to replace them with the comma alternate character `‚` (`#U+201A`, `&sbquo;`, `&#8218;`, `single low-9 quotation mark`) for each argument separately before passing them as the argument to the extra and would also need to pass the `-r` command option to `sudo`. Check the [Passing Arguments Using RUN_COMMAND Intent](#passing-arguments-using-run_command-intent) section for more details. Check the `Template 3` of the [Termux RUN_COMMAND Intent Sudo Templates Task](#templates) task for a template on how to replace commas in each argument separately and also escape single quotes in all the arguments with Tasker.
 &nbsp;
 
-Note that for [RUN_COMMAND Intent], any arguments passed to any command options or the main arguments to `sudo` should also **not** be surrounded with single or double quotes to prevent whitespace splitting in the intent action, like done for usage with `Termux:Tasker` plugin since splitting will occur on simple comma characters instead. Check the `Template 4` of the [Termux RUN_COMMAND Intent Sudo Templates Task](#Templates) task for a template for this.
+Note that for [RUN_COMMAND Intent], any arguments passed to any command options or the main arguments to `sudo` should also **not** be surrounded with single or double quotes to prevent whitespace splitting in the intent action, like done for usage with `Termux:Tasker` plugin since splitting will occur on simple comma characters instead. Check the `Template 4` of the [Termux RUN_COMMAND Intent Sudo Templates Task](#templates) task for a template for this.
 &nbsp;&nbsp;
 
 
