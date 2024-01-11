@@ -131,8 +131,12 @@ SUDO_SHELLS_AUTOMATICALLY_CREATE_HISTORY_FILES="${SUDO_SHELLS_AUTOMATICALLY_CREA
 # Set to 1 if you want to store command history for interactive shells, otherwise 0
 SUDO_SHELLS_HISTORY_ENABLED="${SUDO_SHELLS_HISTORY_ENABLED:-1}" # Default: `1`
 
+# Set absolute path for su binary to use instead of searching for it in default search paths.
+# This can be used if path is not in search paths or all paths in it should not be checked.
+SUDO_SU_PATH="${SUDO_SU_PATH:-}" # Default: ``
 
-# for f in SUDO_SHELL_HOME SUDO_POST_SHELL_HOME SUDO_SHELL_PS1 SUDO_POST_SHELL_PS1 SUDO_ADDITIONAL_PATHS_TO_EXPORT SUDO_EXPORT_ALL_EXISTING_PATHS_IN_PATH_VARIABLE SUDO_ADDITIONAL_LD_LIBRARY_PATHS_TO_EXPORT SUDO_EXPORT_ALL_EXISTING_PATHS_IN_LD_LIBRARY_PATH_VARIABLE SUDO_SHELLS_AUTOMATICALLY_CREATE_RC_FILES SUDO_SHELLS_AUTOMATICALLY_CREATE_HISTORY_FILES SUDO_SHELLS_HISTORY_ENABLED; do echo "$f=\`${!f}\`"; done; echo $'\n'
+
+# for f in SUDO_SHELL_HOME SUDO_POST_SHELL_HOME SUDO_SHELL_PS1 SUDO_POST_SHELL_PS1 SUDO_ADDITIONAL_PATHS_TO_EXPORT SUDO_EXPORT_ALL_EXISTING_PATHS_IN_PATH_VARIABLE SUDO_ADDITIONAL_LD_LIBRARY_PATHS_TO_EXPORT SUDO_EXPORT_ALL_EXISTING_PATHS_IN_LD_LIBRARY_PATH_VARIABLE SUDO_SHELLS_AUTOMATICALLY_CREATE_RC_FILES SUDO_SHELLS_AUTOMATICALLY_CREATE_HISTORY_FILES SUDO_SHELLS_HISTORY_ENABLED SUDO_SU_PATH; do echo "$f=\`${!f}\`"; done; echo $'\n'
 
 ### Set User Modifiable Variables End
 
@@ -743,18 +747,15 @@ sudo_set_su_variables() {
     SU=""
     SU_BIN_PATH=""
 
-    local -a su_search_paths=("/su/bin/su")
+    local -a su_search_paths=()
 
-    # If "/sbin" is accessible
-    if [ -x "/sbin" ]; then
-        su_search_paths+=("/sbin/su" "/sbin/bin/su")
+    # Check "`su` search paths" in README for more info.
+    # If SUDO_SU_PATH is not a valid absolute path
+    if [[ ! "$SUDO_SU_PATH" =~ $VALID_ABSOLUTE_PATH_REGEX ]]; then
+        su_search_paths+=("/system/bin/su" "/debug_ramdisk/su" "/system/xbin/su" "/sbin/su" "/sbin/bin/su" "/system/sbin/su" "/su/xbin/su" "/su/bin/su" "/magisk/.core/bin/su")
+    else
+        su_search_paths+=("$SUDO_SU_PATH")
     fi
-
-    if [ -x "/dev/avd-magisk" ]; then
-        su_search_paths+=("/dev/avd-magisk")
-    fi
-
-    su_search_paths+=("/system/xbin/su" "/system/bin/su" "/su/xbin/su" "/magisk/.core/bin/su")
 
     local su
     local su_found=0
@@ -769,8 +770,12 @@ sudo_set_su_variables() {
             su_help="$($su --help < /dev/null)"
             sudo_set_post_su_variables
 
+            # If '-c' option is not supported, then continue searching
+            if [[ "$su_help" != *"-c,"* ]] && [[ "$su_help" != *"-c "* ]]; then
+                sudo_log 3 "The su binary found does not support '-c' option, continuing search"
+                continue
             # If '--shell' option is not supported, then continue searching
-            if [[ "$su_help" != *"--shell"* ]]; then
+            elif [[ "$su_help" != *"--shell"* ]]; then
                 sudo_log 3 "The su binary found does not support '--shell' option, continuing search"
                 continue
             # If '--preserve-environment' option is not supported, then continue searching
@@ -784,7 +789,11 @@ sudo_set_su_variables() {
             # Else use the su
             else
                 SU="$su"
-                SU_BIN_PATH="${su%/su}"
+
+                SU_BIN_PATH_BASENAME="${SU##*/}" # Strip longest match of */ from start
+                SU_BIN_PATH="${SU:0:${#SU} - ${#SU_BIN_PATH_BASENAME}}" # Substring from 0 to position of basename
+                case $SU_BIN_PATH in *[!/]*/) SU_BIN_PATH=${SU_BIN_PATH%"${SU_BIN_PATH##*[!/]}"};; *[/]) SU_BIN_PATH="/";; esac # Remove trailing slashes if not root
+
                 break
             fi
 
@@ -798,10 +807,11 @@ sudo_set_su_variables() {
         if [[ "$su_found" != "1" ]]; then
             sudo_log_errors "No 'su' binary found"
         else
-            sudo_log_errors "No 'su' binary found that supports the '--shell', '--preserve-environment' and '--mount-master' options"
+            sudo_log_errors "No 'su' binary found that supports the '-c', '--shell', '--preserve-environment' and '--mount-master' options"
         fi
 
-        sudo_log_errors "sudo requires a 'su' binary that supports the '--shell', '--preserve-environment' and '--mount-master' options"
+        sudo_log_errors "SU_SEARCH_PATHS: ${su_search_paths[*]}"
+        sudo_log_errors "sudo requires a 'su' binary that supports the '-c', '--shell', '--preserve-environment' and '--mount-master' options"
         return 1
     fi
 
@@ -5576,6 +5586,15 @@ sudo_process_arguments() {
                         sudo_log_arg_errors "No parameters set for option: '--${OPTARG%=*}'"
                         sudo_exit_on_error || return $?
                         ;;
+                    su-path=?*)
+                        val="$long_optargs"
+                        sudo_log_args "Parsing option: '--${OPTARG%=*}', value: '${val}'"
+                        sudo_trim_trailing_newlines "SUDO_SU_PATH" "$val"
+                        ;;
+                    su-path | su-path=)
+                        sudo_log_arg_errors "No parameters set for option: '--${OPTARG%=*}'"
+                        sudo_exit_on_error || return $?
+                        ;;
                     su-run-options=?*)
                         val="$long_optargs"
                         sudo_log_args "Parsing option: '--${OPTARG%=*}', value: '${val}'"
@@ -5981,6 +6000,9 @@ Available command_options:
   [ --su-env-options=<options> ]
                      Additional options to pass to su that sets up the
                      sudo environment.
+  [ --su-path=<path> ]
+                     Absolute path for su binary to use instead of
+                     searching for it in default search paths.
   [ --su-run-options=<options> ]
                      Additional options to pass to su that runs the
                      final sudo command_type command.

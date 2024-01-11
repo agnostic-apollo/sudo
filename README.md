@@ -295,6 +295,9 @@ Available command_options:
   [ --su-env-options=<options> ]
                      Additional options to pass to su that sets up the
                      sudo environment.
+  [ --su-path=<path> ]
+                     Absolute path for su binary to use instead of
+                     searching for it in default search paths.
   [ --su-run-options=<options> ]
                      Additional options to pass to su that runs the
                      final sudo command_type command.
@@ -875,6 +878,12 @@ Can be used with the `--sleep` option to only sleep if exit code of `sudo` does 
 #### `--su-env-options=<options>`
 
 Set additional options to pass to `su` that set up the `sudo` environment. The `-c` option and `user` argument is not supported. Use `sudo -p su [user]` command instead.
+
+
+
+#### `--su-path`
+
+The `--su-path=<path>` option can be used to set the absolute path for `su` binary to use instead of searching for it in default search paths. This can be used if path is not in search paths or all paths in it should not be checked. This overrides `$SUDO_SU_PATH`. Check [`su` search paths](#su-search-paths) for more info and `su` binary options requirements.
 
 
 
@@ -1803,6 +1812,7 @@ Moreover, linux distros removed support for starting interactive shells with the
 - [PATH and LD_LIBRARY_PATH Priorities](#path-and-ld_library_path-priorities)
 - [`tpath` and `apath` functions](#tpath-and-apath-functions)
 - [`export` and `unset` functions](#export-and-unset-functions)
+- [`su` search paths](#su-search-paths)
 
 &nbsp;
 
@@ -1951,6 +1961,43 @@ If you already have an existing `rc` file for your shell like `~/.suroot/.bashrc
 ### `export` and `unset` functions
 
 For the `fish` shell, additional functions named `export` and `unset` are also added to the `rc` files if the `sudo` script creates its `rc` file, they are not added otherwise. The functions port the `bash` `export var=value` and `unset var` functionality respectively.
+
+## &nbsp;
+
+&nbsp;
+
+
+
+### `su` search paths
+
+The `su` binary is searched at the following paths in order: `/system/bin/su`, `/debug_ramdisk/su`, `/system/xbin/su`, `/sbin/su`, `/sbin/bin/su`, `/system/sbin/su`, `/su/xbin/su`, `/su/bin/su`, `/magisk/.core/bin/su`
+
+If a `su` binary is not found at any of the paths or if no `su` found contains the `-c`, `--shell`, `--preserve-environment` and `--mount-master` options in its `--help` output, then `sudo` will error out. You can specify a custom path by exporting it in `$SUDO_SU_PATH` or passing the [`--su-path`](#--su-pathpath) option if the `su` binary does not exist at the default search paths or all paths in it should not be checked.
+
+- `/system/bin/su`: Used by `Magisk` and its `avd_patch.sh` script which patch the boot image/emulator ramdisk.  
+
+     - https://github.com/topjohnwu/Magisk  
+     - https://github.com/topjohnwu/Magisk/blob/v26.4/scripts/avd_patch.sh  
+
+- `/debug_ramdisk/su`: Used by `Magisk` `>= 26.2` and its `avd_magisk.sh` script which live installs magisk on Android emulator (`AVD`). Previously was `/dev/avd-magisk/su`.  
+
+    `Magisk` normally symlinks `/system/bin/sh` to `/system/bin/magisk`, which is a `tmpfs` mount to `/debug_ramdisk/magisk64`.  
+
+    - https://github.com/topjohnwu/Magisk/commit/f9d22cf8ee43129af8a2a59cb228c5a77508809c  
+    - https://github.com/topjohnwu/Magisk/blob/v26.2/native/src/init/rootdir.cpp#L214  
+    - https://github.com/topjohnwu/Magisk/commit/19a4e11645912e4510f6848b9ec5d8619e6ceb0f  
+    - https://github.com/topjohnwu/Magisk/blob/v26.4/scripts/avd_magisk.sh#L110  
+    - https://github.com/topjohnwu/Magisk/blob/v26.4/docs/details.md#paths-in-magisk-tmpfs-directory  
+
+- `/system/xbin/su`: Used by `SuperSU`. It's also used by the limited `su` provided by Android debug build for `adb root`, and it does not support the `-c`, `--shell`, `--preserve-environment` and `--mount-master` options.  
+
+    Normally, debug build `su` will not be executable by app users, but if already running as `root` user, like nested `sudo` call, then it will be executable and `test -x` checks will pass. So we need `/system/bin/su` before `/system/xbin/su`, so that `Magisk` one is always chosen if running on debug emulator patched with `avd_patch.sh`, otherwise if order is revered, then first `sudo` call as app user will skip `/system/xbin/su` and choose `/system/bin/su`, but second nested call as `root` user will check `/system/xbin/su` first and fail due to missing options when its `su --help` output is checked, wasting time.  
+
+    - https://su.chainfire.eu/  
+    - https://cs.android.com/android/platform/superproject/+/master:system/extras/su/su.cpp  
+    - https://cs.android.com/android/platform/superproject/+/android-14.0.0_r1:system/sepolicy/private/file_contexts;l=310  
+
+- Other paths are used by older versions (of/and other) `su` providers.
 
 ---
 
