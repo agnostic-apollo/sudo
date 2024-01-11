@@ -767,7 +767,9 @@ sudo_set_su_variables() {
             su_found=1
 
             sudo_unset_pre_su_variables
-            su_help="$($su --help < /dev/null)"
+            # Redirect stderr to stdout since some su variants like
+            # Android debug build su at `/system/xbin/su` prints helps on stderr.
+            su_help="$($su --help 2>&1 < /dev/null)"
             sudo_set_post_su_variables
 
             # If '-c' option is not supported, then continue searching
