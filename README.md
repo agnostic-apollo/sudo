@@ -11,14 +11,11 @@ To use `sudo` with [Termux:Tasker] plugin and [RUN_COMMAND Intent], check [Termu
 Note that this `sudo by agnostic-apollo`, [termux-sudo by st42] and [tsu by cswl] are competing packages/scripts and ideally only one of them should be used. Also note that when you install or update `tsu`, it creates a symlink at `$PREFIX/bin/sudo` for its own `sudo` command. So installing or updating `tsu` after installing `sudo by agnostic-apollo` will replace the `sudo by agnostic-apollo` script file with the `tsu` symlink and installing `sudo by agnostic-apollo` if you have already installed `tsu` will break its own `sudo` command.
 
 If you want to run commands in `termux` user context, check [tudo].
-##
-
-
 
 ### Contents
 - [Dependencies](#dependencies)
 - [Downloads](#downloads)
-- [Install Instructions For Termux In Android](#install-instructions-for-termux-in-android)
+- [Install](#install)
 - [Current Features](#current-features)
 - [Planned Features](#planned-features)
 - [Usage](#usage)
@@ -40,7 +37,12 @@ If you want to run commands in `termux` user context, check [tudo].
 - [Contributions](#contributions)
 - [Credits](#credits)
 - [Donations](#donations)
-##
+
+---
+
+&nbsp;
+
+
 
 
 
@@ -54,20 +56,30 @@ However, to use `sudo` with [Termux:Tasker] plugin and [RUN_COMMAND Intent] requ
 - [Termux App] version `>= 0.100`
 - [Tasker App] version `>= 5.9.4.beta`
 - [Termux:Tasker] version `>= 0.5`
-##
+
+---
+
+&nbsp;
+
+
 
 
 
 ### Downloads
 
-Latest version is `v0.1.0`.
+Latest version is `v0.2.0`.
 
 - [GitHub releases](https://github.com/agnostic-apollo/sudo/releases).
-##
+
+---
+
+&nbsp;
 
 
 
-### Install Instructions For Termux In Android
+
+
+### Install
 
 The `sudo` file should be placed in termux `bin` directory `/data/data/com.termux/files/usr/bin`.  
 It should have `termux` `uid:gid` ownership and have executable `700` permission before it can be run directly without `bash`.  
@@ -110,7 +122,12 @@ It should have `termux` `uid:gid` ownership and have executable `700` permission
       `export termux_bin_path="/data/data/com.termux/files/usr/bin"; export owner="$(stat -c "%u" "$termux_bin_path")"; su -c "chown \"$owner:$owner\" \"$termux_bin_path/sudo\" && chmod 700 \"$termux_bin_path/sudo\"";`  
 
     - Or manually set them with your root file browser. You can find `termux` `uid` and `gid` by running the command `id -u` in a non-root termux shell or by checking the properties of the termux `bin` directory from your root file browser.  
-##
+
+---
+
+&nbsp;
+
+
 
 
 
@@ -122,14 +139,24 @@ It should have `termux` `uid:gid` ownership and have executable `700` permission
 - Automatic setup of home directories, `rc` files, `history` files and working directories with proper ownership and permissions.
 - Automatic setup of the shell environment and exporting of all required variables including `LD_PRELOAD` so that termux commands work properly, specifically if being run from [Termux:Tasker] or [RUN_COMMAND Intent].
 - Provides a lot of [Command Options](#command-options) that are specifically designed for usage with [Termux:Tasker] and the [RUN_COMMAND Intent].
-##
+
+---
+
+&nbsp;
+
+
 
 
 
 ### Planned Features
 
 `-`
-##
+
+---
+
+&nbsp;
+
+
 
 
 
@@ -336,30 +363,41 @@ Use the '--post-shell' option to set the interactive shell to use if
 Run "exit" command of your shell to exit interactive shells and return
 to the termux shell.
 ```
-##
+
+---
+
+&nbsp;
+
+
 
 
 
 ### Command Types
 
 
-#### `su`
+### `su`
 
 The `su` command type drops to an interactive shell in `superuser (root)` context for any of the supported [Interactive Shells](#interactive-shells). `su` stands for *substitute user* which in this case will be the `superuser (root)`. To drop to a root `bash` shell, just run `sudo su`. The priority will be set to termux bin and library paths in `$PATH` and `$LD_LIBRARY_PATH` variables. Check the [PATH and LD_LIBRARY_PATH Priorities](#path-and-ld_library_path-priorities) section for more info.
 
 Note that `su` is just a command type and does not represent the `su` binary itself. Use the `path` command type to run the `sudo -p su [user]` command instead for calling the `su` binary.
-&nbsp;&nbsp;
+
+## &nbsp;
+
+&nbsp;
 
 
 
-#### `asu`
+### `asu`
 
 The `asu` command type is the same as `su` command type but instead the priority will be set to android bin and library paths in `$PATH` and `$LD_LIBRARY_PATH` variables. Check the [PATH and LD_LIBRARY_PATH Priorities](#path-and-ld_library_path-priorities) section for more info.
-&nbsp;&nbsp;
+
+## &nbsp;
+
+&nbsp;
 
 
 
-#### `path`
+### `path`
 
 The `path` command type runs a single command in `superuser (root)` context. You can use it just by running `sudo <command> [command_args]` where `command` is the executable you want to run and `command_args` are any optional arguments you want to pass to it.
 
@@ -372,11 +410,14 @@ You can also use `sudo <command>` even if you are inside of a `sudo su` root she
 You can also run the `sudo -p su [user]` or `sudo -p /path/to/su [user]` commands to call the `su` binary for dropping to a shell for a specific user or even run a command for a specific user, like `sudo -p su -c "logcat" system`. Note that if you do not provide an absolute path to the `su` binary and just run `sudo -p su`, then the termux `su` wrapper script will be called which is stored at `$PREFIX/bin/su` which automatically tries to find the `su` binary and unsets `LD_LIBRARY_PATH` and `LD_PRELOAD` variables. You can check its contents with `cat "$PREFIX/bin/su"`. The variables will be also be unset by the `sudo` script if it detects you are trying to run a `su` binary.
 
 Check the `-a` and `-r` command options that can be specifically used with the `path` command type.
-&nbsp;&nbsp;
+
+## &nbsp;
+
+&nbsp;
 
 
 
-#### `script`
+### `script`
 
 The `script` command type takes any script text or path to a script file for any of the supported [Script Shells](#script-shells) referred as `sudo shell`, and executes the script with any optional arguments with the desired script shell. This can be done by running the `sudo -s <core_script> [core_script_args]` command. The `core_script` will be considered a `bash` script by default.
 
@@ -395,7 +436,12 @@ It may also be important to automatically open an interactive shell after the `c
 You can define your own exit traps inside the `core_script`, but **DO NOT** define them outside it with the `--*shell-*-commands` options since `sudo` defines its own trap function `sudo_script_trap` for cleanup, killing child processes and to exit with the trap signal exit code. If you want to handle traps outside the `core_script`, then define a function named `sudo_script_custom_trap` which will automatically be called by `sudo_script_trap`. The function will be sent `TERM`, `INT`, `HUP`, `QUIT` as `$1` for the respective trap signals. For the `EXIT` signal the `$1` will not be passed. Do not `exit` inside the `sudo_script_custom_trap` function. If the `sudo_script_custom_trap` function exits with exit code `0`, then the `sudo_script_trap` will continue to exit with the original trap signal exit code. If it exits with exit code `125` `ECANCELED`, then `sudo_script_trap` will consider that as a cancellation and will just return without running any other trap commands. If any other exit code is returned, then the `sudo_script_trap` will use that as exit code instead of the original trap signal exit code.
 
 Check the `-b`, `-B`, `-c`, `-d`, `-e`, `-E`, `-f`, `-F`, `-l`, `-n`, `N`, `-o`, `O`, `-r`, `--remove-prev-temp`, `--keep-temp`, `--shell*`, `--post-shell*`, `--script-decode`, `--script-redirect`, `--script-name` command options that can be specifically used with the `script` command type.
-##
+
+---
+
+&nbsp;
+
+
 
 
 
@@ -405,8 +451,11 @@ The `bash` shell is the default interactive and script shell and must exist at `
 
 The exported environmental variables `$SUDO_SHELL_PS1` and `$SUDO_POST_SHELL_PS1` can be used to change the default `$PS1` values of the shell, provided that the shell uses it. Check the [Modifying Default Values](#modifying-default-values) section for more info on `sudo` environmental variables and modifying default values.
 
+&nbsp;
 
-#### Interactive Shells
+
+
+### Interactive Shells
 
 The supported interactive shells are: `bash zsh dash sh fish python ruby pry node perl lua5.2 lua5.3 lua5.4 php python2 ksh`
 
@@ -417,15 +466,25 @@ The `bash` shell is automatically chosen as the default interactive shell if the
 
 For `perl`, the interactive shell is started using `rlwrap`, which must be installed. Use `pkg install rlwrap` to install.
 
+## &nbsp;
 
-#### Script Shells
+&nbsp;
+
+
+
+### Script Shells
 
 The supported script shells are: `bash zsh dash sh fish python ruby node perl lua5.2 lua5.3 lua5.4 php python2 ksh`
 
 These shells can be used for the `script` command type like `sudo -s --shell=<shell> <core_script>`.
 
 The `bash` shell is automatically chosen as the default script shell if the `--shell` option is not passed to set a specific shell. You can pass the name of a shell listed in the supported shells list like `--shell=zsh` or an absolute path like `--shell=/path/to/zsh`. The `$PREFIX/` and `~/` prefixes are also supported, like `$PREFIX/bin/zsh` or `~/zsh`.
-##
+
+---
+
+&nbsp;
+
+
 
 
 
@@ -438,214 +497,408 @@ It's the users responsibility to properly quote all arguments passed to command 
 Check [Arguments and Result Data Limits](#arguments-and-result-data-limits) for details on the max size of arguments that you can pass to `sudo` script, specifically the size of `core_script` and its arguments for the `script` command type.
 
 
-- `-v | -vv` options can be used to increase the log level of the `sudo` command. Useful to see script progress and what commands will actually be run. You can also use log level `>= DEBUG` with the `--dry-run` option to see what commands will be run without actually executing them. `sudo` uses log levels (`OFF=0`, `NORMAL=1`, `DEBUG=2`, `VERBOSE=3`) and defaults to `NORMAL=1`, but currently does not log anything at `OFF=0` or `NORMAL=1`. Log level can also be set by exporting an `int` in `$SUDO_LOG_LEVEL` between `0-3`, like `SUDO_LOG_LEVEL=3` to set log level to `VERBOSE=3`.
 
+#### `-v | -vv`
 
-- `-q | --quiet` options can be used to set the log level of the `sudo` command to `OFF=0`.
+Increase the log level of the `sudo` command. Useful to see script progress and what commands will actually be run. You can also use log level `>= DEBUG` with the `--dry-run` option to see what commands will be run without actually executing them. `sudo` uses log levels (`OFF=0`, `NORMAL=1`, `DEBUG=2`, `VERBOSE=3`) and defaults to `NORMAL=1`, but currently does not log anything at `OFF=0` or `NORMAL=1`. Log level can also be set by exporting an `int` in `$SUDO_LOG_LEVEL` between `0-3`, like `SUDO_LOG_LEVEL=3` to set log level to `VERBOSE=3`.
 
 
-- `-a` option can be used with the `path` command type to force setting priority to android bin and library paths in `$PATH` and `$LD_LIBRARY_PATH` variables. This can be useful for cases when the `command` is an absolute path but does not exist in the `/system` partition but still needs priority to be set to android paths or if the `command` is a just the basename and you want to run the binary in `/system` partition instead of the one in termux bin path since that will be found first during the search since the `$PATH` variable will be set to priority to android paths.
 
+#### `-q | --quiet`
 
-- `-b` option can be used with the `script` command type mainly for when commands are to be run in a foreground terminal session from plugins. This will simulate double back button press once the `core_script` is complete to go to the last activity, first to close keyboard and second to close terminal session. Use this only for short scripts, otherwise the user may have switched from the terminal session to a different app and back buttons simulation would be done inside that app instead.
+Set the log level of the `sudo` command to `OFF=0`.
 
 
-- `-B` option can be used with the `script` command type to run the `core_script` in background with `&` (not the entire `sudo` command). This can be used with the `-i` option or even with the `--shell-post-commands` option. The `pid` of the background process will be available in the `$SUDO_SCRIPT_PID` variable. Note that all child processes are killed when `sudo` exits.
 
+#### `-a`
 
-- `-c` option can be used with the `script` command type mainly for when commands are to be run in a foreground terminal session from plugins and an interactive shell session needs to be opened after the `core_script` is complete with the `-i` option. This will clear the terminal session once the `core_script` is complete.
+Can be used with the `path` command type to force setting priority to android bin and library paths in `$PATH` and `$LD_LIBRARY_PATH` variables. This can be useful for cases when the `command` is an absolute path but does not exist in the `/system` partition but still needs priority to be set to android paths or if the `command` is a just the basename and you want to run the binary in `/system` partition instead of the one in termux bin path since that will be found first during the search since the `$PATH` variable will be set to priority to android paths.
 
 
-- `-d` option can be used with the `script` command type to disable `stdin` for the `core_script`. This will redirect the `stdin` to `/dev/null` and unset the `$PS1` variable so that the `core_script` can detect that the `stdin` is not available and run the script in a non-interactive mode. If the `core_script` doesn't check if `stdin` is available or not and still attempts to read, it will receive nothing as input or may even cause exceptions in some script shells if `I/O` exceptions are not handled properly. Note that when plugin commands are run in a foreground terminal session, then even though keyboard is not shown, `stdin` is available and can be requested by the script which will then open the keyboard.
 
+#### `-b`
 
-- `-D` option can be used to disable preserve environment when running `su`, otherwise environment is always preserved.
+Can be used with the `script` command type mainly for when commands are to be run in a foreground terminal session from plugins. This will simulate double back button press once the `core_script` is complete to go to the last activity, first to close keyboard and second to close terminal session. Use this only for short scripts, otherwise the user may have switched from the terminal session to a different app and back buttons simulation would be done inside that app instead.
 
 
-- `-e` option can be used with the `script` command type to exit early if `core_script` fails due to an exit code other than `0` without running any commands meant to be run after the `core_script` like defined by `-b`, `-c`, `-i`, `-l`, `--post-shell-pre-commands` and `--post-shell-options` command options. If `-B` is passed, then this is ignored.
 
+#### `-B`
 
-- `-E` option can be used to `exec` the `su` that runs the final `sudo` `command_type` command. The commands for `--hold` and  `--sleep` options and remount to `ro` commands and any other commands that need to be run after the `sudo` `command_type` command will not be run.
+Can be used with the `script` command type to run the `core_script` in background with `&` (not the entire `sudo` command). This can be used with the `-i` option or even with the `--shell-post-commands` option. The `pid` of the background process will be available in the `$SUDO_SCRIPT_PID` variable. Note that all child processes are killed when `sudo` exits.
 
 
-- `-f` option can be used with the `script` command to force usage of `$HOME/.sudo.temp.XXXXXX/sudo_core_script` temp file for storing `core_script` for debugging or if for reason the shell variant doesn't support process substitution and the `sudo` command is automatically trying to use it and is failing. It can also be used to provide a unique temp directory that can be used by the `core_script` which will automatically be deleted after execution.
 
+#### `-c`
 
-- `-F` option can be used with the `script` command to consider `core_script` as a path to script file that should be passed to `sudo shell` directly instead of considering it as a script text.
+Can be used with the `script` command type mainly for when commands are to be run in a foreground terminal session from plugins and an interactive shell session needs to be opened after the `core_script` is complete with the `-i` option. This will clear the terminal session once the `core_script` is complete.
 
 
-- `-H` option can be used with the `script` command type with the `-i` option to use the same interactive `sudo post shell` home as the script `sudo shell` home. This is useful for situations like if you are passing a custom path for `sudo shell` home and want to use the same for `sudo post shell` home instead of the default home used by the `sudo` script. So instead of running `sudo -si --shell-home=/path/to/home --post-shell-home=/path/to/home <core_script>`, you can simple run `sudo -siH --shell-home=/path/to/home <core_script>`.
 
+#### `-d`
 
-- `-i` option can be used with the `script` command to open an interactive shell after the `core_script` completes, optionally specified by `--post-shell` option. If the `--post-shell` option is not passed, then the shell defaults to `bash`.
+Can be used with the `script` command type to disable `stdin` for the `core_script`. This will redirect the `stdin` to `/dev/null` and unset the `$PS1` variable so that the `core_script` can detect that the `stdin` is not available and run the script in a non-interactive mode. If the `core_script` doesn't check if `stdin` is available or not and still attempts to read, it will receive nothing as input or may even cause exceptions in some script shells if `I/O` exceptions are not handled properly. Note that when plugin commands are run in a foreground terminal session, then even though keyboard is not shown, `stdin` is available and can be requested by the script which will then open the keyboard.
 
 
-- `-l` option can be used with the `script` command type mainly for when commands are to be run in a foreground terminal session from plugins. This will simulate home button press once the `core_script` is complete to go to the launcher activity.
 
+#### `-D`
 
-- `-L` option will export all the additional paths that already exist in the `$LD_LIBRARY_PATH` variable at the moment `sudo` command is run while running shells, The default paths exported by `sudo` command will still be exported and prefixed before the additional paths. You can also use the `--shell-pre-commands` and `--post-shell-pre-commands` options to manually export the `$LD_LIBRARY_PATH` variable with a different priority as long as it doesn't break execution of the shells.
+Disable preserve environment when running `su`, otherwise environment is always preserved.
 
 
-- `-n` option can be used with the `script` command type to redirect `stderr` to `/dev/null` only for the `core_script` (not the entire `sudo` command). This is a shortcut for `--script-redirect=3`.
 
+#### `-e`
 
-- `-N` option can be used with the `script` command type to redirect both `stdout` and `stderr` to `/dev/null` only for the `core_script` (not the entire `sudo` command). This is a shortcut for `--script-redirect=4`.
+Can be used with the `script` command type to exit early if `core_script` fails due to an exit code other than `0` without running any commands meant to be run after the `core_script` like defined by `-b`, `-c`, `-i`, `-l`, `--post-shell-pre-commands` and `--post-shell-options` command options. If `-B` is passed, then this is ignored.
 
 
-- `-o` option can be used with the `script` command type to redirect `stderr` to `stdout` only for the `core_script` (not the entire `sudo` command). This is a shortcut for `--script-redirect=0`.
 
+#### `-E`
 
-- `-O` option can be used with the `script` command type to redirect `stdout` to `stderr` only for the `core_script` (not the entire `sudo` command). This is a shortcut for `--script-redirect=1`.
+`exec` the `su` that runs the final `sudo` `command_type` command. The commands for `--hold` and  `--sleep` options and remount to `ro` commands and any other commands that need to be run after the `sudo` `command_type` command will not be run.
 
 
-- `-p` option sets `path` as the command type for `sudo` and is the default command type.
 
+#### `-f`
 
-- `-P` option will export all the additional paths that already exist in the `$PATH` variable at the moment `sudo` command is run while running shells, The default paths exported by `sudo` command will still be exported and prefixed before the additional paths. You can also use the `--shell-pre-commands` and `--post-shell-pre-commands` options to manually export the `$PATH` variable with a different priority as long as it doesn't break execution of the shells.
+Can be used with the `script` command to force usage of `$HOME/.sudo.temp.XXXXXX/sudo_core_script` temp file for storing `core_script` for debugging or if for reason the shell variant doesn't support process substitution and the `sudo` command is automatically trying to use it and is failing. It can also be used to provide a unique temp directory that can be used by the `core_script` which will automatically be deleted after execution.
 
 
-- `-r` option will parse arguments as per `RUN_COMMAND` intent rules. This will by default replace any comma alternate characters `‚` (`#U+201A`, `&sbquo;`, `&#8218;`, `single low-9 quotation mark`) with simple commas `,` (`U+002C`, `&comma;`, `&#44;`, `comma`) found in any `command_args` for the `path` command type and in `core_script` and any `core_script_args` for the `script` command type. They will also be replaced in the `--hold`, `--post-shell-home`, `--post-shell-pre-commands`, `--post-shell-options`, `--shell-home`, `--shell-pre-commands`, `--shell-post-commands`, `--shell-options`, `--script-name`, `--su-env-options`, `--su-run-options`, `--title` and `--work-dir` command options passed **after** the `-r` option, so ideally `-r` option should be passed before any of them. You can use a different character that should be replaced using the `--comma-alternative` option. Check [Passing Arguments Using RUN_COMMAND Intent](#passing-arguments-using-run_command-intent) section for why this is may be required.
 
+#### `-F`
 
-- `-R` option can be use to enable usage of `root` for searching and validating paths. This can be useful for cases where the `termux` user does not have the read or execute permissions to shell or other paths. Starting new `su` shells for validating paths increases execution time and hence is not done by default.
+Can be used with the `script` command to consider `core_script` as a path to script file that should be passed to `sudo shell` directly instead of considering it as a script text.
 
 
-- `-s` option sets `script` as the command type for `sudo`.
 
+#### `-H`
 
-- `-S` option can be used with the `script` command type with the `-i` option to use the same interactive `sudo post shell` as the script `sudo shell` as long as the `sudo shell` exists in the list of supported interactive shells. This is useful for situations like if you are running a `python` script and want to start a `python` interactive shell after the script completes instead of the likely default `bash` shell. So instead of running `sudo -si --shell=python --post-shell=python <core_script>`, you can simple run `sudo -siS --shell=python <core_script>`.
+Can be used with the `script` command type with the `-i` option to use the same interactive `sudo post shell` home as the script `sudo shell` home. This is useful for situations like if you are passing a custom path for `sudo shell` home and want to use the same for `sudo post shell` home instead of the default home used by the `sudo` script. So instead of running `sudo -si --shell-home=/path/to/home --post-shell-home=/path/to/home <core_script>`, you can simple run `sudo -siH --shell-home=/path/to/home <core_script>`.
 
 
-- `--comma-alternative` option can be used to set the comma alternative character to be used for the `-r` option instead of the default.
 
+#### `-i`
 
-- `--dry-run` option will enable dry running of the `sudo` script. This will not execute any commands, nor will `rc` files, `history` files or `working directory` passed be created. However, the `sudo shell` home and `$HOME/.sudo.temp.XXXXXX/sudo_core_script` file will still be created if `sudo_core_script` file needs to be created. It's advisable to also pass the `-v` or `-vv` options along with this to see script progress and what commands would actually have been run. Passing `--keep-temp` may also be useful.
+Can be used with the `script` command to open an interactive shell after the `core_script` completes, optionally specified by `--post-shell` option. If the `--post-shell` option is not passed, then the shell defaults to `bash`.
 
 
-- `--export-paths` option can be used to set the additional paths to export in `$PATH` variable, separated with colons `:`. The string passed must not start or end with or contain two consecutive colons `:`.
 
+#### `-l`
 
-- `--export-ld-lib-paths` option can be used to set the additional paths to export in `$LD_LIBRARY_PATH` variable, separated with colons `:`. The string passed must not start or end with or contain two consecutive colons `:`.
+Can be used with the `script` command type mainly for when commands are to be run in a foreground terminal session from plugins. This will simulate home button press once the `core_script` is complete to go to the launcher activity.
 
 
-- `--force-remount-ro` will enable force remount of rootfs `/` and system `/system` partitions back to `ro` mode in `Global` namespace after `sudo` commands complete regardless of if they were mounted as `rw` or `ro` when `sudo` command was run and were mounted as `rw` due to home or working directories in those partitions.
 
+#### `-L`
 
-- `--hold[=<string>]` option can be used to make `sudo` script hold the terminal and not exit until the `string` is entered. The `string` can only contain alphanumeric and punctuation characters without newlines specified by `[:alnum:]` and `[:punct:]` bash regex character classes. If only `--hold` is passed, then `sudo` will exit after any key is pressed. This is useful for cases where `sudo` is being run in a foreground terminal session, like from plugins and the terminal closes as soon as the `sudo` exits, regardless of if `sudo` failed or was successful without the user getting a chance to see the output.
+Export all the additional paths that already exist in the `$LD_LIBRARY_PATH` variable at the moment `sudo` command is run while running shells, The default paths exported by `sudo` command will still be exported and prefixed before the additional paths. You can also use the `--shell-pre-commands` and `--post-shell-pre-commands` options to manually export the `$LD_LIBRARY_PATH` variable with a different priority as long as it doesn't break execution of the shells.
 
 
-- `--hold-if-fail` option can be used with the `--hold` option to only hold if exit code of `sudo` does not equal `0`.
 
+#### `-n`
 
-- `--list-interactive-shells` option can be used to display the list of supported [Interactive Shells](#interactive-shells) and exit.
+Can be used with the `script` command type to redirect `stderr` to `/dev/null` only for the `core_script` (not the entire `sudo` command). This is a shortcut for `--script-redirect=3`.
 
 
-- `--list-script-shells` option can be used to display the list of supported [Script Shells](#script-shells) and exit.
 
+#### `-N`
 
-- `--no-create-rc` option will disable automatic creation of `rc` files for `sudo shell` and `sudo post shell` if they are missing.
+Can be used with the `script` command type to redirect both `stdout` and `stderr` to `/dev/null` only for the `core_script` (not the entire `sudo` command). This is a shortcut for `--script-redirect=4`.
 
 
-- `--no-create-hist` option will disable automatic creation of `history` files for `sudo shell` and `sudo post shell` if they are missing.
 
+#### `-o`
 
-- `--no-hist` option will try to disable history loading and saving for `sudo shell` and `sudo post shell` depending on shell capabilities. Not all interactive shells have history support or of disabling it. The history files will also not be created automatically if they are missing.
+Can be used with the `script` command type to redirect `stderr` to `stdout` only for the `core_script` (not the entire `sudo` command). This is a shortcut for `--script-redirect=0`.
 
 
-- `--no-log-args` option can be used with the `path` or `script` command type to disable logging of arguments and `core_script` content when log level is `>= DEBUG`. This is useful in cases where the arguments or `core_script` content is too large and it "hides" the other useful log entries due to terminal session output buffer limitations.
 
+#### `-O`
 
-- `--no-remount-ro` will disable remount of rootfs `/` and system `/system` partitions back to `ro` mode in `Global` namespace after `sudo` commands complete if they were mounted as `rw` when `sudo` command was run due to home or working directories in those partitions.
+Can be used with the `script` command type to redirect `stdout` to `stderr` only for the `core_script` (not the entire `sudo` command). This is a shortcut for `--script-redirect=1`.
 
 
-- `--keep-temp` option will disable automatic deletion of the sudo temp directory `$HOME/.sudo.temp.XXXXXX` on exit. This can be used to debug any temp script files created.
 
+#### `-p`
 
-- `--post-shell=<shell>` option can be used with the `script` command type to pass the name or absolute path for `sudo post shell` to be used with the `script` command type and the `-i` option.
+Sets `path` as the command type for `sudo` and is the default command type.
 
 
-- `--post-shell-home=<path>` option can be used with the `script` command type to pass an absolute path for the `sudo post shell` home that overrides the default value.
 
+#### `-P`
 
-- `--post-shell-options=<options>` option can be used with the `script` command type to set additional options to pass to `sudo post shell` while starting an interactive shell.
+Export all the additional paths that already exist in the `$PATH` variable at the moment `sudo` command is run while running shells, The default paths exported by `sudo` command will still be exported and prefixed before the additional paths. You can also use the `--shell-pre-commands` and `--post-shell-pre-commands` options to manually export the `$PATH` variable with a different priority as long as it doesn't break execution of the shells.
 
 
-- `--post-shell-post-commands=<commands>` option can be used with the `script` command type to set bash commands to be run after the `sudo post shell` exits.
 
+#### `-r`
 
-- `--post-shell-pre-commands=<commands>` option can be used with the `script` command type to set bash commands to be run before the `sudo post shell` is started. The commands are run after the commands that are run for the  `--shell-post-commands`, `-b`, `-l` and `-c` options.
+Parse arguments as per `RUN_COMMAND` intent rules. This will by default replace any comma alternate characters `‚` (`#U+201A`, `&sbquo;`, `&#8218;`, `single low-9 quotation mark`) with simple commas `,` (`U+002C`, `&comma;`, `&#44;`, `comma`) found in any `command_args` for the `path` command type and in `core_script` and any `core_script_args` for the `script` command type. They will also be replaced in the `--hold`, `--post-shell-home`, `--post-shell-pre-commands`, `--post-shell-options`, `--shell-home`, `--shell-pre-commands`, `--shell-post-commands`, `--shell-options`, `--script-name`, `--su-env-options`, `--su-run-options`, `--title` and `--work-dir` command options passed **after** the `-r` option, so ideally `-r` option should be passed before any of them. You can use a different character that should be replaced using the `--comma-alternative` option. Check [Passing Arguments Using RUN_COMMAND Intent](#passing-arguments-using-run_command-intent) section for why this is may be required.
 
 
-- `--post-shell-stdin-string=<string>` ] option can be used with the `script` command type to set the string that should be passed as `stdin` to the `sudo post shell` using process substitution or herestring depending on shell capabilities. Some shells when run in interactive mode may automatically exit after running the commands received through `stdin` or may not even accept strings from `stdin`. This option is used for automated testing.
 
+#### `-R`
 
-- `--remove-prev-temp` option can be used with the `script` command type to remove temp files and directories created on previous runs of `sudo` command that may have been left behind due to `sudo` being killed and not cleanly exiting, or Termux crashing or being killed by android `OOM` killer or the phone rebooting as long as the `sudo shell` home is not changed.
+Can be use to enable usage of `root` for searching and validating paths. This can be useful for cases where the `termux` user does not have the read or execute permissions to shell or other paths. Starting new `su` shells for validating paths increases execution time and hence is not done by default.
 
 
-- `--script-decode` option can be used with the `script` command type so that the `core_script` passed is considered as a `base64` encoded string that should be decoded and stored in temp file. The temp file path is passed to the script shell. This can be useful to pass a script whose normal decoded form contains non `UTF-8` or binary data which if passed directly as an argument may be discarded by the shell if not encoded first since such data cannot be stored in bash variables. If this is passed, then `-r` option processing will be ignored for the `core_script` but not for any arguments.
 
+#### `-s`
 
-- `--script-name` option can be used with the `script` command type to set the filename to use for the `core_script` temp file created in `$HOME/.sudo.temp.XXXXXX/sudo_core_script` directory instead of `sudo_core_script`. The temp file path is passed to the script shell if `-f` or `--script-decode` is passed or if the script shell doesn't support process substitution or if `core_script` passed contained non `UTF-8` or binary data.
+Sets `script` as the command type for `sudo`.
 
 
-- `--script-redirect=<mode/string>` option can be used with the `script` command type to set the redirect mode or string for `stdout` and `stderr` for the `core_script`. The following modes are supported:  
 
-    - `0` redirect `stderr` to `stdout`. This can be used to receive both `stdout` and `stderr` in a synchronized way as `stdout`, like in `%stdout` variable for `Termux:Tasker` plugin for easier processing of result of commands.  
+#### `-S`
 
-    - `1` redirect `stdout` to `stderr`. This can be used to receive both `stdout` and `stderr` in a synchronized way as `stderr`, like in `%stderr` variable for `Termux:Tasker` plugin for easier processing of result of commands.  
+Can be used with the `script` command type with the `-i` option to use the same interactive `sudo post shell` as the script `sudo shell` as long as the `sudo shell` exists in the list of supported interactive shells. This is useful for situations like if you are running a `python` script and want to start a `python` interactive shell after the script completes instead of the likely default `bash` shell. So instead of running `sudo -si --shell=python --post-shell=python <core_script>`, you can simple run `sudo -siS --shell=python <core_script>`.
 
-    - `2` redirect `stdout` to `/dev/null`. This can be used to ignore `stdout` output of the `core_script`.  
 
-    - `3` redirect `stderr` to `/dev/null`. This can be used to ignore `stderr` output of the `core_script`.  
 
-    - `4` redirect `stdout` and `stderr` to `/dev/null`. This can be used to ignore `stdout` and `stderr` output of the `core_script`.  
+#### `--comma-alternative`
 
-    - `5` redirect `stderr` to `stdout` and `stdout` to `stderr`. This can be used to swap `stdout` and `stderr` output of the `core_script`.  
+Set the comma alternative character to be used for the `-r` option instead of the default.
 
-    - `6` redirect `stderr` to `stdout` and `stdout` to `/dev/null`. This can be used to ignore `stdout` and to receive `stderr` output as `stdout` of the `core_script`.  
 
-    - `*` else it is considered a string that's appended after the `core_script` and its arguments. This can be used for custom redirection, like redirection to a file and possibly used along with the `--shell-pre-commands` option if some prep is required.  
 
-    Note that anything sent to `stdout` and `stderr` outside the `core_script` shell will still be sent to `stdout` and `stderr` and will be received in the `%stdout` and `%stderr` variables for `Termux:Tasker` plugin, so do not ignore them completely while checking for failures.  
+#### `--dry-run`
 
-    If you are using `SuperSU` and running commands in an interactive shell like from a foreground terminal session, then these options will not work properly. Check [Automatic redirection of stderr to stdout in SuperSU](#automatic-redirection-of-stderr-to-stdout-in-supersu) for more details.  
+Enable dry running of the `sudo` script. This will not execute any commands, nor will `rc` files, `history` files or `working directory` passed be created. However, the `sudo shell` home and `$HOME/.sudo.temp.XXXXXX/sudo_core_script` file will still be created if `sudo_core_script` file needs to be created. It's advisable to also pass the `-v` or `-vv` options along with this to see script progress and what commands would actually have been run. Passing `--keep-temp` may also be useful.
 
 
-- `--shell=<shell>` option can be used to pass the name or absolute path for `sudo shell`. For `su` and `asu` command types, this is refers to the interactive shell. For `script` command type, this refers to script shell that should run the `core_script`. For `path` command type, this option is ignored.
 
+#### `--export-paths`
 
-- `--shell-home=<path>` option can be used to pass an absolute path for the `sudo shell` home that overrides the default value.
+Set the additional paths to export in `$PATH` variable, separated with colons `:`. The string passed must not start or end with or contain two consecutive colons `:`.
 
 
-- `--shell-options=<options>` option can be used to set additional options to pass to `sudo shell`. For `su` and `asu` command types, these will be passed while starting an interactive shell. For `script` command type, these will be passed while starting the script shell that will be used to passed the `core_script`. For `path` command type, these options are ignored.
 
+#### `--export-ld-lib-paths`
 
-- `--shell-post-commands=<commands>` option can be used with the `script` command type to set bash commands to be run after the `sudo shell` running the `core_script` exits. The commands are run before the commands that are run for the  `-b`, `-l`, `-c` and `--post-shell-pre-commands` options.
+Set the additional paths to export in `$LD_LIBRARY_PATH` variable, separated with colons `:`. The string passed must not start or end with or contain two consecutive colons `:`.
 
 
-- `--shell-pre-commands=<commands>` option can be used to set bash commands to be run before the `sudo shell` is started. For `su`, `asu` and `path` command types, these commands must be simple commands, (preferably one liners) where each command **must** end with a semicolon `;` since they are passed using the `-c` option to `su` that is running a `bash` shell using its `--shell` option. For the `script` command type, these can be more complicated, like a bash script itself, since they are passed to a new `bash` shell in a pseudo file. The commands are run after the `cd` command for `--work-dir` is run.
 
+#### `--force-remount-ro`
 
-- `--shell-stdin-string=<string>` ] option can be used with the `su` `asu` and `script` command type to set the string that should be passed as `stdin` to the `sudo shell` using process substitution or herestring depending on shell capabilities. Some shells when run in interactive mode may automatically exit after running the commands received through `stdin` or may not even accept strings from `stdin`. This option is used for automated testing.
+Will enable force remount of rootfs `/` and system `/system` partitions back to `ro` mode in `Global` namespace after `sudo` commands complete regardless of if they were mounted as `rw` or `ro` when `sudo` command was run and were mounted as `rw` due to home or working directories in those partitions.
 
 
-- `--sleep=<seconds>` option can be used to make `sudo` script to sleep for `x` seconds before exiting. Seconds can be an integer or floating point number that is passed to the `sleep` command. This is useful for cases where `sudo` is being run in a foreground terminal session, like from plugins and the terminal closes as soon as the `sudo` exits, regardless of if `sudo` failed or was successful without the user getting a chance to see the output.
 
+#### `--hold[=<string>]`
 
-- `--sleep-if-fail` option can be used with the `--sleep` option to only sleep if exit code of `sudo` does not equal `0`.
+Make `sudo` script hold the terminal and not exit until the `string` is entered. The `string` can only contain alphanumeric and punctuation characters without newlines specified by `[:alnum:]` and `[:punct:]` bash regex character classes. If only `--hold` is passed, then `sudo` will exit after any key is pressed. This is useful for cases where `sudo` is being run in a foreground terminal session, like from plugins and the terminal closes as soon as the `sudo` exits, regardless of if `sudo` failed or was successful without the user getting a chance to see the output.
 
 
-- `--su-env-options=<options>` option can be used to set additional options to pass to `su` that set up the `sudo` environment. The `-c` option and `user` argument is not supported. Use `sudo -p su [user]` command instead.
 
+#### `--hold-if-fail`
 
-- `--su-run-options=<options>` option can be used to set additional options to pass to `su` that runs the final `sudo` `command_type` command. The `-c` option and `user` argument is not supported. Use `sudo -p su [user]` command instead.
+Can be used with the `--hold` option to only hold if exit code of `sudo` does not equal `0`.
 
 
-- `--title=<title>` option can be used to set the title for the foreground terminal session, that is shown in the `termux` sidebar.
 
+#### `--list-interactive-shells`
 
-- `--work-dir=<path>` option can be used to set the absolute path for working directory for the `sudo shell`. The `cd` command is run before the commands passed with `--shell-pre-commands` and `--post-shell-pre-commands` options are run. The directory will be automatically created if missing.
-##
+Display the list of supported [Interactive Shells](#interactive-shells) and exit.
+
+
+
+#### `--list-script-shells`
+
+Display the list of supported [Script Shells](#script-shells) and exit.
+
+
+
+#### `--no-create-rc`
+
+Disable automatic creation of `rc` files for `sudo shell` and `sudo post shell` if they are missing.
+
+
+
+#### `--no-create-hist`
+
+Disable automatic creation of `history` files for `sudo shell` and `sudo post shell` if they are missing.
+
+
+
+#### `--no-hist`
+
+Try to disable history loading and saving for `sudo shell` and `sudo post shell` depending on shell capabilities. Not all interactive shells have history support or of disabling it. The history files will also not be created automatically if they are missing.
+
+
+
+#### `--no-log-args`
+
+Can be used with the `path` or `script` command type to disable logging of arguments and `core_script` content when log level is `>= DEBUG`. This is useful in cases where the arguments or `core_script` content is too large and it "hides" the other useful log entries due to terminal session output buffer limitations.
+
+
+
+#### `--no-remount-ro`
+
+Will disable remount of rootfs `/` and system `/system` partitions back to `ro` mode in `Global` namespace after `sudo` commands complete if they were mounted as `rw` when `sudo` command was run due to home or working directories in those partitions.
+
+
+
+#### `--keep-temp`
+
+Disable automatic deletion of the sudo temp directory `$HOME/.sudo.temp.XXXXXX` on exit. This can be used to debug any temp script files created.
+
+
+
+#### `--post-shell=<shell>`
+
+Can be used with the `script` command type to pass the name or absolute path for `sudo post shell` to be used with the `script` command type and the `-i` option.
+
+
+
+#### `--post-shell-home=<path>`
+
+Can be used with the `script` command type to pass an absolute path for the `sudo post shell` home that overrides the default value.
+
+
+
+#### `--post-shell-options=<options>`
+
+Can be used with the `script` command type to set additional options to pass to `sudo post shell` while starting an interactive shell.
+
+
+
+#### `--post-shell-post-commands=<commands>`
+
+Can be used with the `script` command type to set bash commands to be run after the `sudo post shell` exits.
+
+
+
+#### `--post-shell-pre-commands=<commands>`
+
+Can be used with the `script` command type to set bash commands to be run before the `sudo post shell` is started. The commands are run after the commands that are run for the  `--shell-post-commands`, `-b`, `-l` and `-c` options.
+
+
+
+#### `--post-shell-stdin-string=<string>`
+
+Can be used with the `script` command type to set the string that should be passed as `stdin` to the `sudo post shell` using process substitution or herestring depending on shell capabilities. Some shells when run in interactive mode may automatically exit after running the commands received through `stdin` or may not even accept strings from `stdin`. This option is used for automated testing.
+
+
+
+#### `--remove-prev-temp`
+
+Can be used with the `script` command type to remove temp files and directories created on previous runs of `sudo` command that may have been left behind due to `sudo` being killed and not cleanly exiting, or Termux crashing or being killed by android `OOM` killer or the phone rebooting as long as the `sudo shell` home is not changed.
+
+
+
+#### `--script-decode`
+
+Can be used with the `script` command type so that the `core_script` passed is considered as a `base64` encoded string that should be decoded and stored in temp file. The temp file path is passed to the script shell. This can be useful to pass a script whose normal decoded form contains non `UTF-8` or binary data which if passed directly as an argument may be discarded by the shell if not encoded first since such data cannot be stored in bash variables. If this is passed, then `-r` option processing will be ignored for the `core_script` but not for any arguments.
+
+
+
+#### `--script-name`
+
+Can be used with the `script` command type to set the filename to use for the `core_script` temp file created in `$HOME/.sudo.temp.XXXXXX/sudo_core_script` directory instead of `sudo_core_script`. The temp file path is passed to the script shell if `-f` or `--script-decode` is passed or if the script shell doesn't support process substitution or if `core_script` passed contained non `UTF-8` or binary data.
+
+
+
+#### `--script-redirect=<mode/string>`
+
+Can be used with the `script` command type to set the redirect mode or string for `stdout` and `stderr` for the `core_script`. The following modes are supported:  
+
+- `0` redirect `stderr` to `stdout`. This can be used to receive both `stdout` and `stderr` in a synchronized way as `stdout`, like in `%stdout` variable for `Termux:Tasker` plugin for easier processing of result of commands.  
+
+- `1` redirect `stdout` to `stderr`. This can be used to receive both `stdout` and `stderr` in a synchronized way as `stderr`, like in `%stderr` variable for `Termux:Tasker` plugin for easier processing of result of commands.  
+
+- `2` redirect `stdout` to `/dev/null`. This can be used to ignore `stdout` output of the `core_script`.  
+
+- `3` redirect `stderr` to `/dev/null`. This can be used to ignore `stderr` output of the `core_script`.  
+
+- `4` redirect `stdout` and `stderr` to `/dev/null`. This can be used to ignore `stdout` and `stderr` output of the `core_script`.  
+
+- `5` redirect `stderr` to `stdout` and `stdout` to `stderr`. This can be used to swap `stdout` and `stderr` output of the `core_script`.  
+
+- `6` redirect `stderr` to `stdout` and `stdout` to `/dev/null`. This can be used to ignore `stdout` and to receive `stderr` output as `stdout` of the `core_script`.  
+
+- `*` else it is considered a string that's appended after the `core_script` and its arguments. This can be used for custom redirection, like redirection to a file and possibly used along with the `--shell-pre-commands` option if some prep is required.  
+
+Note that anything sent to `stdout` and `stderr` outside the `core_script` shell will still be sent to `stdout` and `stderr` and will be received in the `%stdout` and `%stderr` variables for `Termux:Tasker` plugin, so do not ignore them completely while checking for failures.
+
+If you are using `SuperSU` and running commands in an interactive shell like from a foreground terminal session, then these options will not work properly. Check [Automatic redirection of stderr to stdout in SuperSU](#automatic-redirection-of-stderr-to-stdout-in-supersu) for more details.
+
+
+
+#### `--shell=<shell>`
+
+Pass the name or absolute path for `sudo shell`. For `su` and `asu` command types, this is refers to the interactive shell. For `script` command type, this refers to script shell that should run the `core_script`. For `path` command type, this option is ignored.
+
+
+
+#### `--shell-home=<path>`
+
+Pass an absolute path for the `sudo shell` home that overrides the default value.
+
+
+
+#### `--shell-options=<options>`
+
+Set additional options to pass to `sudo shell`. For `su` and `asu` command types, these will be passed while starting an interactive shell. For `script` command type, these will be passed while starting the script shell that will be used to passed the `core_script`. For `path` command type, these options are ignored.
+
+
+
+#### `--shell-post-commands=<commands>`
+
+Can be used with the `script` command type to set bash commands to be run after the `sudo shell` running the `core_script` exits. The commands are run before the commands that are run for the  `-b`, `-l`, `-c` and `--post-shell-pre-commands` options.
+
+
+
+#### `--shell-pre-commands=<commands>`
+
+Set bash commands to be run before the `sudo shell` is started. For `su`, `asu` and `path` command types, these commands must be simple commands, (preferably one liners) where each command **must** end with a semicolon `;` since they are passed using the `-c` option to `su` that is running a `bash` shell using its `--shell` option. For the `script` command type, these can be more complicated, like a bash script itself, since they are passed to a new `bash` shell in a pseudo file. The commands are run after the `cd` command for `--work-dir` is run.
+
+
+
+#### `--shell-stdin-string=<string>`
+
+Can be used with the `su` `asu` and `script` command type to set the string that should be passed as `stdin` to the `sudo shell` using process substitution or herestring depending on shell capabilities. Some shells when run in interactive mode may automatically exit after running the commands received through `stdin` or may not even accept strings from `stdin`. This option is used for automated testing.
+
+
+
+#### `--sleep=<seconds>`
+
+Make `sudo` script to sleep for `x` seconds before exiting. Seconds can be an integer or floating point number that is passed to the `sleep` command. This is useful for cases where `sudo` is being run in a foreground terminal session, like from plugins and the terminal closes as soon as the `sudo` exits, regardless of if `sudo` failed or was successful without the user getting a chance to see the output.
+
+
+
+#### `--sleep-if-fail`
+
+Can be used with the `--sleep` option to only sleep if exit code of `sudo` does not equal `0`.
+
+
+
+#### `--su-env-options=<options>`
+
+Set additional options to pass to `su` that set up the `sudo` environment. The `-c` option and `user` argument is not supported. Use `sudo -p su [user]` command instead.
+
+
+
+#### `--su-run-options=<options>`
+
+Set additional options to pass to `su` that runs the final `sudo` `command_type` command. The `-c` option and `user` argument is not supported. Use `sudo -p su [user]` command instead.
+
+
+
+#### `--title=<title>`
+
+Set the title for the foreground terminal session, that is shown in the `termux` sidebar.
+
+
+
+#### `--work-dir=<path>`
+
+Set the absolute path for working directory for the `sudo shell`. The `cd` command is run before the commands passed with `--shell-pre-commands` and `--post-shell-pre-commands` options are run. The directory will be automatically created if missing.
+
+---
+
+&nbsp;
+
+
 
 
 
@@ -662,7 +915,12 @@ The home directory is automatically created when `sudo` command is run if it doe
 If the home or working directories are in android rootfs `/` partition or android system `/system` partition, then the respective partition is automatically remounted as `rw` in the `Global` namespace when `sudo` command is run and remounted back to `ro` before `sudo` command exits, but only if the partition was mounted as `ro` before `sudo` command was run or `--no-remount-ro` was not passed. The `--force-remount-ro` option can be passed to force remounting to `ro` regardless of partition mount state before `sudo` command was run. For android `>= 10`, do not set home or working directory in rootfs or system partition since `sudo` script will exit with error. In android `>= 10`, rootfs partition is likely a read-only system-as-root `SAR` partition and system partition is likely an `ext4` `dedup` filesystem which cannot be remounted as `rw`.
 
 If the `-E` option is passed or an `exec` is manually done, then remounting back to `ro` will not happen.
-##
+
+---
+
+&nbsp;
+
+
 
 
 
@@ -702,7 +960,12 @@ The `rc` file parent directory is automatically created when `sudo` command is r
 The `rc` file is automatically created when `sudo` command is run if it does not exist. The `root:root` ownership and `600` permission is also set to it.
 
 The `rc` file parent directory and `rc` file will not be created automatically if `-no-create-rc` is passed.
-##
+
+---
+
+&nbsp;
+
+
 
 
 
@@ -745,7 +1008,12 @@ The `history` file parent directory is automatically created when `sudo` command
 The `history` file is automatically created when `sudo` command is run if it does not exist. The `root:root` ownership and `600` permission is also set to it.
 
 The `history` file parent directory and `history` file will not be created automatically if `-no-create-hist` or `--no-hist` is passed.
-##
+
+---
+
+&nbsp;
+
+
 
 
 
@@ -775,7 +1043,12 @@ Note that the android default `SAF` `Document` file picker may not support hidde
 If you use the `bash` shell in termux terminal session, you can optionally export the environmental variables like `$SUDO_SHELL_HOME` and `$SUDO_POST_SHELL_HOME` in the `~/.bashrc` file by adding `export SUDO_SHELL_HOME="/path/to/home"` and `export SUDO_POST_SHELL_HOME="/path/to/home"` lines to it so that they are automatically set whenever you start a terminal session. However, the `~/.bashrc` and `rc` files of other shells will not be sourced if you are running commands from `Termux:Tasker` or `RUN_COMMAND Intent`, and so it is advisable to use the `sudo.config` file instead, which will be sourced in all cases, regardless of how `sudo` is run.
 
 Note that `$SUDO_SHELL_PS1` and `$SUDO_POST_SHELL_PS1` values will not work if `$PS1` variable is overridden in `rc` files in `$PREFIX/etc/` or in `sudo shell` and `sudo post shell` homes. Check [RC File Variables](#rc-file-variables) section for more details.
-##
+
+---
+
+&nbsp;
+
+
 
 
 
@@ -783,8 +1056,11 @@ Note that `$SUDO_SHELL_PS1` and `$SUDO_POST_SHELL_PS1` values will not work if `
 
 If you are using a foreground terminal session, then you must disable the `bash` command completion and history expansion for the current terminal session before running `sudo` commands to pass multi-line arguments by running `bind 'set disable-completion on'; set +H`. Otherwise `bash` will try to auto complete commands and search the history, and you will get prompts like `Display all x possibilities? (y or n)`.
 
+&nbsp;
 
-#### `su`
+
+
+### `su`
 
 - Drop to an interactive `bash` shell in `superuser (root)` context with priority set to termux bin and library paths with the default configuration.  
 
@@ -809,20 +1085,26 @@ If you are using a foreground terminal session, then you must disable the `bash`
 - Drop to an interactive `bash` shell in `superuser (root)` context with priority set to termux bin and library paths, do not store history, export some additional paths in `$PATH` variable, pass additional options to the bash interactive shell starting including a different rc/init file and run some commands before running the bash shell like exporting some variables and running a script. The value of the `--shell-options` option is surrounded with double quotes and the `--init-file` option value passed in it has double quotes escaped to prevent whitespace splitting when its passed to `bash`. The `--shell-pre-commands` option is instead surrounded with single quotes as an example and so doesn't need double quotes escaped but will require single quotes in commands to be escaped. Moreover, each command in the `--shell-pre-commands` option **must** end with a semicolon `;`.  
 
 `sudo --no-hist --export-paths="/path/to/dir1:/path/to/dir2" --shell-options="--noprofile --init-file \"path/to/file\"" --shell-pre-commands='export VARIABLE_1="VARIABLE_VALUE_1"; export VARIABLE_2="VARIABLE_VALUE_2"; /path/to/script;' su`  
-##
+
+## &nbsp;
+
+&nbsp;
 
 
 
-#### `asu`
+### `asu`
 
 - Drop to an interactive `bash` shell in `superuser (root)` context with priority set to android bin and library paths with the default configuration.  
 
 `sudo asu`  
-##
+
+## &nbsp;
+
+&nbsp;
 
 
 
-#### `path`
+### `path`
 
 - Run `top` command to show top `10` processes of any user.  
 
@@ -842,14 +1124,17 @@ If you are using a foreground terminal session, then you must disable the `bash`
 - Run android `dumpsys` command and filter output to show only `termux` related entires.  
 
 `sudo dumpsys | grep -a termux`  
-##
+
+## &nbsp;
+
+&nbsp;
 
 
 
-#### `script`
+### `script`
 
 
-##### `bash`
+#### `bash`
 
 - Pass a `bash` script text surrounded with single quotes that prints the first `2` args to `stdout`. There is normally no need to pass `--shell=bash` since `bash` shell would be the default shell.  
 
@@ -969,12 +1254,14 @@ SUDO_EOF
 ```
 sudo -so 'echo stdout; echo stderr 1>&2'
 ```
-&nbsp;&nbsp;
+
+## &nbsp;
+
+&nbsp;
 
 
 
-
-##### `zsh`
+#### `zsh`
 
 - Pass a `zsh` script text with process substitution that prints the first `2` args to `stdout`.  
 
@@ -997,12 +1284,14 @@ echo "Hi, $name."
 SUDO_EOF
 )
 ```
-&nbsp;&nbsp;
+
+## &nbsp;
+
+&nbsp;
 
 
 
-
-##### `fish`
+#### `fish`
 
 - Pass a `fish` script text with process substitution that prints the first `2` args to `stdout`.  
 
@@ -1025,12 +1314,14 @@ echo "Hi, $name."
 SUDO_EOF
 )
 ```
-&nbsp;&nbsp;
+
+## &nbsp;
+
+&nbsp;
 
 
 
-
-##### `python`
+#### `python`
 
 Currently, `python` refers to `python3` and `python2` refers to `python2` in termux. Check [Termux Python Wiki](https://wiki.termux.com/wiki/Python) for more information.
 
@@ -1055,6 +1346,7 @@ print("Hi, %s." % name)
 SUDO_EOF
 )
 ```
+
 &nbsp;
 
 
@@ -1085,12 +1377,14 @@ sudo -s --shell=python "$(cat "$PREFIX/bin/bandcamp-dl")" --help
 ```
 sudo -s --script-decode --shell=python "$(cat "$PREFIX/bin/bandcamp-dl" | base64)" --help
 ```
-&nbsp;&nbsp;
+
+## &nbsp;
+
+&nbsp;
 
 
 
-
-##### `ruby`
+#### `ruby`
 
 - Pass a `ruby` script text with process substitution that prints the first `2` args to `stdout`.  
 
@@ -1114,12 +1408,14 @@ puts "Hi, " + name.chomp.to_s + "."
 SUDO_EOF
 )
 ```
-&nbsp;&nbsp;
+
+## &nbsp;
+
+&nbsp;
 
 
 
-
-##### `node`
+#### `node`
 
 - Pass a `node` script text with process substitution that prints the first `2` args to `stdout`.  
 
@@ -1148,12 +1444,14 @@ readline.question(`What is your name?\n`, (name) => {
 SUDO_EOF
 )
 ```
-&nbsp;&nbsp;
+
+## &nbsp;
+
+&nbsp;
 
 
 
-
-##### `perl`
+#### `perl`
 
 - Pass a `perl` script text with process substitution that prints the first `2` args to `stdout`.  
 
@@ -1177,12 +1475,14 @@ print "Hi, ", $name, ".\n";
 SUDO_EOF
 )
 ```
-&nbsp;&nbsp;
+
+## &nbsp;
+
+&nbsp;
 
 
 
-
-##### `lua5.2`
+#### `lua5.2`
 
 - Pass a `lua5.2` script text with process substitution that prints the first `2` args to `stdout`.  
 
@@ -1205,12 +1505,14 @@ io.write('Hi, ', name, '.\n')
 SUDO_EOF
 )
 ```
-&nbsp;&nbsp;
+
+## &nbsp;
+
+&nbsp;
 
 
 
-
-##### `lua5.3`
+#### `lua5.3`
 
 - Pass a `lua5.3` script text with process substitution that prints the first `2` args to `stdout`.  
 
@@ -1233,12 +1535,14 @@ io.write('Hi, ', name, '.\n')
 SUDO_EOF
 )
 ```
-&nbsp;&nbsp;
+
+## &nbsp;
+
+&nbsp;
 
 
 
-
-##### `lua5.4`
+#### `lua5.4`
 
 - Pass a `lua5.4` script text with process substitution that prints the first `2` args to `stdout`.  
 
@@ -1261,12 +1565,14 @@ io.write('Hi, ', name, '.\n')
 SUDO_EOF
 )
 ```
-&nbsp;&nbsp;
+
+## &nbsp;
+
+&nbsp;
 
 
 
-
-##### `php`
+#### `php`
 
 - Pass a `php` script text with process substitution that prints the first `2` args to `stdout`.  
 
@@ -1291,7 +1597,12 @@ echo "Hi, " . $name . ".\n";
 SUDO_EOF
 )
 ```
-##
+
+---
+
+&nbsp;
+
+
 
 
 
@@ -1315,7 +1626,12 @@ SUDO_EOF
 
 
 Termux needs to be granted `Storage` permission to allow it to access `/storage/emulated/0/Download` directory, otherwise you will get permission denied errors while running commands.
-##
+
+---
+
+&nbsp;
+
+
 
 
 
@@ -1324,26 +1640,32 @@ Termux needs to be granted `Storage` permission to allow it to access `/storage/
 The `core_script` or any other arguments passed for all the command types must be preserved in their original form and must be passed as is to `sudo` without any variable expansion or history expansion, etc.
 
 This can be done in two ways, either using single quotes to surround the `core_script` and arguments or passing them with process substitution with a literal `cat` `heredoc`.
+
 &nbsp;
 
-If you are using [Termux:Tasker] plugin to run `sudo` commands, you would need to use single quotes to pass arguments, since it doesn't support process substitution. You would need to install [Termux:Tasker] version `>= 0.5` since argument parsing is broken in older versions. Check the [Passing Arguments Surrounded With Single Quotes](#passing-arguments-surrounded-with-single-quotes) section for more details. Check the `Template 2` and `Template 3` of the [Termux Tasker Plugin Sudo Templates Task](#templates) task for templates on how to use single quotes to pass arguments with Tasker. Basically, just set your script text to the `%core_script` variable with the `Variable Set` action and add any additional command options or arguments to the `%arguments` variable.  
+If you are using [Termux:Tasker] plugin to run `sudo` commands, you would need to use single quotes to pass arguments, since it doesn't support process substitution. You would need to install [Termux:Tasker] version `>= 0.5` since argument parsing is broken in older versions. Check the [Passing Arguments Surrounded With Single Quotes](#passing-arguments-surrounded-with-single-quotes) section for more details. Check the `Template 2` and `Template 3` of the [Termux Tasker Plugin Sudo Templates Task](#templates) task for templates on how to use single quotes to pass arguments with Tasker. Basically, just set your script text to the `%core_script` variable with the `Variable Set` action and add any additional command options or arguments to the `%arguments` variable.
+
 &nbsp;
 
 If you are using a foreground terminal session or scripts to run `sudo` commands, you can use single quotes to pass arguments or use process substitution. If you are using a foreground terminal session, then you must disable the `bash` command completion and history expansion for the current terminal session before running `sudo` command to pass multi-line arguments by running `bind 'set disable-completion on'; set +H`. Check the [Passing Arguments Using Process Substitution](#passing-arguments-using-process-substitution) section for more details. Check the [Examples](#examples) section for templates on how to use process substitution to pass arguments.
+
 &nbsp;
 
 If you are using [RUN_COMMAND Intent] to run `sudo` commands with Tasker using the `TermuxCommand()` function in `Tasker Function` action, you don't need to surround the `core_script` or arguments with single quotes, since arguments are split on a simple comma `,` instead. If your arguments themselves contain simple commas `,` (`U+002C`, `&comma;`, `&#44;`, `comma`), then you must replace them with the comma alternate character `‚` (`#U+201A`, `&sbquo;`, `&#8218;`, `single low-9 quotation mark`) for each argument separately before passing them to the intent action and would also need to pass the `-r` command option to `sudo`. Check the [Passing Arguments Using RUN_COMMAND Intent](#passing-arguments-using-run_command-intent) section for more details. Check the `Template 2` of the [Termux RUN_COMMAND Intent Sudo Templates Task](#templates) task for a template on how to replace commas in each argument separately with Tasker.
+
 &nbsp;
 
 If you are using [RUN_COMMAND Intent] to run `sudo` commands with Tasker or other apps using the `am` command, like using the `Run Shell` action in Tasker, you need to surround all your arguments, like the `core_script` and all other arguments with single quotes when passing them to the `com.termux.RUN_COMMAND_ARGUMENTS` string array extra after you have escaped all the single quotes in the final value, since otherwise it may result in incorrect quoting if the arguments themselves contain single quotes. However, due to the string array extra, the arguments are still split on a simple comma `,` so if your arguments themselves contain simple commas `,` (`U+002C`, `&comma;`, `&#44;`, `comma`), then you would also have to replace them with the comma alternate character `‚` (`#U+201A`, `&sbquo;`, `&#8218;`, `single low-9 quotation mark`) for each argument separately before passing them as the argument to the extra and would also need to pass the `-r` command option to `sudo`. Check the [Passing Arguments Using RUN_COMMAND Intent](#passing-arguments-using-run_command-intent) section for more details. Check the `Template 3` of the [Termux RUN_COMMAND Intent Sudo Templates Task](#templates) task for a template on how to replace commas in each argument separately and also escape single quotes in all the arguments with Tasker.
+
 &nbsp;
 
 Note that for [RUN_COMMAND Intent], any arguments passed to any command options or the main arguments to `sudo` should also **not** be surrounded with single or double quotes to prevent whitespace splitting in the intent action, like done for usage with `Termux:Tasker` plugin since splitting will occur on simple comma characters instead. Check the `Template 4` of the [Termux RUN_COMMAND Intent Sudo Templates Task](#templates) task for a template for this.
-&nbsp;&nbsp;
+
+&nbsp;
 
 
 
-##### Passing Arguments Surrounded With Single Quotes
+#### Passing Arguments Surrounded With Single Quotes
 
 Any argument surrounded with single quotes is considered a literal string and variable expansion is not done. However, if an argument itself contains single quotes, then they will need to be escaped properly. You can escape them by replacing all single quotes `'` in an argument value with `'\''` **before** passing the argument surrounded with single quotes. So an argument surrounded with single quotes that would have been passed like `'some arg with single quote ' in it'` will be passed as `'some arg with single quote '\'' in it'`. This is basically 3 parts `'some arg with single quote '`, `\'` and `' in it'` but when processed, it will be considered as one single argument with the value `some arg with single quote ' in it` that is passed to `sudo`.
 
@@ -1358,11 +1680,14 @@ sudo -s '
 <core_script>
 ' '[some arg1]' '[some arg2]'
 ```
-&nbsp;&nbsp;
+
+## &nbsp;
+
+&nbsp;
 
 
 
-##### Passing Arguments Using Process Substitution
+#### Passing Arguments Using Process Substitution
 
 [Process Substitution] can be used to pass the `core_script` and `core_script_args` for the `script` command type and to pass the `command_args` for the `path` command type when running `sudo` from a foreground terminal session or from a script.
 
@@ -1398,19 +1723,25 @@ You can also read text from an existing script file using `cat` and pass that to
 ```
 sudo -s <(cat "~/some-script")
 ```
-&nbsp;&nbsp;
+
+## &nbsp;
+
+&nbsp;
 
 
 
 ##### Passing Arguments Using RUN_COMMAND Intent
 
 To use [RUN_COMMAND Intent] that has arguments working properly, you need to install Termux version `>= 0.100` and Tasker version `>= 5.9.4.beta`. However, leading and trailing whitespaces from arguments will be removed for Tasker version `< 5.11.1.beta` if you are using `TermuxCommand()` function, so its advisable to use a higher version or use `am` command instead.
+
 &nbsp;
 
 If you are using the `am` command, the format is `am startservice --user 0 -n com.termux/com.termux.app.RunCommandService -a com.termux.RUN_COMMAND --es com.termux.RUN_COMMAND_PATH '<path>' --esa com.termux.RUN_COMMAND_ARGUMENTS '<one_or_more_args_seperated_with_commas>' --es com.termux.RUN_COMMAND_WORKDIR '/data/data/com.termux/files/home' --ez com.termux.RUN_COMMAND_BACKGROUND 'false'`
+
 &nbsp;
 
 If you are using the `TermuxCommand()` function, the format is `TermuxCommand(path,<one_or_more_args_seperated_with_commas>,workdir,background)`. The args can be of any count, each separated with a simple comma `,`. The only condition is that in the list the first must be `path` and the last two must be `workdir` and `background` respectively.
+
 &nbsp;
 
 For both the `--esa com.termux.RUN_COMMAND_ARGUMENTS` string array extra and the `TermuxCommand()` function, if you want to pass an argument that itself contains a simple comma `,` (`U+002C`, `&comma;`, `&#44;`, `comma`), it must be escaped with a backslash `\,` so that the  argument isn't split into multiple arguments. The only problem is that, the arguments received by the script being executed will contain `\,` instead of `,` since the reversal isn't done as described in the [am command source](https://android.googlesource.com/platform/frameworks/base/+/21bdaf1/cmds/am/src/com/android/commands/am/Am.java#572) while converting to a string array. Tasker uses the same method. There is also no way for the `am` command or the script to know whether `\,` was done to prevent arguments splitting or `\,` was a literal string naturally part of the argument.
@@ -1422,40 +1753,62 @@ For both the `--esa com.termux.RUN_COMMAND_ARGUMENTS` string array extra and the
 String[] strings = value.split("(?<!\\\\),");
 intent.putExtra(key, strings);
 ```
+
 &nbsp;
 
 `sudo` uses an alternative method to handle such conditions. If an argument contains a simple comma `,`, then instead of escaping them with a backslash `\,`, replace all simple commas with the comma alternate character `‚` (`#U+201A`, `&sbquo;`, `&#8218;`, `single low-9 quotation mark`). This way argument splitting will not be done. You can pass the `-r` option to `sudo` which will then parse arguments as per `RUN_COMMAND` intent rules to replace all the comma alternate characters back to simple commas. It would be unlikely for the `core_script` or the arguments to naturally contain the comma alternate characters for this to be a problem. Even if they do, they might not be significant for any script logic. If they are, then you can set a different character that should be replaced, with the `--comma-alternative` option. The `-r` and `--comma-alternative` options should ideally be the first options passed so that `sudo` replaces the alternative comma characters from all arguments passed after the options.
 
 For `Tasker` use the `Variable Search Replace` action on an `%argument` variable to replace the simple comma characters. Set the `Search` field to one simple comma `,`, and enable `Replace Matches` toggle, and set `Replace With` field to `%comma_alternative` where the `%comma_alternative` variable must contain the comma alternate character `‚`.
-##
+
+---
+
+&nbsp;
 
 
 
-### Issues
 
 
-##### Automatic redirection of stderr to stdout in SuperSU
+## Issues
+
+### Automatic redirection of stderr to stdout in SuperSU
 
 In `SuperSU` `v2.82` for the `script` command type, if `stdin` is available like running `su` in an interactive shell like from a foreground terminal session, then it automatically redirects `stderr` of commands to `stdout`, specially affecting the `--script-redirect` and related command options. However, if commands are run in a non-interactive shell, in the background, like from `Termux:Tasker` plugin, then `stdout` and `stderr` streams behave normally and are separate. This can be confirmed by running `(su -c 'echo 1 1>&2' 2>/dev/null)` and `(exec <&-; su -c 'echo 1 1>&2' 2>/dev/null)` in a terminal session. In the former case, `1` is still printed on the screen even though `stderr` is redirected to `/dev/null`. The later case closes the `stdin` file descriptor which makes `su` assume its running non-interactively. Running `(su -c 'echo 1 1>&2' 1>/dev/null)` also suppresses printing since it redirects `stdout` to `/dev/null` instead. Running `(bash -c 'echo 1 1>&2' 2>/dev/null)` works normally. Reopening `stdin` with hacks, inside the `su` shell doesn't work either for a few reasons, including that `stderr` redirection to `stdout` starts happening again. This seems to be an issue of the [libsuperuser](https://github.com/Chainfire/libsuperuser/blob/v1.1.0/libsuperuser/src/eu/chainfire/libsuperuser/Shell.java) itself or how the `su` binary handles streams internally and might not be solvable but if you have a solution that can be used to prevent automatic redirection, please report it.
 
 This does not affect usage with `Termux:Tasker` in background mode. This does not apply to `Magisk`, at least the currently latest version `v21.1`. However, this may apply to other `su` implementation.
-&nbsp;&nbsp;
+
+## &nbsp;
+
+&nbsp;
 
 
 
-##### su -c support
+### su -c support
 
 The `sudo` script requires the `-c` command option support by the `su` binary. The `su` that comes with the android studio `avd` does not support it. Other `su` implementations may not support it either.
 
 Moreover, linux distros removed support for starting interactive shells with the `su -c` command. Check [debian su manpage](https://manpages.debian.org/testing/login/su.1.en.html). The `-c` command option info specifies that `The executed command will have no controlling terminal. This option cannot be used to execute interactive programs which need a controlling TTY.`. For more info, check [debian bug report #628843](https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=628843) and [ubuntu CVE-2005-4890](https://ubuntu.com/security/CVE-2005-4890). However, this likely does not apply to android `su` implementations, at least does not apply for `SuperSU` and `Magisk` currently, so `sudo` should work fine, at least on those.
-##
+
+---
+
+&nbsp;
 
 
 
-### Worthy Of Note
 
 
-#### RC File Variables
+## Worthy Of Note
+
+- [RC File Variables](#r-c-file-variables)
+- [Arguments and Result Data Limits](#arguments-and-result-data-limits)
+- [PATH and LD_LIBRARY_PATH Priorities](#path-and-ld_library_path-priorities)
+- [`tpath` and `apath` functions](#tpath-and-apath-functions)
+- [`export` and `unset` functions](#export-and-unset-functions)
+
+&nbsp;
+
+
+
+### RC File Variables
 
 If you don't know what `$PATH`, `$LD_LIBRARY_PATH` and `$PS1` variables or `rc` files are or don't care to find out, then just run the commands below so that `sudo` works properly, otherwise read the details below. Ignore `No such file or directory` errors when running the commands.
 
@@ -1464,24 +1817,25 @@ sed -i'' -E 's/^(PS1=.*)$/\(\[ -z "\$PS1" \] \|\| \[\[ "\$PS1" == '\''\\s-\\v\\\
 sed -i'' -E 's/^(PS1=.*)$/\(\[ -z "\$PS1" \] \|\| \[\[ "\$PS1" == '\''%m%# '\'' \]\]\) \&\& \1/' "/data/data/com.termux/files/usr/etc/zshrc"
 su -c "rm \"/data/data/com.termux/files/home/.suroot/.bashrc\""
 ```
+
 &nbsp;
 
 
 `rc` files, short for `run commands`, are shell specific files that are run or sourced whenever an interactive shell is started to define variables and functions etc.
 
 Make sure in your `rc` files like `~/.suroot/.bashrc` file for `bash` (where `~/.suroot` is the `sudo shell` home), the `$PATH`, `$LD_LIBRARY_PATH` and `$PS1` variables and any other variables exported by `sudo` are not overridden, **otherwise the `sudo` commands will not work properly**, since `sudo` exports its own custom variable values which will get overridden when `rc` files are sourced by any new shell started. You can run commands like `sudo -v --dry-run --shell=bash su` to see what variables are normally exported for a given shell by `sudo`.
+
 &nbsp;
 
-
-##### `$PATH` or `$LD_LIBRARY_PATH`
+#### `$PATH` or `$LD_LIBRARY_PATH`
 
 Check the [PATH and LD_LIBRARY_PATH Priorities](#path-and-ld_library_path-priorities) section for more info on what these variables are.
 
 For the `$PATH` or `$LD_LIBRARY_PATH` variables, either remove their variable set lines completely or if necessary only append any required paths to the existing variable values like `export PATH="$PATH:/dir1:/dir2"` and `export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/dir1:/dir2"` instead of overriding them with `export PATH="/dir1:/dir2"` and `export LD_LIBRARY_PATH="/dir1:/dir2"` in your `rc` files.
+
 &nbsp;
 
-
-##### `$PS1`
+#### `$PS1`
 
 The `$PS1` variable, short for [Prompt String 1], defines the characters you see at the start of the "line" when typing commands in shells running interactively like `bash` or `zsh`. For `termux` `bash` shell, this defaults to `$ `. For `termux` `zsh` shell, this defaults to `% `.
 
@@ -1500,8 +1854,8 @@ If you want to allow `sudo` to set its own default `$PS1` value `# ` or the one 
     - `zsh` shell default `rc` file set by `sudo` is `~/.suroot/.zshrc`. You can for example set `$PS1` to `£ ` by adding the line `([[ -z "$PS1" ]] || [[ "$PS1" == '%# ' ]]) && PS1='£ '` to it, where `'%# '` is the default value for `PS1` in `$PREFIX/etc/zshrc` file.  
 
 This will ensure that the exported `$PS1` variables will not be overridden by `rc` files for `bash` and `zsh`. For other shells that may use the `$PS1` variable, you can use similar conditionals in their `rc` files.
-&nbsp;
 
+&nbsp;
 
 ##### `termux-sudo by st42`
 If you were **previously using [termux-sudo by st42]**, then it would have automatically created the `~/.suroot/.bashrc` file with entries like the following. You should either remove those lines if you haven't exported custom values yourself or remove the file entirely if you haven't made changes to it yourself.
@@ -1515,11 +1869,14 @@ export PS1="# "
 To remove the `~/.suroot/.bashrc` file, run `su -c "rm \"/data/data/com.termux/files/home/.suroot/.bashrc\""` command.
 
 To edit the `~/.suroot/.bashrc` file, run `su -c "nano \"/data/data/com.termux/files/home/.suroot/.bashrc\""` command. Make changes as advised above, then press `Ctrl+o` and then `Enter` to save and `Ctrl+x` to exit. You can also open the file with a text editor app with root support like [QuickEdit] or [QuickEdit Pro].
-&nbsp;&nbsp;
+
+## &nbsp;
+
+&nbsp;
 
 
 
-#### Arguments and Result Data Limits
+### Arguments and Result Data Limits
 
 There are limits on the arguments size you can pass to commands or the full command string length that can be run, which is likely equal to `131072` bytes or `128KB` for an android device defined by `ARG_MAX` but after subtracting shell environment size, etc, it will roughly be around `120-125KB` but limits may vary for different android versions and kernels. You can check the limits for a given termux session by running `true | xargs --show-limits`. If you exceed the limit, you will get exceptions like `Argument list too long`. You can manually cross the limit by running something like `$PREFIX/bin/echo "$(head -c 131072 < /dev/zero | tr '\0' 'a')" | tr -d 'a'`, use full path of `echo`, otherwise the `echo` shell built-in will be called to which the limit does not apply since `exec` is not done.
 
@@ -1528,11 +1885,14 @@ Moreover, exchanging data between `Tasker` and `Termux:Tasker` is done using [In
 Basically, make sure any data/arguments you pass to `sudo` script directly on the shell or through scripts or using the `Termux:Tasker` plugin or [RUN_COMMAND Intent] intent is less than `120KB` (or whatever you found) and any expected result sent back if using the `Termux:Tasker` plugin is less than `500KB`, but best keep it as low as possible for greater portability. If you want to exchange an even larger data between tasker and termux, use physical files instead.
 
 The argument data limits also apply for the [RUN_COMMAND Intent] intent.
-&nbsp;&nbsp;
+
+## &nbsp;
+
+&nbsp;
 
 
 
-#### PATH and LD_LIBRARY_PATH Priorities
+### PATH and LD_LIBRARY_PATH Priorities
 
 The word executable will be used henceforth for binaries, scripts and any other executable files.
 
@@ -1564,9 +1924,13 @@ You can also use the `tpath` and `apath` functions if they are defined in the `r
 
 Normally `sudo su` will work fine without problem when dropping to `sudo` shell. But if you want to specifically run an executable in the android executable paths instead of the one in termux executable paths or are getting linking errors when running android executables with `sudo su`, then try using `sudo asu` and then running the required command or use `sudo <command>` or `sudo -a <command>`.
 
+## &nbsp;
+
+&nbsp;
 
 
-#### `tpath` and `apath` functions
+
+### `tpath` and `apath` functions
 
 For the shells `bash zsh dash sh fish ksh`, additional functions named `tpath` and `apath` are added to their `rc` files if the `sudo` script creates the `rc` files, they are not added otherwise. You can call these functions to set priorities from inside interactive shell sessions only when running `sudo su`, `sudo asu` or `sudo -is <core_script` commands, since they depend on some environmental variables set by the `sudo` script and are not hard-coded in case of future changes.
 
@@ -1578,40 +1942,69 @@ The functions allows the users to quickly switch priorities without having to sw
 
 If you already have an existing `rc` file for your shell like `~/.suroot/.bashrc` and want to add the functions to it. Just temporarily move (not copy) the file to somewhere else and run `sudo su` command with the optional `--shell` option, then copy the functions from the new `rc` file created by `sudo` to your old file, then remove the new file and move the old file back.
 
+## &nbsp;
+
+&nbsp;
 
 
-#### `export` and `unset` functions
+
+### `export` and `unset` functions
 
 For the `fish` shell, additional functions named `export` and `unset` are also added to the `rc` files if the `sudo` script creates its `rc` file, they are not added otherwise. The functions port the `bash` `export var=value` and `unset var` functionality respectively.
-##
+
+---
+
+&nbsp;
+
+
 
 
 
 ### Tests
 
 Check the [sudo_tests](tests/sudo_tests) script to run automated tests for the `sudo` script command types, options and shells. Usage instructions are inside the script. There are more examples for running `sudo` inside the `sudo_tests` script that can be used by users, although may not be too user friendly to view or understand.
-##
+
+---
+
+&nbsp;
+
+
 
 
 
 ### FAQs And FUQs
 
 Check [FAQs_And_FUQs.md](FAQs_And_FUQs.md) file for the **Frequently Asked Questions(FAQs)** and **Frequently Unasked Questions(FUQs)**.
-##
+
+---
+
+&nbsp;
+
+
 
 
 
 ### Changelog
 
 Check [CHANGELOG.md](CHANGELOG.md) file for the **Changelog**.
-##
+
+---
+
+&nbsp;
+
+
 
 
 
 ### Contributions
 
 `-`
-##
+
+---
+
+&nbsp;
+
+
 
 
 
@@ -1619,14 +2012,26 @@ Check [CHANGELOG.md](CHANGELOG.md) file for the **Changelog**.
 
 - [termux-sudo by st42]
 - [tsu by cswl]
-##
+
+---
+
+&nbsp;
+
+
 
 
 
 ### Donations
 
 - To donate money to support me, you can visit [here](https://github.com/agnostic-apollo/agnostic-apollo/blob/main/Donations.md) for more info.
-##
+
+---
+
+&nbsp;
+
+
+
+
 
 [Tasker App]: https://play.google.com/store/apps/details?id=net.dinglisch.android.taskerm
 [Termux App]: https://github.com/termux/termux-app
