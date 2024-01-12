@@ -238,18 +238,21 @@ sudo_tests_run() {
         return $return_value
     fi
 
-    # Find android sdk/os version
-    ANDROID_SDK_VERSION="$(getprop "ro.build.version.sdk")"
-    return_value=$?
-    if [ $return_value -ne 0 ] || [[ ! "$ANDROID_SDK_VERSION" =~ $VALID_NUMBER_REGEX ]]; then
-        sudo_tests_log_errors "Failure while finding \"ro.build.version.sdk\" property"
-        sudo_tests_log_errors "ANDROID_SDK_VERSION = \"$ANDROID_SDK_VERSION\""
-        if [ $return_value -eq 0 ]; then
-            return_value=1
-        fi
-        return $return_value
-    fi
 
+    # Find android sdk/os version
+    # Termux app exports ANDROID__BUILD_VERSION_SDK for `>= v0.119.0`
+    if [[ ! "$ANDROID__BUILD_VERSION_SDK" =~ $VALID_NUMBER_REGEX ]]; then
+        ANDROID__BUILD_VERSION_SDK="$(getprop "ro.build.version.sdk")"
+        return_value=$?
+        if [ $return_value -ne 0 ] || [[ ! "$ANDROID__BUILD_VERSION_SDK" =~ $VALID_NUMBER_REGEX ]]; then
+            sudo_tests_log_errors "Failure while finding \"ro.build.version.sdk\" property"
+            sudo_tests_log_errors "ANDROID__BUILD_VERSION_SDK = \"$ANDROID__BUILD_VERSION_SDK\""
+            if [ $return_value -eq 0 ]; then
+                return_value=1
+            fi
+            return $return_value
+        fi
+    fi
 
 
     # Generate unique suffix to use for sudo_tests directories
@@ -625,7 +628,7 @@ echo "VARIABLE_2=\`$VARIABLE_2\`"
     output="$(sudo -s --shell-home="$sudo_test_temp_shell_home" 'cd "$HOME"; pwd;' 2>&1)"
     return_value=$?
     # If android >= 10
-    if [ "$ANDROID_SDK_VERSION" -ge 29 ]; then
+    if [ "$ANDROID__BUILD_VERSION_SDK" -ge 29 ]; then
         validate_sudo_test 1 $return_value "$output" "" "The rootfs \"/\" partition cannot be mounted as rw to be used for SUDO_SHELL_HOME \"$sudo_test_temp_shell_home\"" "*"
     else
         validate_sudo_test 0 $return_value "$output" "$sudo_test_temp_shell_home"
@@ -639,7 +642,7 @@ echo "VARIABLE_2=\`$VARIABLE_2\`"
     output="$(sudo -si --post-shell-home="$sudo_test_temp_post_shell_home" --post-shell-stdin-string='exit' --post-shell-pre-commands='cd "$HOME"; pwd;' 2>&1)"
     return_value=$?
     # If android >= 10
-    if [ "$ANDROID_SDK_VERSION" -ge 29 ]; then
+    if [ "$ANDROID__BUILD_VERSION_SDK" -ge 29 ]; then
         validate_sudo_test 1 $return_value "$output" "" "The rootfs \"/\" partition cannot be mounted as rw to be used for SUDO_POST_SHELL_HOME \"$sudo_test_temp_post_shell_home\"" "*"
     else
         validate_sudo_test 0 $return_value "$output" "$sudo_test_temp_post_shell_home"$'\n'"# exit"$'\n'"exit"
@@ -653,7 +656,7 @@ echo "VARIABLE_2=\`$VARIABLE_2\`"
     output="$(sudo -s --shell-home="$sudo_test_temp_shell_home" 'cd "$HOME"; pwd;' 2>&1)"
     return_value=$?
     # If android >= 10
-    if [ "$ANDROID_SDK_VERSION" -ge 29 ]; then
+    if [ "$ANDROID__BUILD_VERSION_SDK" -ge 29 ]; then
         validate_sudo_test 1 $return_value "$output" "" "The system \"/system\" partition cannot be mounted as rw to be used for SUDO_SHELL_HOME \"$sudo_test_temp_shell_home\"" "*"
     else
         validate_sudo_test 0 $return_value "$output" "$sudo_test_temp_shell_home"
@@ -667,7 +670,7 @@ echo "VARIABLE_2=\`$VARIABLE_2\`"
     output="$(sudo -si --post-shell-home="$sudo_test_temp_post_shell_home" --post-shell-stdin-string='exit' --post-shell-pre-commands='cd "$HOME"; pwd;' 2>&1)"
     return_value=$?
     # If android >= 10
-    if [ "$ANDROID_SDK_VERSION" -ge 29 ]; then
+    if [ "$ANDROID__BUILD_VERSION_SDK" -ge 29 ]; then
         validate_sudo_test 1 $return_value "$output" "" "The system \"/system\" partition cannot be mounted as rw to be used for SUDO_POST_SHELL_HOME \"$sudo_test_temp_post_shell_home\"" "*"
     else
         validate_sudo_test 0 $return_value "$output" "$sudo_test_temp_post_shell_home"$'\n'"# exit"$'\n'"exit"
@@ -1597,7 +1600,7 @@ sudo_tests_remove_sudo_tests_temp_directories() {
 
 
         # If android < 10
-        if [[ "$ANDROID_SDK_VERSION" =~ $VALID_NUMBER_REGEX ]] && [ "$ANDROID_SDK_VERSION" -lt 29 ]; then
+        if [[ "$ANDROID__BUILD_VERSION_SDK" =~ $VALID_NUMBER_REGEX ]] && [ "$ANDROID__BUILD_VERSION_SDK" -lt 29 ]; then
             # If rootfs_partition_dependent_paths is set
             if [ -n "$rootfs_partition_dependent_paths" ]; then
                 # Remount android rootfs partition as rw
@@ -1633,7 +1636,7 @@ sudo_tests_remove_sudo_tests_temp_directories() {
 
 
         # If android < 10
-        if [[ "$ANDROID_SDK_VERSION" =~ $VALID_NUMBER_REGEX ]] && [ "$ANDROID_SDK_VERSION" -lt 29 ]; then
+        if [[ "$ANDROID__BUILD_VERSION_SDK" =~ $VALID_NUMBER_REGEX ]] && [ "$ANDROID__BUILD_VERSION_SDK" -lt 29 ]; then
             # If rootfs_partition_dependent_paths is set
             if [ -n "$rootfs_partition_dependent_paths" ]; then
                 sudo_remount_partition "rootfs" "ro" "0"

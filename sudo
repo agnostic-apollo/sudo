@@ -934,6 +934,25 @@ sudo_set_required_variables() {
 
     sudo_log 3 "ARCH=\"$ARCH\""
 
+
+    # Find android sdk/os version
+    # Termux app exports ANDROID__BUILD_VERSION_SDK for `>= v0.119.0`
+    if [[ ! "$ANDROID__BUILD_VERSION_SDK" =~ $VALID_NUMBER_REGEX ]]; then
+        ANDROID__BUILD_VERSION_SDK="$(getprop "ro.build.version.sdk")"
+        return_value=$?
+        if [ $return_value -ne 0 ] || [[ ! "$ANDROID__BUILD_VERSION_SDK" =~ $VALID_NUMBER_REGEX ]]; then
+            sudo_log_errors "Failure while finding \"ro.build.version.sdk\" property"
+            sudo_log_errors "ANDROID__BUILD_VERSION_SDK = \"$ANDROID__BUILD_VERSION_SDK\""
+            if [ $return_value -eq 0 ]; then
+                return_value=1
+            fi
+            return $return_value
+        fi
+    fi
+
+    sudo_log 3 "ANDROID__BUILD_VERSION_SDK=\"$ANDROID__BUILD_VERSION_SDK\""
+
+
     # Set LD_LIBRARY_PATH
     # If ARCH is 64 bit
     if [[ "$ARCH" == *64 ]]; then
@@ -979,7 +998,7 @@ sudo_set_required_variables() {
     fi
 
     # Remove_duplicates_in_path_variable is only enabled if custom paths are added to the PATH variables
-    # This will reduce execution time since an external call to awk with a subshell will not be made
+    # This will reduce execution time since an external call to awk with a subshell will be made
     # Default paths set must not have any duplicates
 
     # Remove duplicates from TERMUX_PRIORITY_PATH and check if it is valid and can be used as the PATH variable
@@ -1029,7 +1048,7 @@ sudo_set_required_variables() {
     fi
 
     # Remove_duplicates_in_path_variable is only enabled if custom paths are added to the LD_LIBRARY_PATH variables
-    # This will reduce execution time since an external call to awk with a subshell will not be made
+    # This will reduce execution time since an external call to awk with a subshell will be made
     # Default paths set must not have any duplicates
 
     # Remove duplicates from TERMUX_PRIORITY_LD_LIBRARY_PATH and check if it is valid and can be used as the LD_LIBRARY_PATH variable
@@ -1062,7 +1081,7 @@ sudo_set_required_variables() {
 
     # Replace "$PREFIX/" or "~/" prefix with termux absolute paths in SUDO_SHELL_HOME
     # Canonicalize_path is only enabled if a custom path was passed for SUDO_SHELL_HOME by the user
-    # This will reduce execution time since an external call to readlink with a subshell will not be made
+    # This will reduce execution time since an external call to readlink with a subshell will be made
     sudo_expand_termux_path "SUDO_SHELL_HOME" "SUDO_SHELL_HOME" "$SUDO_SHELL_HOME" "$TERMUX_PREFIX" "$TERMUX_HOME" "$custom_sudo_shell_home_set"
     return_value=$?
     if [ $return_value -ne 0 ]; then
@@ -1098,7 +1117,7 @@ sudo_set_required_variables() {
 
         # Replace "$PREFIX/" or "~/" prefix with termux absolute paths in SUDO_POST_SHELL_HOME
         # Canonicalize_path is only enabled if a custom path was passed for SUDO_POST_SHELL_HOME by the user
-        # This will reduce execution time since an external call to readlink with a subshell will not be made
+        # This will reduce execution time since an external call to readlink with a subshell will be made
         sudo_expand_termux_path "SUDO_POST_SHELL_HOME" "SUDO_POST_SHELL_HOME" "$SUDO_POST_SHELL_HOME" "$TERMUX_PREFIX" "$TERMUX_HOME" "$custom_sudo_post_shell_home_set"
         return_value=$?
         if [ $return_value -ne 0 ]; then
@@ -1172,22 +1191,8 @@ sudo_set_required_variables() {
 
     # If ROOTFS_PARTITION_DEPENDENT_PATHS or SYSTEM_PARTITION_DEPENDENT_PATHS is set
     if [ -n "$ROOTFS_PARTITION_DEPENDENT_PATHS" ] || [ -n "$SYSTEM_PARTITION_DEPENDENT_PATHS" ]; then
-        # Find android sdk/os version
-        ANDROID_SDK_VERSION="$(getprop "ro.build.version.sdk")"
-        return_value=$?
-        if [ $return_value -ne 0 ] || [[ ! "$ANDROID_SDK_VERSION" =~ $VALID_NUMBER_REGEX ]]; then
-            sudo_log_errors "Failure while finding \"ro.build.version.sdk\" property"
-            sudo_log_errors "ANDROID_SDK_VERSION = \"$ANDROID_SDK_VERSION\""
-            if [ $return_value -eq 0 ]; then
-                return_value=1
-            fi
-            return $return_value
-        fi
-
-        sudo_log 3 "ANDROID_SDK_VERSION=\"$ANDROID_SDK_VERSION\""
-
         # If android >= 10
-        if [ "$ANDROID_SDK_VERSION" -ge 29 ]; then
+        if [ "$ANDROID__BUILD_VERSION_SDK" -ge 29 ]; then
             [ -n "$ROOTFS_PARTITION_DEPENDENT_PATHS" ] && sudo_log_errors "The rootfs \"/\" partition cannot be mounted as rw to be used for$ROOTFS_PARTITION_DEPENDENT_PATHS since in android >= 10 the rootfs partition is likely a read-only system-as-root SAR partition"
             [ -n "$SYSTEM_PARTITION_DEPENDENT_PATHS" ] && sudo_log_errors "The system \"/system\" partition cannot be mounted as rw to be used for$SYSTEM_PARTITION_DEPENDENT_PATHS since in android >= 10 the system partition is an ext4 dedup filesystem"
             return 1
