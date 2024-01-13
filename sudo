@@ -156,8 +156,10 @@ COMMAND_TYPE_PATH_FORCED=0 # Default: `0`
 
 ROOTFS_PREVIOUS_STATE_RO=0 # Default to `0` (true)
 SYSTEM_PREVIOUS_STATE_RO=0 # Default to `0` (true)
-ROOTFS_PARTITION_DEPENDENT_PATHS="" # Default: ``
-SYSTEM_PARTITION_DEPENDENT_PATHS="" # Default: ``
+ROOTFS_PARTITION_RW_DEPENDENT_PATHS="" # Default: ``
+SYSTEM_PARTITION_RW_DEPENDENT_PATHS="" # Default: ``
+ROOTFS_PARTITION_MM_DEPENDENT_PATHS="" # Default: ``
+SYSTEM_PARTITION_MM_DEPENDENT_PATHS="" # Default: ``
 
 SAME_SUDO_POST_SHELL_AS_SUDO_SHELL=0 # Default: `0`
 SAME_SUDO_POST_SHELL_HOME_AS_SUDO_SHELL_HOME=0 # Default: `0`
@@ -838,8 +840,8 @@ sudo_set_su_env_command() {
 
     SU_ENV_COMMAND="$SU"
 
-    # If ROOTFS_PARTITION_DEPENDENT_PATHS or SYSTEM_PARTITION_DEPENDENT_PATHS is set
-    if [ -n "$ROOTFS_PARTITION_DEPENDENT_PATHS" ] || [ -n "$SYSTEM_PARTITION_DEPENDENT_PATHS" ]; then
+    # If ROOTFS_PARTITION_MM_DEPENDENT_PATHS or SYSTEM_PARTITION_MM_DEPENDENT_PATHS is set
+    if [ -n "$ROOTFS_PARTITION_MM_DEPENDENT_PATHS" ] || [ -n "$SYSTEM_PARTITION_MM_DEPENDENT_PATHS" ]; then
         # If SUDO_SU_ENV_ADDITIONAL_COMMAND_OPTIONS does not start with the '--mount-master' or '-mm' command option, then
         # add the '--mount-master' option to SU_ENV_COMMAND at the start as required by su
         if [[ ! "${SUDO_SU_ENV_ADDITIONAL_COMMAND_OPTIONS[*]}" =~ $VALID_SU_MOUNT_MASTER_OPTION_PREFIXED_STRING  ]]; then
@@ -882,8 +884,8 @@ sudo_set_su_run_command() {
 
     SU_RUN_COMMAND="$SU"
 
-    # If ROOTFS_PARTITION_DEPENDENT_PATHS or SYSTEM_PARTITION_DEPENDENT_PATHS is set
-    if [ -n "$ROOTFS_PARTITION_DEPENDENT_PATHS" ] || [ -n "$SYSTEM_PARTITION_DEPENDENT_PATHS" ]; then
+    # If ROOTFS_PARTITION_MM_DEPENDENT_PATHS or SYSTEM_PARTITION_MM_DEPENDENT_PATHS is set
+    if [ -n "$ROOTFS_PARTITION_MM_DEPENDENT_PATHS" ] || [ -n "$SYSTEM_PARTITION_MM_DEPENDENT_PATHS" ]; then
         # If SUDO_SU_RUN_ADDITIONAL_COMMAND_OPTIONS does not start with the '--mount-master' or '-mm' command option, then
         # add the '--mount-master' option to SU_RUN_COMMAND at the start as required by su
         if [[ ! "${SUDO_SU_RUN_ADDITIONAL_COMMAND_OPTIONS[*]}" =~ $VALID_SU_MOUNT_MASTER_OPTION_PREFIXED_STRING  ]]; then
@@ -1194,45 +1196,76 @@ sudo_set_required_variables() {
 
 
 
-    # Set ROOTFS_PARTITION_DEPENDENT_PATHS and SYSTEM_PARTITION_DEPENDENT_PATHS
-    # Which are required by sudo_set_su_env_command and sudo_set_su_run_command functions to add '--mount-master option'
-    # to SU_ENV_COMMAND and SU_RUN_COMMAND if required and then by the sudo_remount_partitions_for_sudo_shell_homes function
+    # Set ROOTFS_PARTITION_*_DEPENDENT_PATHS and SYSTEM_PARTITION_*_DEPENDENT_PATHS
+    # ROOTFS_PARTITION_MM_DEPENDENT_PATHS and SYSTEM_PARTITION_MM_DEPENDENT_PATHS are
+    # required by sudo_set_su_env_command and sudo_set_su_run_command functions to
+    # add '--mount-master option' to SU_ENV_COMMAND and SU_RUN_COMMAND if required.
+    # ROOTFS_PARTITION_RW_DEPENDENT_PATHS and SYSTEM_PARTITION_RW_DEPENDENT_PATHS are
+    # required by the sudo_remount_partitions_for_sudo_shell_homes function to
+    # remount rootfs `/` or system `/system` partition.
     # Using parent directories for rootfs checks since some directories in root like /mnt may
     # require rootfs to be mounted as rw to be writeable
+    ROOTFS_PARTITION_RW_DEPENDENT_PATHS=""
+    SYSTEM_PARTITION_RW_DEPENDENT_PATHS=""
 
-    ROOTFS_PARTITION_DEPENDENT_PATHS=""
-    SYSTEM_PARTITION_DEPENDENT_PATHS=""
+
+    # The SUDO_SHELL_HOME and SUDO_POST_SHELL_HOME must be rw, and hence
+    # always added to *_PARTITION_RW_DEPENDENT_PATHS.
 
     # If SUDO_SHELL_HOME is in system "/system" partition
     if [[ "$SUDO_SHELL_HOME" =~ $VALID_PATH_IN_SYSTEM_PARTITION_REGEX ]]; then
-        SYSTEM_PARTITION_DEPENDENT_PATHS+=" SUDO_SHELL_HOME \"$SUDO_SHELL_HOME\""
+        SYSTEM_PARTITION_RW_DEPENDENT_PATHS+=" SUDO_SHELL_HOME \"$SUDO_SHELL_HOME\""
     # If SUDO_SHELL_HOME_PARENT_DIR is in rootfs "/" partition
     elif [[ "$SUDO_SHELL_HOME_PARENT_DIR" =~ $VALID_PATH_IN_ROOTFS_PARTITION_REGEX ]]; then
-        ROOTFS_PARTITION_DEPENDENT_PATHS+=" SUDO_SHELL_HOME \"$SUDO_SHELL_HOME\""
+        ROOTFS_PARTITION_RW_DEPENDENT_PATHS+=" SUDO_SHELL_HOME \"$SUDO_SHELL_HOME\""
     fi
 
     # If SUDO_POST_SHELL_HOME is in system "/system" partition
     if [[ "$SUDO_POST_SHELL_HOME" =~ $VALID_PATH_IN_SYSTEM_PARTITION_REGEX ]]; then
-        SYSTEM_PARTITION_DEPENDENT_PATHS+=" SUDO_POST_SHELL_HOME \"$SUDO_POST_SHELL_HOME\""
+        SYSTEM_PARTITION_RW_DEPENDENT_PATHS+=" SUDO_POST_SHELL_HOME \"$SUDO_POST_SHELL_HOME\""
     # If SUDO_POST_SHELL_HOME_PARENT_DIR is in rootfs "/" partition
     elif [[ "$SUDO_POST_SHELL_HOME_PARENT_DIR" =~ $VALID_PATH_IN_ROOTFS_PARTITION_REGEX ]]; then
-        ROOTFS_PARTITION_DEPENDENT_PATHS+=" SUDO_POST_SHELL_HOME \"$SUDO_POST_SHELL_HOME\""
+        ROOTFS_PARTITION_RW_DEPENDENT_PATHS+=" SUDO_POST_SHELL_HOME \"$SUDO_POST_SHELL_HOME\""
     fi
+
+    ROOTFS_PARTITION_MM_DEPENDENT_PATHS="$ROOTFS_PARTITION_RW_DEPENDENT_PATHS"
+    SYSTEM_PARTITION_MM_DEPENDENT_PATHS="$SYSTEM_PARTITION_RW_DEPENDENT_PATHS"
+
+
+    # The SUDO_SHELL_WORKING_DIR normally only needs to be readable,
+    # but if it does not exist, then its parent partition must be rw.
+    # Since rw remount is only possible on android `< 10`, its only added
+    # to *_PARTITION_RW_DEPENDENT_PATHS for lower versions and if it
+    # does not already exist to allow using an already existing directory
+    # like `/` or `/system` on android `>= 10`.
+    # If passing a non-existent directory on android `>= 10`, then
+    # `mkdir` called by sudo_setup_sudo_shell_working_dir will error
+    # out with `cannot create directory '/path': Read-only file system`
+    local sudo_shell_working_dir_exists=0
+    [ -d "$SUDO_SHELL_WORKING_DIR" ] && sudo_shell_working_dir_exists=1
 
     # If SUDO_SHELL_WORKING_DIR is in system "/system" partition
     if [[ "$SUDO_SHELL_WORKING_DIR" =~ $VALID_PATH_IN_SYSTEM_PARTITION_REGEX ]]; then
-        SYSTEM_PARTITION_DEPENDENT_PATHS+=" SUDO_SHELL_WORKING_DIR \"$SUDO_SHELL_WORKING_DIR\""
-    # If SUDO_SHELL_WORKING_DIR_PARENT_DIR is in rootfs "/" partition
-    elif [[ "$SUDO_SHELL_WORKING_DIR_PARENT_DIR" =~ $VALID_PATH_IN_ROOTFS_PARTITION_REGEX ]]; then
-        ROOTFS_PARTITION_DEPENDENT_PATHS+=" SUDO_SHELL_WORKING_DIR \"$SUDO_SHELL_WORKING_DIR\""
+        if [ "$ANDROID__BUILD_VERSION_SDK" -lt 29 ] && [ "$sudo_shell_working_dir_exists" != "1" ]; then
+            SYSTEM_PARTITION_RW_DEPENDENT_PATHS+=" SUDO_SHELL_WORKING_DIR \"$SUDO_SHELL_WORKING_DIR\""
+        fi
+
+        SYSTEM_PARTITION_MM_DEPENDENT_PATHS+=" SUDO_SHELL_WORKING_DIR \"$SUDO_SHELL_WORKING_DIR\""
+    # If SUDO_SHELL_WORKING_DIR_PARENT_DIR is under rootfs "/" partition
+    elif [ "$SUDO_SHELL_WORKING_DIR" != "/" ] && [[ "$SUDO_SHELL_WORKING_DIR_PARENT_DIR" =~ $VALID_PATH_IN_ROOTFS_PARTITION_REGEX ]]; then
+        if [ "$ANDROID__BUILD_VERSION_SDK" -lt 29 ] && [ "$sudo_shell_working_dir_exists" != "1" ]; then
+            ROOTFS_PARTITION_RW_DEPENDENT_PATHS+=" SUDO_SHELL_WORKING_DIR \"$SUDO_SHELL_WORKING_DIR\""
+        fi
+
+        ROOTFS_PARTITION_MM_DEPENDENT_PATHS+=" SUDO_SHELL_WORKING_DIR \"$SUDO_SHELL_WORKING_DIR\""
     fi
 
-    # If ROOTFS_PARTITION_DEPENDENT_PATHS or SYSTEM_PARTITION_DEPENDENT_PATHS is set
-    if [ -n "$ROOTFS_PARTITION_DEPENDENT_PATHS" ] || [ -n "$SYSTEM_PARTITION_DEPENDENT_PATHS" ]; then
-        # If android >= 10
+    # If ROOTFS_PARTITION_RW_DEPENDENT_PATHS or SYSTEM_PARTITION_RW_DEPENDENT_PATHS is set
+    if [ -n "$ROOTFS_PARTITION_RW_DEPENDENT_PATHS" ] || [ -n "$SYSTEM_PARTITION_RW_DEPENDENT_PATHS" ]; then
+        # If android `>= 10`
         if [ "$ANDROID__BUILD_VERSION_SDK" -ge 29 ]; then
-            [ -n "$ROOTFS_PARTITION_DEPENDENT_PATHS" ] && sudo_log_errors "The rootfs \"/\" partition cannot be mounted as rw to be used for$ROOTFS_PARTITION_DEPENDENT_PATHS since in android >= 10 the rootfs partition is likely a read-only system-as-root SAR partition"
-            [ -n "$SYSTEM_PARTITION_DEPENDENT_PATHS" ] && sudo_log_errors "The system \"/system\" partition cannot be mounted as rw to be used for$SYSTEM_PARTITION_DEPENDENT_PATHS since in android >= 10 the system partition is an ext4 dedup filesystem"
+            [ -n "$ROOTFS_PARTITION_RW_DEPENDENT_PATHS" ] && sudo_log_errors "The rootfs \"/\" partition cannot be mounted as rw to be used for$ROOTFS_PARTITION_RW_DEPENDENT_PATHS since in android >= 10 the rootfs partition is likely a read-only system-as-root SAR partition"
+            [ -n "$SYSTEM_PARTITION_RW_DEPENDENT_PATHS" ] && sudo_log_errors "The system \"/system\" partition cannot be mounted as rw to be used for$SYSTEM_PARTITION_RW_DEPENDENT_PATHS since in android >= 10 the system partition is an ext4 dedup filesystem"
             return 1
         fi
     fi
@@ -3525,8 +3558,8 @@ sudo_setup_sudo_shell_home_and_working_environment() {
             fi
         fi
 
-        # If SUDO_SHELL_WORKING_DIR is set
-        if [ -n "$SUDO_SHELL_WORKING_DIR" ]; then
+        # If SUDO_SHELL_WORKING_DIR is set and does not equal rootfs
+        if [ -n "$SUDO_SHELL_WORKING_DIR" ] && [ "$SUDO_SHELL_WORKING_DIR" != "/" ]; then
             # Create SUDO_SHELL_WORKING_DIR if missing
             sudo_setup_sudo_shell_working_dir || return $?
         fi
@@ -3927,16 +3960,18 @@ sudo_set_sudo_shell_working_dir() {
 
     sudo_log_literal 3 "\nRunning sudo_set_sudo_shell_working_dir"
 
-    # Replace "$PREFIX/" or "~/" prefix with termux absolute paths in SUDO_SHELL_WORKING_DIR
-    sudo_expand_termux_path "SUDO_SHELL_WORKING_DIR" "SUDO_SHELL_WORKING_DIR" "$SUDO_SHELL_WORKING_DIR" "$TERMUX_PREFIX" "$TERMUX_HOME" 1
-    return_value=$?
-    if [ $return_value -ne 0 ]; then
-        sudo_log_errors "Failed to expand SUDO_SHELL_WORKING_DIR \"$SUDO_SHELL_WORKING_DIR\""
-        return $return_value
+    if [ "$SUDO_SHELL_WORKING_DIR" != "/" ]; then
+        # Replace "$PREFIX/" or "~/" prefix with termux absolute paths in SUDO_SHELL_WORKING_DIR
+        sudo_expand_termux_path "SUDO_SHELL_WORKING_DIR" "SUDO_SHELL_WORKING_DIR" "$SUDO_SHELL_WORKING_DIR" "$TERMUX_PREFIX" "$TERMUX_HOME" 1
+        return_value=$?
+        if [ $return_value -ne 0 ]; then
+            sudo_log_errors "Failed to expand SUDO_SHELL_WORKING_DIR \"$SUDO_SHELL_WORKING_DIR\""
+            return $return_value
+        fi
     fi
 
     # If SUDO_SHELL_WORKING_DIR is not a valid absolute path
-    if [[ ! "$SUDO_SHELL_WORKING_DIR" =~ $VALID_ABSOLUTE_PATH_REGEX ]]; then
+    if [[ ! "$SUDO_SHELL_WORKING_DIR" =~ $VALID_ROOTFS_OR_ABSOLUTE_PATH_REGEX ]]; then
         sudo_log_errors "The SUDO_SHELL_WORKING_DIR \"$SUDO_SHELL_WORKING_DIR\" is not a valid absolute path"
         return 1
     fi
@@ -3981,7 +4016,7 @@ sudo_setup_sudo_shell_working_dir() {
     # If SUDO_SHELL_WORKING_DIR is the same as TERMUX_FILES or is under it
     if [[ "$SUDO_SHELL_WORKING_DIR" == "$TERMUX_FILES" ]] || [[ "$SUDO_SHELL_WORKING_DIR" == "$TERMUX_FILES"/* ]]; then
         shell_working_dir_file_type_tests="drwx"
-    # It might not be possible for the directory to be writable or executable in other paths like in storage
+    # It might not be possible for the directory to be writable or executable in other paths like in storage or rootfs/system partition
     else
         shell_working_dir_file_type_tests="dr"
     fi
@@ -4920,16 +4955,16 @@ sudo_remount_partitions_for_sudo_shell_homes() {
         return 1
     fi
 
-    # If ROOTFS_PARTITION_DEPENDENT_PATHS is set
-    if [ -n "$ROOTFS_PARTITION_DEPENDENT_PATHS" ]; then
+    # If ROOTFS_PARTITION_RW_DEPENDENT_PATHS is set
+    if [ -n "$ROOTFS_PARTITION_RW_DEPENDENT_PATHS" ]; then
         # If remount_mode equals "rw"
         if [[ "$remount_mode" == "rw" ]]; then
             # Remount android rootfs partition as rw
-            sudo_log 3 "Remounting rootfs \"/\" partition as rw to be used for$rootfs_partition_dependent_paths"
+            sudo_log 3 "Remounting rootfs \"/\" partition as rw to be used for$ROOTFS_PARTITION_RW_DEPENDENT_PATHS"
             sudo_remount_partition "rootfs" "rw" 0
             return_value=$?
             if [ $return_value -ne 0 ] && [ $return_value -ne 112 ]; then
-                sudo_log_errors "Failed to mount rootfs \"/\" partition as rw to be used for$rootfs_partition_dependent_paths"
+                sudo_log_errors "Failed to mount rootfs \"/\" partition as rw to be used for$ROOTFS_PARTITION_RW_DEPENDENT_PATHS"
                 return $return_value
             fi
 
@@ -4948,16 +4983,16 @@ sudo_remount_partitions_for_sudo_shell_homes() {
     fi
 
 
-    # If SYSTEM_PARTITION_DEPENDENT_PATHS is set
-    if [ -n "$SYSTEM_PARTITION_DEPENDENT_PATHS" ]; then
+    # If SYSTEM_PARTITION_RW_DEPENDENT_PATHS is set
+    if [ -n "$SYSTEM_PARTITION_RW_DEPENDENT_PATHS" ]; then
         # If remount_mode equals "rw"
         if [[ "$remount_mode" == "rw" ]]; then
             # Remount android system partition as rw
-            sudo_log 3 "Remounting system \"/system\" partition as rw to be used for$system_partition_dependent_paths"
+            sudo_log 3 "Remounting system \"/system\" partition as rw to be used for$SYSTEM_PARTITION_RW_DEPENDENT_PATHS"
             sudo_remount_partition "system" "rw" 0
             return_value=$?
             if [ $return_value -ne 0 ] && [ $return_value -ne 112 ]; then
-                sudo_log_errors "Failed to mount system \"/system\" partition as rw to be used for$system_partition_dependent_paths"
+                sudo_log_errors "Failed to mount system \"/system\" partition as rw to be used for$SYSTEM_PARTITION_RW_DEPENDENT_PATHS"
                 return $return_value
             fi
 
