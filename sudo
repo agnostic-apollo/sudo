@@ -239,6 +239,7 @@ declare -ga SUDO_SU_RUN_ADDITIONAL_COMMAND_OPTIONS=()
 # Set regexes for validation
 VALID_NUMBER_REGEX='^[0-9]+$'
 VALID_ABSOLUTE_PATH_REGEX='^(/[^/]+)+$'
+VALID_ROOTFS_OR_ABSOLUTE_PATH_REGEX='^((/)|((/[^/]+)+))$'
 VALID_PATH_IN_ROOTFS_PARTITION_REGEX='^/[^/]*/?$'
 VALID_PATH_IN_SYSTEM_PARTITION_REGEX='^/system/.*'
 VALID_SU_MOUNT_MASTER_OPTION_PREFIXED_STRING='^[ \t]*(--mount-master|-mm)[ \t]*'
@@ -965,6 +966,31 @@ sudo_set_required_variables() {
     sudo_log 3 "ANDROID__BUILD_VERSION_SDK=\"$ANDROID__BUILD_VERSION_SDK\""
 
 
+    # Set current working directory
+    CURRENT_WORKING_DIR="$PWD"
+    # Do not needlessly create a subshell
+    if [[ ! "$CURRENT_WORKING_DIR" =~ $VALID_ROOTFS_OR_ABSOLUTE_PATH_REGEX ]]; then
+        # We use `-L` logical mode as its default bash shell behaviour for `pwd` builtin,
+        # unlike `pwd` external command, which uses `-P` physical mode by default.
+        # - https://www.gnu.org/software/bash/manual/html_node/Bourne-Shell-Builtins.html#index-pwd
+        # - https://github.com/bminor/bash/blob/bash-5.2/builtins/cd.def#L472
+        # - https://man7.org/linux/man-pages/man1/pwd.1.html
+        CURRENT_WORKING_DIR="$(pwd -L)"
+        return_value=$?
+        if [ $return_value -ne 0 ] || [[ ! "$CURRENT_WORKING_DIR" =~ $VALID_ROOTFS_OR_ABSOLUTE_PATH_REGEX ]]; then
+            sudo_log_errors "Failure while finding current working directory"
+            sudo_log_errors "CURRENT_WORKING_DIR = \"$CURRENT_WORKING_DIR\""
+            if [ $return_value -eq 0 ]; then
+                return_value=1
+            fi
+            return $return_value
+        fi
+    fi
+
+    sudo_log 3 "CURRENT_WORKING_DIR=\"$CURRENT_WORKING_DIR\""
+
+
+
     # Set LD_LIBRARY_PATH
     # If ARCH is 64 bit
     if [[ "$ARCH" == *64 ]]; then
@@ -1528,11 +1554,11 @@ sudo_set_sudo_command_path() {
     # If USE_ROOT_FOR_PATH_SEARCH_AND_VALIDATION is enabled
     if [[ "$USE_ROOT_FOR_PATH_SEARCH_AND_VALIDATION" == "1" ]]; then
         sudo_unset_pre_su_variables
-        SUDO_COMMAND_ABSOLUTE_PATH="$($SU_ENV_COMMAND "source '${SUDO_SCRIPT_PATH//\'/\'\\\'\'}'; sudo_find_absolute_path_for_executable_and_validate \"SUDO_COMMAND_ABSOLUTE_PATH\" \"SUDO_PATH_COMMAND\" '${SUDO_PATH_COMMAND//\'/\'\\\'\'}' '${PATH_TO_EXPORT//\'/\'\\\'\'}' \"$TERMUX_PREFIX\" \"$TERMUX_HOME\" 1" < /dev/null)"
+        SUDO_ABSOLUTE_PATH_COMMAND="$($SU_ENV_COMMAND "source '${SUDO_SCRIPT_PATH//\'/\'\\\'\'}'; CURRENT_WORKING_DIR='${CURRENT_WORKING_DIR//\'/\'\\\'\'}'; sudo_find_absolute_path_for_executable_and_validate \"SUDO_ABSOLUTE_PATH_COMMAND\" \"SUDO_PATH_COMMAND\" '${SUDO_PATH_COMMAND//\'/\'\\\'\'}' '${PATH_TO_EXPORT//\'/\'\\\'\'}' \"$TERMUX_PREFIX\" \"$TERMUX_HOME\" 1" < /dev/null)"
         return_value=$?
         sudo_set_post_su_variables
     else
-        sudo_find_absolute_path_for_executable_and_validate "SUDO_COMMAND_ABSOLUTE_PATH" "SUDO_PATH_COMMAND" "$SUDO_PATH_COMMAND" "$PATH_TO_EXPORT" "$TERMUX_PREFIX" "$TERMUX_HOME" 0
+        sudo_find_absolute_path_for_executable_and_validate "SUDO_ABSOLUTE_PATH_COMMAND" "SUDO_PATH_COMMAND" "$SUDO_PATH_COMMAND" "$PATH_TO_EXPORT" "$TERMUX_PREFIX" "$TERMUX_HOME" 0
         return_value=$?
     fi
     if [ $return_value -ne 0 ] && [ $return_value -ne 112 ]; then
@@ -1544,14 +1570,31 @@ sudo_set_sudo_command_path() {
         return 1
     fi
 
-    SUDO_PATH_COMMAND="$SUDO_COMMAND_ABSOLUTE_PATH"
+    SUDO_PATH_COMMAND="$SUDO_ABSOLUTE_PATH_COMMAND"
 
-    sudo_log 2 "SUDO_PATH_COMMAND_UPDATED=\"$SUDO_PATH_COMMAND\""
+    sudo_log 2 "SUDO_ABSOLUTE_PATH_COMMAND=\"$SUDO_ABSOLUTE_PATH_COMMAND\""
 
     # If SUDO_PATH_COMMAND is not a valid absolute path
     if [[ ! "$SUDO_PATH_COMMAND" =~ $VALID_ABSOLUTE_PATH_REGEX ]]; then
         sudo_log_errors "The SUDO_PATH_COMMAND \"$SUDO_PATH_COMMAND\" is not a valid absolute path"
         return 1
+    fi
+
+
+    # Find canonical path to be used for setting priority in sudo_set_pre_sudo_shell_commands_to_run
+    SUDO_CANONICAL_PATH_COMMAND="$(readlink -m -- "$SUDO_ABSOLUTE_PATH_COMMAND")"
+    return_value=$?
+    if [ $return_value -ne 0 ] || [[ ! "$SUDO_CANONICAL_PATH_COMMAND" =~ $VALID_ABSOLUTE_PATH_REGEX ]]; then
+        sudo_log_errors "Failure while finding canonical path to sudo path commmand"
+        sudo_log_errors "SUDO_CANONICAL_PATH_COMMAND = \"$SUDO_CANONICAL_PATH_COMMAND\""
+        if [ $return_value -eq 0 ]; then
+            return_value=1
+        fi
+        return $return_value
+    fi
+
+    if [[ "$SUDO_CANONICAL_PATH_COMMAND" != "$SUDO_ABSOLUTE_PATH_COMMAND" ]]; then
+        sudo_log 2 "SUDO_CANONICAL_PATH_COMMAND=\"$SUDO_CANONICAL_PATH_COMMAND\""
     fi
 
     return 0
@@ -2154,7 +2197,7 @@ sudo_set_script_argument_for_script_shell() {
         sudo_log 3 "$script_file_label will be passed to the script shell as a path to a file"
 
         # Replace "$PREFIX/" or "~/" prefix with termux absolute paths in script_file_path
-        sudo_expand_termux_path "script_file_path" "$script_file_label" "$script_file_path" "$TERMUX_PREFIX" "$TERMUX_HOME" 1
+        sudo_expand_termux_path "script_file_path" "$script_file_label" "$script_file_path" "$TERMUX_PREFIX" "$TERMUX_HOME" 3
         return_value=$?
         if [ $return_value -ne 0 ]; then
             sudo_log_errors "Failed to expand $script_file_label \"$script_file_path\""
@@ -2482,7 +2525,7 @@ sudo_validate_shell() {
         fi
     else
         # Replace "$PREFIX/" or "~/" prefix with termux absolute paths in user_shell
-        sudo_expand_termux_path "user_shell" "$shell_label" "$user_shell" "$termux_prefix" "$termux_home" 1
+        sudo_expand_termux_path "user_shell" "$shell_label" "$user_shell" "$termux_prefix" "$termux_home" 3
         return_value=$?
         if [ $return_value -ne 0 ]; then
             sudo_log_errors "Failed to expand $shell_label \"$user_shell\""
@@ -4593,6 +4636,9 @@ sudo_expand_termux_path() {
     local termux_home="$5"
     local canonicalize_path="$6"
 
+    local absolute_path_to_expand
+    local valid_absolute_path_regex='^(/[^/]+)+$'
+
     [[ "$path_to_expand" == "\$PREFIX/" ]] && path_to_expand="$termux_prefix" # Replace '$PREFIX/' with "$termux_prefix"
     [[ "$path_to_expand" == "~/" ]] && path_to_expand="$termux_home" # Replace '~/' with "$termux_home"
 
@@ -4601,7 +4647,30 @@ sudo_expand_termux_path() {
 
     # If canonicalize_path equals "1" or (canonicalize_path equals "2" and path_to_expand is not a symlink
     if [[ "$canonicalize_path" == "1" ]] || { [[ "$canonicalize_path" == "2" ]] && [ ! -L "$path_to_expand" ]; }; then
+        absolute_path_to_expand="$path_to_expand"
         path_to_expand="$(readlink -m -- "$path_to_expand")"
+        return_value=$?
+        if [ $return_value -ne 0 ] || [[ ! "$path_to_expand" =~ $valid_absolute_path_regex ]]; then
+            sudo_log_errors "Failure while finding canonical path for path_to_expand \"$absolute_path_to_expand\""
+            sudo_log_errors "canonical_path_to_expand = \"$path_to_expand\""
+            if [ $return_value -eq 0 ]; then
+                return_value=1
+            fi
+            return $return_value
+        fi
+    elif [[ "$canonicalize_path" == "3" ]]; then
+        # If path is relative to current working directory starting with `./` or `../`
+        if [[ "${path_to_expand:0:2}" == "./" ]] || [[ "${path_to_expand:0:3}" == "../" ]]; then
+            # Prepend current working directory
+            if [[ "$CURRENT_WORKING_DIR" != "/" ]]; then
+                path_to_expand="$CURRENT_WORKING_DIR/$path_to_expand"
+            else
+                path_to_expand="/$path_to_expand"
+            fi
+        fi
+
+        # Replace duplicate path separators `//` with single `/`
+        path_to_expand="${path_to_expand//\/\///}"
     fi
 
     local valid_bash_variable_name_regex='^[a-zA-Z][a-zA-Z0-9_]*(\[[0-9]+\])?$'
@@ -4618,10 +4687,11 @@ sudo_expand_termux_path() {
 }
 
 ##
-# The path will be first expanded:
-# If the path is an absolute path and an executable then that is returned, otherwise function fails with 112.
-# If the path is not an absolute path, then it is searched in current working directory by "readlink -m" and also in all the paths in paths_to_check_for_executable list (ideally $PATH variable).
-# If an executable is found, then that is returned, otherwise function fails with 112.
+# - The path will be first expanded by `sudo_expand_termux_path`. If the path is relative to current directory starting with `./` or `../`,
+#   then it is prefixed with CURRENT_WORKING_DIR due to passing `canonicalize_path=3`.
+# - If an absolute path is returned by `sudo_expand_termux_path`, then it checked to see if it is for an executable file,
+#   otherwise executable is searched in all the paths in `paths_to_check_for_executable` list (ideally `$PATH` variable).
+# - If an executable is found, then that is returned, otherwise function fails with 112.
 # .
 # sudo_find_absolute_path_for_executable_and_validate `variable_name` `label` `path` `paths_to_check_for_executable` `termux_prefix` `termux_home` `output_path_to_stdout`
 ##
@@ -4645,30 +4715,35 @@ sudo_find_absolute_path_for_executable_and_validate() {
 
     local executable_found=0
     local absolute_path
+    local expanded_path
+    local valid_absolute_path_regex='^(/[^/]+)+$'
 
     # Replace "$PREFIX/" or "~/" prefix with termux absolute paths in path
-    sudo_expand_termux_path "absolute_path" "${label}_PATH" "$path" "$termux_prefix" "$termux_home" 1
+    sudo_expand_termux_path "expanded_path" "${label}_PATH" "$path" "$termux_prefix" "$termux_home" 3
     return_value=$?
     if [ $return_value -ne 0 ]; then
         sudo_log_errors "Failed to expand ${label}_PATH \"$path\""
         return $return_value
     fi
 
-    [[ "$output_path_to_stdout" == "1" ]] || sudo_log 3 "${label}_ABSOLUTE_PATH=\"$absolute_path\""
+    [[ "$output_path_to_stdout" == "1" ]] || sudo_log 3 "${label}_EXPANDED_PATH=\"$expanded_path\""
 
-    test -f "$absolute_path" && test -r "$absolute_path" && test -x "$absolute_path"
-    return_value=$?
-    if [ $return_value -ne 0 ] && [ $return_value -ne 1 ]; then
-        sudo_log_errors "Failed to run the following test types on the file \"${label}_PATH\" at path \"$absolute_path\": [regular file], [readable], [executable]"
-        return $return_value
-    elif [ $return_value -eq 0 ]; then
-        [[ "$output_path_to_stdout" == "1" ]] || sudo_log 3 "Executable found at \"$absolute_path\""
-        executable_found=1
+    if [[ "$expanded_path" =~ $valid_absolute_path_regex ]]; then
+        absolute_path="$expanded_path"
+        test -f "$absolute_path" && test -r "$absolute_path" && test -x "$absolute_path"
+        return_value=$?
+        if [ $return_value -ne 0 ] && [ $return_value -ne 1 ]; then
+            sudo_log_errors "Failed to run the following test types on the file \"${label}_PATH\" at path \"$absolute_path\": [regular file], [readable], [executable]"
+            return $return_value
+        elif [ $return_value -eq 0 ]; then
+            [[ "$output_path_to_stdout" == "1" ]] || sudo_log 3 "Executable found at \"$absolute_path\""
+            executable_found=1
+        fi
     fi
 
-    # If executable still not found and original path was not an absolute path, then check if path exists in PATH_TO_EXPORT
+    # If executable still not found and original path was just a basename, then check if path exists in PATH_TO_EXPORT
     local valid_absolute_path_regex='^(/[^/]+)+$'
-    if [[ "$executable_found" == "0" ]] && [[ ! "$path" =~ $valid_absolute_path_regex ]]; then
+    if [[ "$executable_found" == "0" ]] && [[ "$path" != *'/'* ]]; then
         # Check if paths_to_check_for_executable is valid
         local invalid_value_for_path_variable_regex='^:|:$|.*::.*|.*'$'\n''.*'
         if [[ "$paths_to_check_for_executable" =~ $invalid_value_for_path_variable_regex ]]; then
@@ -6052,8 +6127,14 @@ The 'path' command type runs a single command in superuser (root)
 context. You can use it just by running 'sudo <command> [command_args]'
 where 'command' is the executable you want to run and 'command_args'
 are any optional arguments to it. The 'command' will be run within a
-'bash' shell. Priority is given to termux bin and library paths unless
-'command' exists in '/system' partition.
+'bash' shell.
+The 'command' must be an 'absolute' path to an executable, or
+'relative' path from the current working directory to an executable
+starting starting with './' or '../' (like './script.sh') or the
+executable 'basename' in a directory listed in the final '$PATH'
+variable that is to be exported by the 'sudo' command depending on
+priority set.
+exists in '/system' partition.
 To call the 'su' binary, run the 'sudo -p su [user]' command.
 
 

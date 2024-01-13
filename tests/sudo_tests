@@ -407,49 +407,45 @@ sudo_tests_run_path_tests() {
         run_sudo_test 1 && \
         output="$(sudo "$TERMUX_HOME/.termux/tasker/termux_tasker_basic_bash_test" "$shell" "shell")"
         validate_sudo_test 0 $? "$output" "\$1=\`$shell\`"$'\n'"\$2=\`shell\`"
-    else
-        skip_sudo_test 1
-    fi
 
-    if [ -x "$TERMUX_HOME/.termux/tasker/termux_tasker_basic_bash_test" ]; then
         run_sudo_test 2 && \
         output="$(sudo '~/.termux/tasker/termux_tasker_basic_bash_test' "$shell" "shell")"
         validate_sudo_test 0 $? "$output" "\$1=\`$shell\`"$'\n'"\$2=\`shell\`"
-    else
-        skip_sudo_test 2
-    fi
 
-    if [ -x "$TERMUX_HOME/.termux/tasker/termux_tasker_basic_bash_test" ]; then
         run_sudo_test 3 && \
         output="$(cd "$TERMUX_HOME"; sudo './.termux/tasker/termux_tasker_basic_bash_test' "$shell" "shell")"
         validate_sudo_test 0 $? "$output" "\$1=\`$shell\`"$'\n'"\$2=\`shell\`"
-    else
-        skip_sudo_test 3
-    fi
 
-    if [ -x "$TERMUX_HOME/.termux/tasker/termux_tasker_basic_bash_test" ]; then
         run_sudo_test 4 && \
-        output="$(cd "$TERMUX_HOME/.termux/tasker"; sudo 'termux_tasker_basic_bash_test' "$shell" "shell")"
+        output="$(cd "$TERMUX_HOME/.termux/tasker"; sudo './termux_tasker_basic_bash_test' "$shell" "shell")"
+        validate_sudo_test 0 $? "$output" "\$1=\`$shell\`"$'\n'"\$2=\`shell\`"
+
+        run_sudo_test 5 && \
+        output="$(cd "$TERMUX_HOME/.termux/tasker"; sudo '../tasker/termux_tasker_basic_bash_test' "$shell" "shell")"
         validate_sudo_test 0 $? "$output" "\$1=\`$shell\`"$'\n'"\$2=\`shell\`"
     else
+        skip_sudo_test 1
+        skip_sudo_test 2
+        skip_sudo_test 3
         skip_sudo_test 4
+        skip_sudo_test 5
     fi
 
 
 
-    run_sudo_test 5 && \
+    run_sudo_test 6 && \
     output="$(sudo ps -e -o cmd | grep "$TERMUX_PREFIX/bin/ps")"
     validate_sudo_test 0 $? "$output" "*" "$TERMUX_PREFIX/bin/ps -e -o cmd" "*"
 
 
 
-    run_sudo_test 6 && \
+    run_sudo_test 7 && \
     output="$(sudo dumpsys activity services | grep -aE 'ServiceRecord\{.*com\.termux/.*\.app\.TermuxService\}')"
     validate_sudo_test 0 $? "$output" "*" "com.termux/.app.TermuxService" "*"
 
 
 
-    run_sudo_test 7 && \
+    run_sudo_test 8 && \
     output="$(sudo -r echo "$COMMA_ALTERNATIVE")"
     validate_sudo_test 0 $? "$output" ","
 
