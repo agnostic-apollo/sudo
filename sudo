@@ -864,7 +864,7 @@ sudo_set_su_env_command() {
     # the child functions
     # This has drastic performance improvements in some cases where multiple root
     # commands need to be run since creating a new su shell for each command has too
-    # much overhead
+    # much overhead.
     SU_ENV_COMMAND+=" --preserve-environment --shell $BASH_SHELL_PATH -c $SU_ENV_COMMAND_VARIABLES_TO_EXPORT "
 
     sudo_log 3 "SU_ENV_COMMAND=\`$SU_ENV_COMMAND\`"
@@ -1492,7 +1492,10 @@ sudo_set_pre_sudo_shell_commands_to_run() {
 
     # If SUDO_SHELL_WORKING_DIR is set, then append cd command to PRE_SUDO_SHELL_COMMANDS_TO_RUN
     if [ -n "$SUDO_SHELL_WORKING_DIR" ]; then
-        PRE_SUDO_SHELL_COMMANDS_TO_RUN+="cd '${SUDO_SHELL_WORKING_DIR//\'/\'\\\'\'}';"$'\n'
+        PRE_SUDO_SHELL_COMMANDS_TO_RUN+="cd -- '${SUDO_SHELL_WORKING_DIR//\'/\'\\\'\'}';"$'\n'
+    # Otherwise append current working directory in case su changes it
+    else
+        PRE_SUDO_SHELL_COMMANDS_TO_RUN+="cd -- '${CURRENT_WORKING_DIR//\'/\'\\\'\'}';"$'\n'
     fi
 
     # If COMMAND_TYPE equals "su", "asu" or "path"
