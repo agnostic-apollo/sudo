@@ -24,6 +24,7 @@ Available command_options:
                      works.
   [ -q | --quiet ]   Set log level to 'OFF'.
   [ -v | -vv ]       Set log level to 'DEBUG', 'VERBOSE', `VVERBOSE'.
+  [ --only-bash-tests ] Run only bash shell tests.
 
 
 Setting log level '>= DEBUG' will fail test validation for tests that
@@ -139,6 +140,7 @@ SUDO_TESTS_LOG_ARGS=${SUDO_TESTS_LOG_ARGS:-0} # Default: `0` (Export or manually
 
 SUDO_TESTS_COMMAND_TYPE="" # Default: ``
 SUDO_TESTS_NOOP_COMMAND=0 # Default: `0`
+SUDO_TESTS_ONLY_BASH_TESTS=0 # Default: `0`
 SUDO_TESTS_PREVIOUS_TEMP_TEST_SHELL="" # Default: ``
 SUDO_TESTS_PREVIOUS_TEST_SHELL="" # Default: ``
 SUDO_TESTS_PREVIOUS_TEST_NUMBER="" # Default: ``
@@ -855,6 +857,12 @@ SUDO_EOF
     run_sudo_test 47 && \
     output="$(sudo -sr "[[ \",\" == \"$COMMA_ALTERNATIVE\" ]] && [[ "\$1" == \"$COMMA_ALTERNATIVE\" ]] && echo \"arg1 equals simple comma\"" "$COMMA_ALTERNATIVE")"
     validate_sudo_test 0 $? "$output" "arg1 equals simple comma"
+
+
+
+    if [[ "$SUDO_TESTS_ONLY_BASH_TESTS" == "1" ]]; then
+        return 0
+    fi
 
 
 
@@ -1688,6 +1696,14 @@ sudo_tests_process_arguments() {
                         SUDO_TESTS_NOOP_COMMAND=1; return 0
                         ;;
                     help*)
+                        sudo_tests_log_arg_errors "Invalid option or parameters not allowed for option: '--${OPTARG%=*}'"
+                        sudo_tests_exit_on_error || return $?
+                        ;;
+                    only-bash-tests)
+                        sudo_tests_log_args "Parsing option: '--${OPTARG%=*}'"
+                        SUDO_TESTS_ONLY_BASH_TESTS=1
+                        ;;
+                    only-bash-tests*)
                         sudo_tests_log_arg_errors "Invalid option or parameters not allowed for option: '--${OPTARG%=*}'"
                         sudo_tests_exit_on_error || return $?
                         ;;
