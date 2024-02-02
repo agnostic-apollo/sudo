@@ -36,13 +36,13 @@ SUDO_TESTS_HELP_EXTRA="$(cat<<'SUDO_TESTS_HELP_EXTRA'
 ### Install and Usage Instructions For Termux In Android:
 
 # Install sudo and sudo_tests scripts and set ownership and executable permission
-curl -L 'https://github.com/agnostic-apollo/sudo/raw/master/sudo' -o "/data/data/com.termux/files/usr/bin/sudo"
-curl -L 'https://github.com/agnostic-apollo/sudo/raw/master/tests/sudo_tests' -o ~/sudo_tests
+curl -L 'https://github.com/agnostic-apollo/sudo/raw/master/sudo' -o "${TERMUX__PREFIX:-$PREFIX}/bin/sudo"; chmod +x "${TERMUX__PREFIX:-$PREFIX}/bin/sudo";
+curl -L 'https://github.com/agnostic-apollo/sudo/raw/master/tests/sudo_tests' -o ~/sudo_tests; chmod +x ~/sudo_tests;
 or
-cat "/storage/emulated/0/Download/sudo" > "/data/data/com.termux/files/usr/bin/sudo"
-cat "/storage/emulated/0/Download/sudo_tests" > ~/sudo_tests
+cat "/sdcard/Download/sudo" > "${TERMUX__PREFIX:-$PREFIX}/bin/sudo"; chmod +x "${TERMUX__PREFIX:-$PREFIX}/bin/sudo";
+cat "/sdcard/Download/sudo_tests" > ~/sudo_tests; chmod +x ~/sudo_tests;
 
-export termux_bin_path="/data/data/com.termux/files/usr/bin"; export owner="$(stat -c "%u" "$termux_bin_path")"; chown "$owner:$owner" "$termux_bin_path/sudo" && chmod 700 "$termux_bin_path/sudo"; chown "$owner:$owner" ~/sudo_tests && chmod 700 ~/sudo_tests;
+export termux_bin_path="${TERMUX__PREFIX:-$PREFIX}/bin"; export owner="$(stat -c "%u" "$termux_bin_path")"; chown "$owner:$owner" "$termux_bin_path/sudo" && chmod 700 "$termux_bin_path/sudo"; chown "$owner:$owner" ~/sudo_tests && chmod 700 ~/sudo_tests;
 
 
 # Install shells used by sudo_tests script
@@ -50,17 +50,17 @@ pkg install bash zsh dash fish python ruby nodejs perl lua52 lua53 lua54 php rlw
 
 
 # Install termux_tasker_basic_bash_test and termux_tasker_basic_python_test script and set permissions
-mkdir -p /data/data/com.termux/files/home/.termux/tasker
-chmod 700 -R /data/data/com.termux/files/home/.termux
+mkdir -p ~/.termux/tasker
+chmod 700 -R ~/.termux
 
-curl -L 'https://github.com/termux/termux-tasker/raw/master/templates/scripts/termux_tasker_basic_bash_test' -o "/data/data/com.termux/files/home/.termux/tasker/termux_tasker_basic_bash_test"
-curl -L 'https://github.com/termux/termux-tasker/raw/master/templates/scripts/termux_tasker_basic_python_test' -o "/data/data/com.termux/files/home/.termux/tasker/termux_tasker_basic_python_test"
+curl -L 'https://github.com/termux/termux-tasker/raw/master/templates/scripts/termux_tasker_basic_bash_test' -o ~/.termux/tasker/termux_tasker_basic_bash_test
+curl -L 'https://github.com/termux/termux-tasker/raw/master/templates/scripts/termux_tasker_basic_python_test' -o ~/.termux/tasker/termux_tasker_basic_python_test
 or
-cat "/storage/emulated/0/Download/termux_tasker_basic_bash_test" > "/data/data/com.termux/files/home/.termux/tasker/termux_tasker_basic_bash_test"
-cat "/storage/emulated/0/Download/termux_tasker_basic_python_test" > "/data/data/com.termux/files/home/.termux/tasker/termux_tasker_basic_python_test"
+cat "/sdcard/Download/termux_tasker_basic_bash_test" > ~/.termux/tasker/termux_tasker_basic_bash_test
+cat "/sdcard/Download/termux_tasker_basic_python_test" > ~/.termux/tasker/termux_tasker_basic_python_test
 
-chmod 700 "/data/data/com.termux/files/home/.termux/tasker/termux_tasker_basic_bash_test"
-chmod 700 "/data/data/com.termux/files/home/.termux/tasker/termux_tasker_basic_python_test"
+chmod 700 ~/.termux/tasker/termux_tasker_basic_bash_test
+chmod 700 ~/.termux/tasker/termux_tasker_basic_python_test
 
 
 # Install yt-dlp
@@ -71,7 +71,7 @@ python3 -m pip install -U yt-dlp
 # otherwise will get "bad interpreter: /usr/bin/env" errors when running with root shell, plugin or TermuxCommand,
 # because termux-exec doesn't work for those cases and LD_PRELOAD isn't set,
 # but its not required for usage with sudo since it sets the LD_PRELOAD
-termux-fix-shebang /data/data/com.termux/files/usr/bin/yt-dlp
+termux-fix-shebang "${TERMUX__PREFIX:-$PREFIX}/bin/yt-dlp"
 #
 # Update yt-dlp
 python3 -m pip install -U yt-dlp
@@ -100,8 +100,8 @@ pkg intsall loksh
 
 
 # Follow instructions in `RC File Variables` section of README.md to fix `rc` files.
-sed -i'' -E 's/^(PS1=.*)$/\(\[ -z "\$PS1" \] \|\| \[\[ "\$PS1" == '\''\\s-\\v\\\$ '\'' \]\]\) \&\& \1/' "/data/data/com.termux/files/usr/etc/bash.bashrc"
-sed -i'' -E 's/^(PS1=.*)$/\(\[ -z "\$PS1" \] \|\| \[\[ "\$PS1" == '\''%m%# '\'' \]\]\) \&\& \1/' "/data/data/com.termux/files/usr/etc/zshrc"
+sed -i'' -E 's/^(PS1=.*)$/\(\[ -z "\$PS1" \] \|\| \[\[ "\$PS1" == '\''\\s-\\v\\\$ '\'' \]\]\) \&\& \1/' "${TERMUX__PREFIX:-$PREFIX}/etc/bash.bashrc"
+sed -i'' -E 's/^(PS1=.*)$/\(\[ -z "\$PS1" \] \|\| \[\[ "\$PS1" == '\''%m%# '\'' \]\]\) \&\& \1/' "${TERMUX__PREFIX:-$PREFIX}/etc/zshrc"
 
 
 

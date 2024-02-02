@@ -81,7 +81,7 @@ Latest version is `v0.2.0`.
 
 ### Install
 
-The `sudo` file should be placed in termux `bin` directory `/data/data/com.termux/files/usr/bin`.  
+The `sudo` file should be placed in termux `bin` directory `${TERMUX__PREFIX:-$PREFIX}/bin`.  
 It should have `termux` `uid:gid` ownership and have executable `700` permission before it can be run directly without `bash`.  
 
 1. Download the `sudo` file.  
@@ -90,36 +90,36 @@ It should have `termux` `uid:gid` ownership and have executable `700` permission
         Run `pkg install curl` to install `curl` first.  
         - Latest release:  
 
-          `curl -L 'https://github.com/agnostic-apollo/sudo/releases/latest/download/sudo' -o "/data/data/com.termux/files/usr/bin/sudo"`  
+            `curl -L 'https://github.com/agnostic-apollo/sudo/releases/latest/download/sudo' -o "${TERMUX__PREFIX:-$PREFIX}/bin/sudo"`  
 
         - Specific release:  
 
-          `curl -L 'https://github.com/agnostic-apollo/sudo/releases/download/v0.1.0/sudo' -o "/data/data/com.termux/files/usr/bin/sudo"`  
+            `curl -L 'https://github.com/agnostic-apollo/sudo/releases/download/v0.1.0/sudo' -o "${TERMUX__PREFIX:-$PREFIX}/bin/sudo"`  
 
         - Master Branch *may be unstable*:  
 
-          `curl -L 'https://github.com/agnostic-apollo/sudo/raw/master/sudo' -o "/data/data/com.termux/files/usr/bin/sudo"`  
+            `curl -L 'https://github.com/agnostic-apollo/sudo/raw/master/sudo' -o "${TERMUX__PREFIX:-$PREFIX}/bin/sudo"`  
 
     - Download `sudo` file manually from github to the android download directory and then copy it to termux bin directory.  
 
-      You can download the `sudo` file from a github release from the `Assets` dropdown menu.  
+        You can download the `sudo` file from a github release from the `Assets` dropdown menu.  
 
-      You can also download it from a specific github branch/tag by opening the `sudo` file from the `Code` section.  
-      Right-click or hold the `Raw` button at the top and select `Download/Save link`.  
+        You can also download it from a specific github branch/tag by opening the `sudo` file from the `Code` section.  
+        Right-click or hold the `Raw` button at the top and select `Download/Save link`.  
 
-      Then copy the file to termux bin directory using `cat` command below or use a root file browser to manually place it.  
+        Then copy the file to termux bin directory using `cat` command below or use a root file browser to manually place it.  
 
-       `cat "/storage/emulated/0/Download/sudo" > "/data/data/com.termux/files/usr/bin/sudo"`  
+         `cat "/sdcard/Download/sudo" > "${TERMUX__PREFIX:-$PREFIX}/bin/sudo"`  
 
 2. Set `termux` ownership and executable permissions.  
 
     - If you used a `curl` or `cat` to copy the file, then use a non-root termux shell to set ownership and permissions with `chown` and `chmod` commands respectively:  
 
-      `export termux_bin_path="/data/data/com.termux/files/usr/bin"; export owner="$(stat -c "%u" "$termux_bin_path")"; chown "$owner:$owner" "$termux_bin_path/sudo" && chmod 700 "$termux_bin_path/sudo";`  
+        `export termux_bin_path="${TERMUX__PREFIX:-$PREFIX}/bin"; export owner="$(stat -c "%u" "$termux_bin_path")"; chown "$owner:$owner" "$termux_bin_path/sudo" && chmod 700 "$termux_bin_path/sudo";`  
 
     - If you used a root file browser to copy the file, then use `su` to start a root shell to set ownership and permissions with `chown` and `chmod` commands respectively:  
 
-      `export termux_bin_path="/data/data/com.termux/files/usr/bin"; export owner="$(stat -c "%u" "$termux_bin_path")"; su -c "chown \"$owner:$owner\" \"$termux_bin_path/sudo\" && chmod 700 \"$termux_bin_path/sudo\"";`  
+        `export termux_bin_path="${TERMUX__PREFIX:-$PREFIX}/bin"; export owner="$(stat -c "%u" "$termux_bin_path")"; su -c "chown \"$owner:$owner\" \"$termux_bin_path/sudo\" && chmod 700 \"$termux_bin_path/sudo\"";`  
 
     - Or manually set them with your root file browser. You can find `termux` `uid` and `gid` by running the command `id -u` in a non-root termux shell or by checking the properties of the termux `bin` directory from your root file browser.  
 
@@ -1037,7 +1037,7 @@ Check the [sudo.config](sudo.config) file to see the environmental variables tha
 You can download it from the `master` branch and set it up by running the following commands. If you are on an older version, you may want to extract it from its [release](https://github.com/agnostic-apollo/sudo/releases) instead.
 
 ```
-config_directory="/data/data/com.termux/files/home/.config/sudo"
+config_directory=~/.config/sudo
 mkdir -p "$config_directory" && \
 chmod 700 -R "$config_directory" && \
 curl -L 'https://github.com/agnostic-apollo/sudo/raw/master/sudo.config' -o "$config_directory/sudo.config" && \
@@ -1046,11 +1046,11 @@ chmod 600 "$config_directory/sudo.config"
 
 You can use `shell` based text editors like `nano`, `vim` or `emacs` to modify the `sudo.config` file.
 
-`nano "/data/data/com.termux/files/home/.config/sudo/sudo.config"`
+`nano ~/.config/sudo/sudo.config`
 
 You can also use `GUI` based text editor android apps that support `SAF`. Termux provides a [Storage Access Framework (SAF)](https://wiki.termux.com/wiki/Internal_and_external_storage) file provider to allow other apps to access its `~/` home directory. However, the `$PREFIX/` directory is not accessible to other apps. The [QuickEdit] or [QuickEdit Pro] app does support `SAF` and can handle large files without crashing, however, it is closed source and its pro version without ads is paid. You can also use [Acode editor] or [Turbo Editor] if you want an open source app.
 
-Note that the android default `SAF` `Document` file picker may not support hidden file or directories like `~/.config` which start with a dot `.`, so if you try to use it to open files for a text editor app, then that directory will not show. You can instead create a symlink for  `~/.config` at `~/config_sym` so that it is shown. Use `ln -s "/data/data/com.termux/files/home/.config" "/data/data/com.termux/files/home/config_sym"` to create it.
+Note that the android default `SAF` `Document` file picker may not support hidden file or directories like `~/.config` which start with a dot `.`, so if you try to use it to open files for a text editor app, then that directory will not show. You can instead create a symlink for  `~/.config` at `~/config_sym` so that it is shown. Use `ln -s ~/.config ~/config_sym` to create it.
 
 
 If you use the `bash` shell in termux terminal session, you can optionally export the environmental variables like `$SUDO_SHELL_HOME` and `$SUDO_POST_SHELL_HOME` in the `~/.bashrc` file by adding `export SUDO_SHELL_HOME="/path/to/home"` and `export SUDO_POST_SHELL_HOME="/path/to/home"` lines to it so that they are automatically set whenever you start a terminal session. However, the `~/.bashrc` and `rc` files of other shells will not be sourced if you are running commands from `Termux:Tasker` or `RUN_COMMAND Intent`, and so it is advisable to use the `sudo.config` file instead, which will be sourced in all cases, regardless of how `sudo` is run.
@@ -1627,9 +1627,9 @@ SUDO_EOF
     - `XML`  
         Download the [Termux Tasker Plugin Sudo Templates Task XML](templates/plugin_hosts/tasker/Termux_Tasker_Plugin_Sudo_Templates.tsk.xml) and [Termux RUN_COMMAND Intent Sudo Templates Task XML](templates/plugin_hosts/tasker/Termux_RUN_COMMAND_Intent_Sudo_Templates.tsk.xml) files to the android download directory. To download, right-click or hold the `Raw` button at the top after opening a file link and select `Download/Save link` or use `curl` from a termux shell. Then import the downloaded task files into Tasker by long pressing the `Task` tab button in Tasker home and selecting `Import Task`.  
 
-        `curl -L 'https://github.com/agnostic-apollo/sudo/raw/master/templates/plugin_hosts/tasker/Termux_Tasker_Plugin_Sudo_Templates.tsk.xml' -o "/storage/emulated/0/Download/Termux_Tasker_Plugin_Sudo_Templates.tsk.xml"`  
+        `curl -L 'https://github.com/agnostic-apollo/sudo/raw/master/templates/plugin_hosts/tasker/Termux_Tasker_Plugin_Sudo_Templates.tsk.xml' -o "/sdcard/Download/Termux_Tasker_Plugin_Sudo_Templates.tsk.xml"`  
 
-        `curl -L 'https://github.com/agnostic-apollo/sudo/raw/master/templates/plugin_hosts/tasker/Termux_RUN_COMMAND_Intent_Sudo_Templates.tsk.xml' -o "/storage/emulated/0/Download/Termux_RUN_COMMAND_Intent_Sudo_Templates.tsk.xml"`  
+        `curl -L 'https://github.com/agnostic-apollo/sudo/raw/master/templates/plugin_hosts/tasker/Termux_RUN_COMMAND_Intent_Sudo_Templates.tsk.xml' -o "/sdcard/Download/Termux_RUN_COMMAND_Intent_Sudo_Templates.tsk.xml"`  
 
     - `Taskernet`  
         Import `Termux Tasker Plugin Sudo Templates Task` from `Taskernet` from [here](https://taskernet.com/shares/?user=AS35m8mXdvaT1Vj8TwkSaCaoMUv220IIGtHe3pG4MymrCUhpgzrat6njEOnDVVulhAIHLi6BPUt1&id=Task%3ATermux+Tasker+Plugin+Sudo+Templates).  
@@ -1638,7 +1638,7 @@ SUDO_EOF
     Check [Termux Tasker Plugin Sudo Templates Task Info](templates/plugin_hosts/tasker/Termux_Tasker_Plugin_Sudo_Templates.tsk.md) and [Termux RUN_COMMAND Intent Sudo Templates Task Info](templates/plugin_hosts/tasker/Termux_RUN_COMMAND_Intent_Sudo_Templates.tsk.md) files for more info on the tasks.  
 
 
-Termux needs to be granted `Storage` permission to allow it to access `/storage/emulated/0/Download` directory, otherwise you will get permission denied errors while running commands.
+Termux needs to be granted `Storage` permission to allow it to access `/sdcard/Download` directory, otherwise you will get permission denied errors while running commands.
 
 ---
 
@@ -1749,7 +1749,7 @@ To use [RUN_COMMAND Intent] that has arguments working properly, you need to ins
 
 &nbsp;
 
-If you are using the `am` command, the format is `am startservice --user 0 -n com.termux/com.termux.app.RunCommandService -a com.termux.RUN_COMMAND --es com.termux.RUN_COMMAND_PATH '<path>' --esa com.termux.RUN_COMMAND_ARGUMENTS '<one_or_more_args_seperated_with_commas>' --es com.termux.RUN_COMMAND_WORKDIR '/data/data/com.termux/files/home' --ez com.termux.RUN_COMMAND_BACKGROUND 'false'`
+If you are using the `am` command, the format is `am startservice --user 0 -n com.termux/com.termux.app.RunCommandService -a com.termux.RUN_COMMAND --es com.termux.RUN_COMMAND_PATH '<path>' --esa com.termux.RUN_COMMAND_ARGUMENTS '<one_or_more_args_seperated_with_commas>' --ez com.termux.RUN_COMMAND_BACKGROUND 'false'`
 
 &nbsp;
 
@@ -1827,9 +1827,9 @@ Moreover, linux distros removed support for starting interactive shells with the
 If you don't know what `$PATH`, `$LD_LIBRARY_PATH` and `$PS1` variables or `rc` files are or don't care to find out, then just run the commands below so that `sudo` works properly, otherwise read the details below. Ignore `No such file or directory` errors when running the commands.
 
 ```
-sed -i'' -E 's/^(PS1=.*)$/\(\[ -z "\$PS1" \] \|\| \[\[ "\$PS1" == '\''\\s-\\v\\\$ '\'' \]\]\) \&\& \1/' "/data/data/com.termux/files/usr/etc/bash.bashrc"
-sed -i'' -E 's/^(PS1=.*)$/\(\[ -z "\$PS1" \] \|\| \[\[ "\$PS1" == '\''%m%# '\'' \]\]\) \&\& \1/' "/data/data/com.termux/files/usr/etc/zshrc"
-su -c "rm \"/data/data/com.termux/files/home/.suroot/.bashrc\""
+sed -i'' -E 's/^(PS1=.*)$/\(\[ -z "\$PS1" \] \|\| \[\[ "\$PS1" == '\''\\s-\\v\\\$ '\'' \]\]\) \&\& \1/' "${TERMUX__PREFIX:-$PREFIX}/etc/bash.bashrc"
+sed -i'' -E 's/^(PS1=.*)$/\(\[ -z "\$PS1" \] \|\| \[\[ "\$PS1" == '\''%m%# '\'' \]\]\) \&\& \1/' "${TERMUX__PREFIX:-$PREFIX}/etc/zshrc"
+su -c "rm \"$HOME/.suroot/.bashrc\""
 ```
 
 &nbsp;
@@ -1857,9 +1857,9 @@ If you want to allow `sudo` to set its own default `$PS1` value `# ` or the one 
 
 1. The `rc` files in `$PREFIX/etc/` are sourced first whenever shells are started by `sudo`. The `$PS1` value is set and exported by `sudo` before new shells are started, however, the value will get replaced if its overridden by the `rc` files when they are sourced during startup of the new shell.  
 
-    - `bash` shell currently uses the `$PREFIX/etc/bash.bashrc` file, in which it sets the default value of `$PS1` to `\$ ` or `\[\e[0;32m\]\w\[\e[0m\] \[\e[0;97m\]\$\[\e[0m\] ` in recent versions. You need to replace the line `PS1='\$ '` or `PS1=<default>` with the conditional `([[ -z "$PS1" ]] || [[ "$PS1" == '\s-\v\$ ' ]]) && PS1=<default>` so that `$PS1` is only set if its not already set or is set to the default value internally used by `bash`. You can run the command `sed -i'' -E 's/^(PS1=.*)$/\(\[ -z "\$PS1" \] \|\| \[\[ "\$PS1" == '\''\\s-\\v\\\$ '\'' \]\]\) \&\& \1/' "/data/data/com.termux/files/usr/etc/bash.bashrc"` to automatically do it or you can do it manually by running `nano "/data/data/com.termux/files/usr/etc/bash.bashrc"`.  
+    - `bash` shell currently uses the `$PREFIX/etc/bash.bashrc` file, in which it sets the default value of `$PS1` to `\$ ` or `\[\e[0;32m\]\w\[\e[0m\] \[\e[0;97m\]\$\[\e[0m\] ` in recent versions. You need to replace the line `PS1='\$ '` or `PS1=<default>` with the conditional `([[ -z "$PS1" ]] || [[ "$PS1" == '\s-\v\$ ' ]]) && PS1=<default>` so that `$PS1` is only set if its not already set or is set to the default value internally used by `bash`. You can run the command `sed -i'' -E 's/^(PS1=.*)$/\(\[ -z "\$PS1" \] \|\| \[\[ "\$PS1" == '\''\\s-\\v\\\$ '\'' \]\]\) \&\& \1/' "${TERMUX__PREFIX:-$PREFIX}/etc/bash.bashrc"` to automatically do it or you can do it manually by running `nano "${TERMUX__PREFIX:-$PREFIX}/etc/bash.bashrc"`.  
 
-    - `zsh` shell currently uses the `$PREFIX/etc/zshrc` file, in which it sets the default value of `$PS1` to `%# `. You need to replace the line `PS1='%# '` or `PS1=<default>` with the conditional `([[ -z "$PS1" ]] || [[ "$PS1" == '%m%# ' ]]) && PS1=<default>` so that `$PS1` is only set if its not already set or is set to the default value internally used by `zsh`. You can run the command `sed -i'' -E 's/^(PS1=.*)$/\(\[ -z "\$PS1" \] \|\| \[\[ "\$PS1" == '\''%m%# '\'' \]\]\) \&\& \1/' "/data/data/com.termux/files/usr/etc/zshrc"` to automatically do it or you can do it manually by running `nano "/data/data/com.termux/files/usr/etc/zshrc"`.  
+    - `zsh` shell currently uses the `$PREFIX/etc/zshrc` file, in which it sets the default value of `$PS1` to `%# `. You need to replace the line `PS1='%# '` or `PS1=<default>` with the conditional `([[ -z "$PS1" ]] || [[ "$PS1" == '%m%# ' ]]) && PS1=<default>` so that `$PS1` is only set if its not already set or is set to the default value internally used by `zsh`. You can run the command `sed -i'' -E 's/^(PS1=.*)$/\(\[ -z "\$PS1" \] \|\| \[\[ "\$PS1" == '\''%m%# '\'' \]\]\) \&\& \1/' "${TERMUX__PREFIX:-$PREFIX}/etc/zshrc"` to automatically do it or you can do it manually by running `nano "${TERMUX__PREFIX:-$PREFIX}/etc/zshrc"`.  
 
 2. The `rc` files in `~/.suroot` (default `sudo shell` home) are also sourced afterwards whenever shells are started by `sudo`. They must also not override the `$PS1` value. However, if you want to set a custom value in them for usage outside `sudo`, then you can add conditionals to override `$PS1` only if its not already set or is set to the default `termux` value set by `$PREFIX/etc/*` `rc` files.  
 
@@ -1880,9 +1880,9 @@ export PATH=/data/data/com.termux/files/usr/bin:/data/data/com.termux/files/usr/
 export PS1="# "
 ```
 
-To remove the `~/.suroot/.bashrc` file, run `su -c "rm \"/data/data/com.termux/files/home/.suroot/.bashrc\""` command.
+To remove the `~/.suroot/.bashrc` file, run `su -c "rm \"$HOME/.suroot/.bashrc\""` command.
 
-To edit the `~/.suroot/.bashrc` file, run `su -c "nano \"/data/data/com.termux/files/home/.suroot/.bashrc\""` command. Make changes as advised above, then press `Ctrl+o` and then `Enter` to save and `Ctrl+x` to exit. You can also open the file with a text editor app with root support like [QuickEdit] or [QuickEdit Pro].
+To edit the `~/.suroot/.bashrc` file, run `su -c "nano \"$HOME/.suroot/.bashrc\""` command. Make changes as advised above, then press `Ctrl+o` and then `Enter` to save and `Ctrl+x` to exit. You can also open the file with a text editor app with root support like [QuickEdit] or [QuickEdit Pro].
 
 ## &nbsp;
 
