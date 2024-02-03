@@ -1817,6 +1817,7 @@ Moreover, linux distros removed support for starting interactive shells with the
 - [`tpath` and `apath` functions](#tpath-and-apath-functions)
 - [`export` and `unset` functions](#export-and-unset-functions)
 - [`su` search paths](#su-search-paths)
+- [`su` and `sudo` pipes](#su-and-sudo-pipes)
 
 &nbsp;
 
@@ -2003,6 +2004,20 @@ If a `su` binary is not found at any of the paths or if no `su` found contains t
     - https://cs.android.com/android/platform/superproject/+/android-14.0.0_r1:system/sepolicy/private/file_contexts;l=310  
 
 - Other paths are used by older versions (of/and other) `su` providers.
+
+## &nbsp;
+
+&nbsp;
+
+
+
+### `su` and `sudo` pipes
+
+If a `su` or `sudo` command is piped to another command, like `su -c 'foo' | grep bar` or `sudo foo | grep bar`, then this could have unexpected behaviour, including wrong output or output containing leading whitespaces in lines.
+
+To prevent such issues, do not pipe `su` or `sudo` output to another command, but put the pipe inside the `su` shell/command itself, like `su -c 'foo | grep bar'` or `sudo -s 'foo | grep bar'`, where for `sudo`, the `-s` flag is for the [`script`](#script) command type.
+
+You can observe this behaviour with, `sudo pm list packages | grep termux` vs `sudo -s 'pm list packages | grep termux'`.
 
 ---
 
