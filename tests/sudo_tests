@@ -169,7 +169,7 @@ function sudo_tests_log_arg_errors() { echo "$@" 1>&2; }
 
 # stdin in closed for some tests as a patch to SuperSU automatic redirection of stderr to stdout when running in interactive mode
 function close_stdin () {  if [ -t 0 ]; then exec <&-; fi }
-function reopen_stdin () {  if [[ "$tty_path" == "/dev/"* ]]; then exec <$tty_path; fi }
+function reopen_stdin () {  if [[ "$SUDO_TESTS_TTY_PATH" == "/dev/"* ]]; then exec <$SUDO_TESTS_TTY_PATH; fi }
 
 
 
@@ -193,9 +193,7 @@ sudo_tests_main() {
         TERMUX_FILES
         TERMUX_PREFIX
         TERMUX_HOME
-        TERMUX_PATH
         TERMUX_LD_LIBRARY_PATH
-        ANDROID_PATH
     )
 
     local var
@@ -207,6 +205,11 @@ sudo_tests_main() {
         return 1
     fi
     done
+
+
+    # Set pre required variables to be used by this script
+    sudo_tests_set_pre_required_variables || return $?
+
 
     # Process the command arguments passed to sudo_tests
     sudo_tests_process_arguments "$@" || return $?
@@ -221,30 +224,44 @@ sudo_tests_run() {
 
     local return_value
 
-    # Set SUDO_TESTS_WORKING_DIR to use for tests
-    SUDO_TESTS_WORKING_DIR="$TERMUX_HOME"
+    # Set required variables to be used by this script
+    sudo_tests_set_required_variables || return $?
+
 
     cd "$SUDO_TESTS_WORKING_DIR"
 
 
-    if [ -t 0 ]; then
-        tty_path="$(tty 2>/dev/null)"
+    # Run tests
+    if [ -z "$SUDO_TESTS_COMMAND_TYPE" ]; then
+        sudo_tests_log 1 "Running 'sudo' tests"
+        sudo_tests_log 1 $'\n\n'; sudo_tests_run_su_tests || return $?
+        sudo_tests_log 1 $'\n\n'; sudo_tests_run_asu_tests || return $?
+        sudo_tests_log 1 $'\n\n'; sudo_tests_run_path_tests || return $?
+        sudo_tests_log 1 $'\n\n'; sudo_tests_run_script_tests || return $?
+    elif [[ "$SUDO_TESTS_COMMAND_TYPE" != *,* ]] && [[ ",su,asu,path,script," == *",$SUDO_TESTS_COMMAND_TYPE,"* ]]; then
+        sudo_tests_run_"${SUDO_TESTS_COMMAND_TYPE,,}"_tests || return $?
+    else
+        sudo_tests_log_errors "Unknown tests command type $SUDO_TESTS_COMMAND_TYPE"
+        sudo_tests_show_help
+        return 1
     fi
 
+    sudo_tests_log 1 $'\n\n'"All 'sudo' tests successful"
 
-    # Find machine arch
-    ARCH="$(dpkg --print-architecture)"
-    return_value=$?
-    if [ $return_value -ne 0 ]; then
-        sudo_tests_log_errors "Failed to find machine arch"
-        return $return_value
-    fi
+    return 0
 
+}
+
+
+
+sudo_tests_set_pre_required_variables() {
+
+    local return_value
 
     # Find android sdk/os version
     # Termux app exports ANDROID__BUILD_VERSION_SDK for `>= v0.119.0`
     if [[ ! "$ANDROID__BUILD_VERSION_SDK" =~ $VALID_NUMBER_REGEX ]]; then
-        ANDROID__BUILD_VERSION_SDK="$(getprop "ro.build.version.sdk")"
+        ANDROID__BUILD_VERSION_SDK="$(unset LD_LIBRARY_PATH; unset LD_PRELOAD; getprop "ro.build.version.sdk")"
         return_value=$?
         if [ $return_value -ne 0 ] || [[ ! "$ANDROID__BUILD_VERSION_SDK" =~ $VALID_NUMBER_REGEX ]]; then
             sudo_tests_log_errors "Failure while finding \"ro.build.version.sdk\" property"
@@ -256,6 +273,41 @@ sudo_tests_run() {
         fi
     fi
 
+    sudo_tests_log 3 "ANDROID__BUILD_VERSION_SDK=\"$ANDROID__BUILD_VERSION_SDK\""
+
+
+
+    # Set LD_LIBRARY_PATH for all external commands that may be run
+    # If on Android `< 7`
+    if [ "$ANDROID__BUILD_VERSION_SDK" -lt 24 ]; then
+        # Set only termux library path
+        LD_LIBRARY_PATH="$TERMUX_LD_LIBRARY_PATH"
+    else
+        # Do not set termux or android library paths
+        LD_LIBRARY_PATH=""
+    fi
+
+    # Used by sudo_set_post_su_variables
+    SUDO_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
+
+    sudo_tests_log 3 "LD_LIBRARY_PATH=\"$LD_LIBRARY_PATH\""
+
+    return 0
+
+}
+
+sudo_tests_set_required_variables() {
+
+    local return_value
+
+    if [ -t 0 ]; then
+        SUDO_TESTS_TTY_PATH="$(tty 2>/dev/null)"
+    fi
+
+
+
+    # Set SUDO_TESTS_WORKING_DIR to use for tests
+    SUDO_TESTS_WORKING_DIR="$TERMUX_HOME"
 
     # Generate unique suffix to use for sudo_tests directories
     SUDO_TESTS_TEMP_DIRECTORY_SUFFIX="$(mktemp -d --dry-run sudo.XXXXXX)"
@@ -287,28 +339,11 @@ sudo_tests_run() {
     trap 'sudo_tests_cleanup HUP' HUP
     trap 'sudo_tests_cleanup QUIT' QUIT
 
-
-
-    # Run tests
-    if [ -z "$SUDO_TESTS_COMMAND_TYPE" ]; then
-        sudo_tests_log 1 "Running 'sudo' tests"
-        sudo_tests_log 1 $'\n\n'; sudo_tests_run_su_tests || return $?
-        sudo_tests_log 1 $'\n\n'; sudo_tests_run_asu_tests || return $?
-        sudo_tests_log 1 $'\n\n'; sudo_tests_run_path_tests || return $?
-        sudo_tests_log 1 $'\n\n'; sudo_tests_run_script_tests || return $?
-    elif [[ "$SUDO_TESTS_COMMAND_TYPE" != *,* ]] && [[ ",su,asu,path,script," == *",$SUDO_TESTS_COMMAND_TYPE,"* ]]; then
-        sudo_tests_run_"${SUDO_TESTS_COMMAND_TYPE,,}"_tests || return $?
-    else
-        sudo_tests_log_errors "Unknown tests command type $SUDO_TESTS_COMMAND_TYPE"
-        sudo_tests_show_help
-        return 1
-    fi
-
-    sudo_tests_log 1 $'\n\n'"All 'sudo' tests successful"
-
     return 0
 
 }
+
+
 
 sudo_tests_run_su_tests() {
 
@@ -332,14 +367,39 @@ sudo_tests_run_su_tests() {
     output="$(sudo --shell-stdin-string='cd "$HOME"; pwd; exit;' su)"
     validate_sudo_test 0 $? "$output" "*" "$SUDO_SHELL_HOME" "*"
 
-    run_sudo_test 3 && \
-    output="$(sudo --shell-stdin-string='echo "$PATH"; exit;' su)"
-    validate_sudo_test 0 $? "$output" "*" "$TERMUX_PATH" "*"
 
-    run_sudo_test 4 && \
-    output="$(sudo --shell-stdin-string='echo "$LD_LIBRARY_PATH"; exit;' su)"
-    validate_sudo_test 0 $? "$output" "*" "$TERMUX_LD_LIBRARY_PATH" "*"
+    # If on Android `< 7`
+    if [ "$ANDROID__BUILD_VERSION_SDK" -lt 24 ]; then
+        sudo_set_path_priority_variables "1"
+        run_sudo_test 3 && \
+        output="$(sudo --shell-stdin-string='echo "PATH=$PATH; LD_LIBRARY_PATH=$LD_LIBRARY_PATH; LD_PRELOAD=$LD_PRELOAD;"; exit;' su)"
+        validate_sudo_test 0 $? "$output" "*" "PATH=$TERMUX_BIN:$TERMUX_BIN_APPLETS:$ANDROID_PATH; LD_LIBRARY_PATH=$TERMUX_LD_LIBRARY_PATH; LD_PRELOAD=$TERMUX_LD_PRELOAD;" "*"
 
+        sudo_set_path_priority_variables "0"
+        run_sudo_test 4 && \
+        output="$(sudo -T --shell-stdin-string='echo "PATH=$PATH; LD_LIBRARY_PATH=$LD_LIBRARY_PATH; LD_PRELOAD=$LD_PRELOAD;"; exit;' su)"
+        validate_sudo_test 0 $? "$output" "*" "PATH=$TERMUX_BIN; LD_LIBRARY_PATH=$TERMUX_LD_LIBRARY_PATH; LD_PRELOAD=$TERMUX_LD_PRELOAD;" "*"
+
+        sudo_set_path_priority_variables "1"
+        run_sudo_test 5 && \
+        output="$(sudo -TT --shell-stdin-string='echo "PATH=$PATH; LD_LIBRARY_PATH=$LD_LIBRARY_PATH; LD_PRELOAD=$LD_PRELOAD;"; exit;' su)"
+        validate_sudo_test 0 $? "$output" "*" "PATH=$TERMUX_BIN:$TERMUX_BIN_APPLETS; LD_LIBRARY_PATH=$TERMUX_LD_LIBRARY_PATH; LD_PRELOAD=$TERMUX_LD_PRELOAD;" "*"
+    else
+        sudo_set_path_priority_variables "1"
+        run_sudo_test 3 && \
+        output="$(sudo --shell-stdin-string='echo "PATH=$PATH; LD_LIBRARY_PATH=$LD_LIBRARY_PATH; LD_PRELOAD=$LD_PRELOAD;"; exit;' su)"
+        validate_sudo_test 0 $? "$output" "*" "PATH=$TERMUX_BIN:$TERMUX_BIN_APPLETS:$ANDROID_PATH; LD_LIBRARY_PATH=; LD_PRELOAD=$TERMUX_LD_PRELOAD;" "*"
+
+        sudo_set_path_priority_variables "0"
+        run_sudo_test 4 && \
+        output="$(sudo -T --shell-stdin-string='echo "PATH=$PATH; LD_LIBRARY_PATH=$LD_LIBRARY_PATH; LD_PRELOAD=$LD_PRELOAD;"; exit;' su)"
+        validate_sudo_test 0 $? "$output" "*" "PATH=$TERMUX_BIN; LD_LIBRARY_PATH=; LD_PRELOAD=$TERMUX_LD_PRELOAD;" "*"
+
+        sudo_set_path_priority_variables "1"
+        run_sudo_test 5 && \
+        output="$(sudo -TT --shell-stdin-string='echo "PATH=$PATH; LD_LIBRARY_PATH=$LD_LIBRARY_PATH; LD_PRELOAD=$LD_PRELOAD;"; exit;' su)"
+        validate_sudo_test 0 $? "$output" "*" "PATH=$TERMUX_BIN:$TERMUX_BIN_APPLETS; LD_LIBRARY_PATH=; LD_PRELOAD=$TERMUX_LD_PRELOAD;" "*"
+    fi
 
 
     sudo_tests_log 1 $'\n\n'"All 'su' command type tests successful"
@@ -370,20 +430,39 @@ sudo_tests_run_asu_tests() {
     output="$(sudo --shell-stdin-string='cd "$HOME"; pwd; exit;' asu)"
     validate_sudo_test 0 $? "$output" "*" "$SUDO_SHELL_HOME" "*"
 
-    run_sudo_test 3 && \
-    output="$(sudo --shell-stdin-string='echo "$PATH"; exit;' asu)"
-    validate_sudo_test 0 $? "$output" "*" "$ANDROID_PATH" "*"
 
-    run_sudo_test 4 && \
-    output="$(sudo --shell-stdin-string='echo "$LD_LIBRARY_PATH"; exit;' asu)"
-    return_value=$?
-    # If ARCH is 64 bit
-    if [[ "$ARCH" == *64 ]]; then
-        validate_sudo_test 0 $return_value "$output" "*" "/system/lib64:/system/lib:" "*"
+    # If on Android `< 7`
+    if [ "$ANDROID__BUILD_VERSION_SDK" -lt 24 ]; then
+        sudo_set_path_priority_variables "1"
+        run_sudo_test 3 && \
+        output="$(sudo --shell-stdin-string='echo "PATH=$PATH; LD_LIBRARY_PATH=$LD_LIBRARY_PATH; LD_PRELOAD=$LD_PRELOAD;"; exit;' asu)"
+        validate_sudo_test 0 $? "$output" "*" "PATH=$ANDROID_PATH:$TERMUX_BIN:$TERMUX_BIN_APPLETS; LD_LIBRARY_PATH=$TERMUX_LD_LIBRARY_PATH; LD_PRELOAD=;" "*"
+
+        sudo_set_path_priority_variables "0"
+        run_sudo_test 4 && \
+        output="$(sudo -A --shell-stdin-string='echo "PATH=$PATH; LD_LIBRARY_PATH=$LD_LIBRARY_PATH; LD_PRELOAD=$LD_PRELOAD;"; exit;' asu)"
+        validate_sudo_test 0 $? "$output" "*" "PATH=$SYS_BIN; LD_LIBRARY_PATH=; LD_PRELOAD=;" "*"
+
+        sudo_set_path_priority_variables "1"
+        run_sudo_test 5 && \
+        output="$(sudo -AA --shell-stdin-string='echo "PATH=$PATH; LD_LIBRARY_PATH=$LD_LIBRARY_PATH; LD_PRELOAD=$LD_PRELOAD;"; exit;' asu)"
+        validate_sudo_test 0 $? "$output" "*" "PATH=$ANDROID_PATH; LD_LIBRARY_PATH=; LD_PRELOAD=;" "*"
     else
-        validate_sudo_test 0 $return_value "$output" "*" "/system/lib:" "*"
-    fi
+        sudo_set_path_priority_variables "1"
+        run_sudo_test 3 && \
+        output="$(sudo --shell-stdin-string='echo "PATH=$PATH; LD_LIBRARY_PATH=$LD_LIBRARY_PATH; LD_PRELOAD=$LD_PRELOAD;"; exit;' asu)"
+        validate_sudo_test 0 $? "$output" "*" "PATH=$ANDROID_PATH:$TERMUX_BIN:$TERMUX_BIN_APPLETS; LD_LIBRARY_PATH=; LD_PRELOAD=;" "*"
 
+        sudo_set_path_priority_variables "0"
+        run_sudo_test 4 && \
+        output="$(sudo -A --shell-stdin-string='echo "PATH=$PATH; LD_LIBRARY_PATH=$LD_LIBRARY_PATH; LD_PRELOAD=$LD_PRELOAD;"; exit;' asu)"
+        validate_sudo_test 0 $? "$output" "*" "PATH=$SYS_BIN; LD_LIBRARY_PATH=; LD_PRELOAD=;" "*"
+
+        sudo_set_path_priority_variables "1"
+        run_sudo_test 5 && \
+        output="$(sudo -AA --shell-stdin-string='echo "PATH=$PATH; LD_LIBRARY_PATH=$LD_LIBRARY_PATH; LD_PRELOAD=$LD_PRELOAD;"; exit;' asu)"
+        validate_sudo_test 0 $? "$output" "*" "PATH=$ANDROID_PATH; LD_LIBRARY_PATH=; LD_PRELOAD=;" "*"
+    fi
 
 
     sudo_tests_log 1 $'\n\n'"All 'asu' command type tests successful"
@@ -1644,7 +1723,9 @@ sudo_tests_remove_sudo_tests_temp_directories() {
         # Remove all directories in SUDO_TESTS_DIRECTORIES if they match the SUDO_TESTS_TEMP_DIRECTORY_SUFFIX
         for i in "${!SUDO_TESTS_DIRECTORIES[@]}"; do
             if [[ "${SUDO_TESTS_DIRECTORIES[$i]}" == *"$SUDO_TESTS_TEMP_DIRECTORY_SUFFIX" ]]; then
+                sudo_unset_pre_su_variables
                 "$SU" --mount-master -c "[ -d \"${SUDO_TESTS_DIRECTORIES[$i]}\" ] && rm -rf \"${SUDO_TESTS_DIRECTORIES[$i]}\""
+                sudo_set_post_su_variables
             fi
         done
 

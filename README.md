@@ -133,7 +133,7 @@ It should have `termux` `uid:gid` ownership and have executable `700` permission
 
 ### Current Features
 
-- Allows dropping to an interactive shell in `termux` user context for any of the supported [Interactive Shells](#interactive-shells) with priority to either termux or android binary and library paths.
+- Allows dropping to an interactive shell in `termux` user context for any of the supported [Interactive Shells](#interactive-shells) with priority to either termux or android bin and library paths.
 - Allows running single commands in `superuser (root)` context without having to start an interactive shell.
 - Allows passing of script file paths or script text as arguments for any of the supported [Script Shells](#script-shells) to have them executed in `termux` user context without having to create physical script files first for the later case, like in `~/.termux/tasker/` directory for [Termux:Tasker].
 - Automatic setup of home directories, `rc` files, `history` files and working directories with proper ownership and permissions.
@@ -181,8 +181,19 @@ Available command_options:
   [ -q | --quiet ]    Set log level to 'OFF'.
   [ -v | -vv ]       Set log level to 'DEBUG', 'VERBOSE'.
   [ --version ]      Display version.
-  [ -a ]             Force set priority to android paths for path
-                     command type.
+  [ -a ]             Set priority to android paths for 'path' and
+                     'script' command types. The '$PATH' variable will
+                     contain all android bin paths followed all termux
+                     bin paths. The `$LD_PRELOAD` variable will not be
+                     set.
+  [ -A ]             Set priority to android paths for 'asu', 'path'
+                     and 'script' command types. The '$PATH' variable
+                     will contain only `/system/bin` path. The
+                     `$LD_PRELOAD` variable will not be set.
+  [ -AA ]            Set priority to android paths for 'asu', 'path'
+                     and 'script' command types. The '$PATH' variable
+                     will contain all android bin paths. The
+                     `$LD_PRELOAD` variable will not be set.
   [ -b ]             Go back to last activity after running core_script.
   [ -B ]             Run core_script in background.
   [ -c ]             Clear shell after running core_script.
@@ -210,16 +221,31 @@ Available command_options:
   [ -R ]             Use root for searching and validating paths.
   [ -s ]             Set 'script' as command type.
   [ -S ]             Same sudo post shell as sudo shell.
+  [ -t ]             Set priority to termux paths for 'path' and
+                     'script' command types. The '$PATH' variable will
+                     contain all termux bin paths followed all android
+                     bin paths. The `$LD_PRELOAD` variable will
+                     contain `$TERMUX__PREFIX/lib/libtermux-exec.so`.
+  [ -T ]             Set priority to termux paths for 'su', 'path'
+                     and 'script' command types. The '$PATH' variable
+                     will contain only '$TERMUX__PREFIX/bin' path.
+                     The `$LD_PRELOAD` variable will contain
+                     `$TERMUX__PREFIX/lib/libtermux-exec.so`.
+  [ -TT ]            Set priority to termux paths for 'su', 'path'
+                     and 'script' command types. The '$PATH' variable
+                     will contain all termux bin paths. The
+                     `$LD_PRELOAD` variable will contain
+                     `$TERMUX__PREFIX/lib/libtermux-exec.so`.
   [ --comma-alternative=<alternative> ]
                      Comma alternative character to be used for
                      the '-r' option instead of the default.
   [ --dry-run ]
                      Do not execute sudo commands.
   [ --export-paths=<paths> ]
-                     Additional paths to export in PATH variable,
+                     Additional paths to export in '$PATH' variable,
                      separated with colons ':'.
   [ --export-ld-lib-paths=<paths> ]
-                     Additional paths to export in LD_LIBRARY_PATH
+                     Additional paths to export in '$LD_LIBRARY_PATH'
                      variable, separated with colons ':'.
   [ --force-remount-ro ]
                      Force remount rootfs and system partitions back
@@ -337,8 +363,18 @@ The 'path' command type runs a single command in superuser (root)
 context. You can use it just by running 'sudo <command> [command_args]'
 where 'command' is the executable you want to run and 'command_args'
 are any optional arguments to it. The 'command' will be run within a
-'bash' shell. Priority is given to termux bin and library paths unless
-'command' exists in '/system' partition.
+'bash' shell.
+The 'command' must be an 'absolute' path to an executable, or
+'relative' path from the current working directory to an executable
+starting starting with './' or '../' (like './script.sh') or the
+executable 'basename' in a directory listed in the final '$PATH'
+variable that is to be exported by the 'sudo' command depending on
+priority set.
+The priority is set based on '-a|-A|-AA' or '-t|-T|-TT' flags, and
+if flags are not passed, then the priority for bin paths in `$PATH`
+variable is given to termux paths followed by android paths if
+executable canonical path is under '$TERMUX__ROOTFS' directory,
+otherwise to android paths followed by termux paths.
 To call the 'su' binary, run the 'sudo -p su [user]' command.
 
 
@@ -361,6 +397,8 @@ is considered as a path to script file that should be passed to
 Use the '--shell' option to set the script shell to use.
 Use the '--post-shell' option to set the interactive shell to use if
 '-i' option is passed.
+The priority is given to termux paths unless '-a|-A|-AA' or
+'-t|-T|-TT' flags are passed.
 
 
 Run "exit" command of your shell to exit interactive shells and return
@@ -380,9 +418,11 @@ to the termux shell.
 
 ### `su`
 
-The `su` command type drops to an interactive shell in `superuser (root)` context for any of the supported [Interactive Shells](#interactive-shells). `su` stands for *substitute user* which in this case will be the `superuser (root)`. To drop to a root `bash` shell, just run `sudo su`. The priority will be set to termux bin and library paths in `$PATH` and `$LD_LIBRARY_PATH` variables. Check the [PATH and LD_LIBRARY_PATH Priorities](#path-and-ld_library_path-priorities) section for more info.
+The `su` command type drops to an interactive shell in `superuser (root)` context for any of the supported [Interactive Shells](#interactive-shells). `su` stands for *substitute user* which in this case will be the `superuser (root)`. To drop to a root `bash` shell, just run `sudo su`.
 
-Note that `su` is just a command type and does not represent the `su` binary itself. Use the `path` command type to run the `sudo -p su [user]` command instead for calling the `su` binary.
+The priority for bin paths in `$PATH` variable is set to `termux` paths followed `android` paths, the same as if [`-t`](#-t) flag was passed. The [`-T`](#-t-1) or [`-TT`](#-tt) flags can be used to change priority. **To have consistent behaviour with shells starts by the Termux app, pass the [`-T`](#-t-1) flag.** Check the [`$PATH` and `$LD_LIBRARY_PATH` Priorities](#path-and-ld_library_path-priorities) section for more info.
+
+Note that `su` is just a command type and does not represent the `su` binary itself. Use the [`path`](#path) command type to run the `sudo -p su [user]` command instead for calling the `su` binary.
 
 ## &nbsp;
 
@@ -392,7 +432,7 @@ Note that `su` is just a command type and does not represent the `su` binary its
 
 ### `asu`
 
-The `asu` command type is the same as `su` command type but instead the priority will be set to android bin and library paths in `$PATH` and `$LD_LIBRARY_PATH` variables. Check the [PATH and LD_LIBRARY_PATH Priorities](#path-and-ld_library_path-priorities) section for more info.
+The `asu` command type is the same as `su` command type but instead the priority for bin paths in `$PATH` variable is set to `android` paths followed `termux` paths, the same as if [`-a`](#-a) flag was passed. The [`-A`](#-a-1) or [`-AA`](#-aa) flags can be used to change priority. **To have consistent behaviour with shells starts by android [`adb`](https://developer.android.com/tools/adb), pass the [`-AA`](#-aa) flag.** Check the [`$PATH` and `$LD_LIBRARY_PATH` Priorities](#path-and-ld_library_path-priorities) section for more info.
 
 ## &nbsp;
 
@@ -402,19 +442,31 @@ The `asu` command type is the same as `su` command type but instead the priority
 
 ### `path`
 
-The `path` command type runs a single command in `superuser (root)` context. You can use it just by running `sudo <command> [command_args]` where `command` is the executable you want to run and `command_args` are any optional arguments you want to pass to it.
+The `path` command type runs a single command in `superuser (root)` context within a `bash` shell without having to drop to an interactive `root` shell. You can use it just by running `sudo <command> [command_args]` where `command` is the executable you want to run and `command_args` are any optional arguments you want to pass to it.
 
-The `command` will be run within a `bash` shell. Priority is given to termux bin and library paths unless `command` exists in `/system` partition. `sudo <command>` will not work if executable to be run does not have proper ownership or executable permissions set that disallows `termux` user to read or execute it if `sudo` command itself is being run from the `termux` context and [`-R`](#-r-1) option is not passed.
+The `sudo <command>` will not work if executable to be run does not have proper ownership or executable permissions which allow the `termux` user to read or execute it if `sudo` command itself is being run from the `termux` context and [`-R`](#-r-1) option is not passed.
 
 The `command` must be an `absolute` path to an executable, or `relative` path from the current working directory to an executable starting with `./` or `../` (like `./script.sh`) or the executable `basename` in a directory listed in the final `$PATH` variable that is to be exported by the `sudo` command depending on priority set. If it is not found, `sudo` will exit with an error.
 
-The `path` command type is of course useful for running single commands with root context without having to drop to a root shell, but its also very useful for running commands in `/system` partition that require priorities to be set to android library paths and which fail otherwise with errors like `CANNOT LINK EXECUTABLE` and `cannot locate symbol some_symbol referenced by /lib....`. The `sudo` command will automatically detect if the `command` exists in `/system` partition and set priorities to android bin and library paths in `$PATH` and `$LD_LIBRARY_PATH` variables. So running `sudo dumpsys` will just work. You can also force setting priority to android paths by passing the [`-a`](#-a) option or to run a binary in `/system` partition instead of that in termux bin paths.
+&nbsp;
+
+The priority for bin paths in `$PATH` variable is set based on ([`-a`](#-a), [`-A`](#-a-1), [`-AA`](#-aa)) or ([`-t`](#-t), [`-T`](#-t-1), [`-TT`](#-tt)) flags. If flags are not passed, then priority is given to `termux` paths followed `android` paths if executable `canonical` path is under `$TERMUX__ROOTFS` directory (like [`-t`](#-t) flag), otherwise to `android` paths followed `termux` paths (like [`-a`](#-a) flag). Check the [`$PATH` and `$LD_LIBRARY_PATH` Priorities](#path-and-ld_library_path-priorities) section for more info.
+
+If `sudo <command>` is executed, like `sudo ls`, and `ls` is found under `$TERMUX__ROOTFS` directory, which it should be since `coreutils` package provides it at `$TERMUX__PREFIX/bin/ls`, then priority will be set to `termux` paths. If `sudo dumpsys` is executed, then priority should be set to `android` paths since it normally exists at `/system/bin/dumpsys`, i.e not under `$TERMUX__ROOTFS` directory as termux does not provide it with a package or as a wrapper around `/system/bin/dumpsys`.
+
+If `sudo -T <command>` is executed with the [`-T`](#-t-1) flag, then it will be ensured that only binaries under `$TERMUX__PREFIX/bin` directory are executed. like `sudo -T ls` should execute `$TERMUX__PREFIX/bin/ls`.
+
+If `sudo -A <command>` is executed with the [`-A`](#-a-1) flag, then it will be ensured that only binaries under `/system/bin` directory are executed. like `sudo -A ls` should execute `/system/bin/ls`.
+
+&nbsp;
 
 You can also use `sudo <command>` even if you are inside of a `sudo su` root shell and it will work without having to switch to `sudo asu` or exporting variables to change priority.
 
 You can also run the `sudo -p su [user]` or `sudo -p /path/to/su [user]` commands to call the `su` binary for dropping to a shell for a specific user or even run a command for a specific user, like `sudo -p su -c "logcat" system`. Note that if you do not provide an absolute path to the `su` binary and just run `sudo -p su`, then the termux `su` wrapper script will be called which is stored at `$PREFIX/bin/su` which automatically tries to find the `su` binary and unsets `LD_LIBRARY_PATH` and `LD_PRELOAD` variables. You can check its contents with `cat "$PREFIX/bin/su"`. The variables will be also be unset by the `sudo` script if it detects you are trying to run a `su` binary.
 
-Check the [`-a`](#-a) and [`-r`](#-r) command options that can be specifically used with the `path` command type.
+&nbsp;
+
+Check the [`-r`](#-r) command option that can be specifically used with the `path` command type.
 
 ## &nbsp;
 
@@ -426,7 +478,19 @@ Check the [`-a`](#-a) and [`-r`](#-r) command options that can be specifically u
 
 The `script` command type takes any script text or path to a script file for any of the supported [Script Shells](#script-shells) referred as `sudo shell`, and executes the script with any optional arguments with the desired script shell. This can be done by running the `sudo -s <core_script> [core_script_args]` command. The `core_script` will be considered a `bash` script by default.
 
+&nbsp;
+
+The priority or bin paths in `$PATH` variable is set to `termux` paths followed `android` paths (like [`-t`](#-t) flag), unless ([`-a`](#-a), [`-A`](#-a-1), [`-AA`](#-aa)) or ([`-T`](#-t-1), [`-TT`](#-tt)) flags are passed. Check the [`$PATH` and `$LD_LIBRARY_PATH` Priorities](#path-and-ld_library_path-priorities) section for more info.
+
+If `sudo -sT <core_script>` is executed with the [`-T`](#-t-1) flag, then it will be ensured that only binaries under `$TERMUX__PREFIX/bin` directory are executed. like `sudo -sT 'ls'` should execute `$TERMUX__PREFIX/bin/ls`.
+
+If `sudo -sA <core_script>` is executed with the [`-A`](#-a-1) flag, then it will be ensured that only binaries under `/system/bin` directory are executed. like `sudo -sA 'ls'` should execute `/system/bin/ls`.
+
+&nbsp;
+
 The `script` command type is incredibly useful for usage with termux plugins like [Termux:Tasker] or [RUN_COMMAND Intent]. Such APIs require script files to be created under `$TERMUX__ROOTFS` or `~/.termux/tasker/` directory to be able to execute them, unless using their `stdin` config. It may get inconvenient to create physical script files for each type of command you want to run. These script files are also neither part of backups of plugin host apps like Tasker and require separate backup methods and nor are part of project configs shared with other people or even between your own devices, and so the scripts need to be added manually to the `~/.termux/tasker/` directory on each device. To solve such issues and to dynamically define scripts of different interpreted languages inside your plugin host app like `Tasker` in local variables (all lowercase `%core_script`) of a task and to pass them to `Termux` as arguments instead of creating script files, the `script` command type can be used. The termux environment will also be properly loaded like setting `LD_PRELOAD` etc before running the commands.
+
+&nbsp;
 
 The `core_script` will be passed to the desired shell using [Process Substitution] or after storing the `core_script` in a temp file in a temp directory in `sudo shell` home `$HOME/.sudo.temp.XXXXXX/sudo_core_script` and passing the path to the desired shell, where `XXXXXX` is a randomly generated string. The method is automatically chosen based on the script shell capabilities. The [`-f`](#-f) option can be used to force the usage of a script file. If the temp directory is created, it will be empty other than the `sudo_core_script` file and will be unique for each execution of the script, which the script can use for other temporary stuff without having to worry about cleanup since the temp directory will be automatically removed when `sudo` command exits unless [`--keep-temp`](#--keep-temp) is passed. The temp directory path will also be exported in the `$SUDO_SCRIPT_DIR` environment variable which can be used by the `core_script`, `post shell` and `--*shell-*-commands` options, like `--shell-pre-commands='cd "$SUDO_SCRIPT_DIR"'`. The `$HOME` refers to the `sudo shell` home.
 
@@ -436,9 +500,15 @@ The [`-F`](#-f-1) option can be passed so that the `core_script` is considered a
 
 The `core_script` can optionally not be passed or passed as an empty string so that other "features" of the `script` command type can still be used without calling the script shell.
 
+&nbsp;
+
 It may also be important to automatically open an interactive shell after the `core_script` completes. This can be done by using the  [`-i`](#-i) option along with [`--post-shell*`](#--post-shell) options. The `sudo post shell` can be any of the supported [Interactive Shells](#interactive-shells) and defaults to `bash`. The same shell as the script `sudo shell` can also be used for `sudo post shell` by passing the [`-S`](#-s-1) option as long as the `sudo shell` exists in the list of supported interactive shells. The environment variable `$SUDO_SCRIPT_EXIT_CODE` will be exported containing the exit code of the `core_script` before the interactive shell is started. Running an interactive shell will also keep the terminal session open after commands complete which is normally closed automatically when commands are run with the plugin or intents, although the [`--hold`](#--hold) option can also be used for this.
 
+&nbsp;
+
 You can define your own exit traps inside the `core_script`, but **DO NOT** define them outside it with the `--*shell-*-commands` options since `sudo` defines its own trap function `sudo_script_trap` for cleanup, killing child processes and to exit with the trap signal exit code. If you want to handle traps outside the `core_script`, then define a function named `sudo_script_custom_trap` which will automatically be called by `sudo_script_trap`. The function will be sent `TERM`, `INT`, `HUP`, `QUIT` as `$1` for the respective trap signals. For the `EXIT` signal the `$1` will not be passed. Do not `exit` inside the `sudo_script_custom_trap` function. If the `sudo_script_custom_trap` function exits with exit code `0`, then the `sudo_script_trap` will continue to exit with the original trap signal exit code. If it exits with exit code `125` `ECANCELED`, then `sudo_script_trap` will consider that as a cancellation and will just return without running any other trap commands. If any other exit code is returned, then the `sudo_script_trap` will use that as exit code instead of the original trap signal exit code.
+
+&nbsp;
 
 Check the [`-b`](#-b), [`-B`](#-b-1), [`-c`](#-c), [`-d`](#-d), [`-e`](#-e), [`-E`](#-e-1), [`-f`](#-f), [`-F`](#-f-1), [`-l`](#-l), [`-n`](#-n), `N`, [`-o`](#-o), `O`, [`-r`](#-r), [`--remove-prev-temp`](#--remove-prev-temp), [`--keep-temp`](#--keep-temp), [`--shell*`](#--shell), [`--post-shell*`](#--post-shell), [`--script-decode`](#--script-decode), [`--script-redirect`](#--script-redirect), [`--script-name`](#--script-name) command options that can be specifically used with the `script` command type.
 
@@ -454,7 +524,7 @@ Check the [`-b`](#-b), [`-B`](#-b-1), [`-c`](#-c), [`-d`](#-d), [`-e`](#-e), [`-
 
 The `bash` shell is the default interactive and script shell and must exist at `$PREFIX/bin/bash` with ownership and permissions allowing `termux` user to read and execute it. The [`--shell`](#--shell) and [`--post-shell`](#--post-shell) options can be used to change the default shells. The `path` command type always uses the `bash` shell and command options are ignored. Normally, shells are not validated as the root user unless [`-R`](#-r-1) is passed so they must have proper ownership or executable permissions set that allows `termux` user to read and execute them.
 
-The exported environmental variables `$SUDO_SHELL_PS1` and `$SUDO_POST_SHELL_PS1` can be used to change the default `$PS1` values of the shell, provided that the shell uses it. Check the [Modifying Default Values](#modifying-default-values) section for more info on `sudo` environmental variables and modifying default values.
+The exported environment variables `$SUDO_SHELL_PS1` and `$SUDO_POST_SHELL_PS1` can be used to change the default `$PS1` values of the shell, provided that the shell uses it. Check the [Modifying Default Values](#modifying-default-values) section for more info on `sudo` environment variables and modifying default values.
 
 &nbsp;
 
@@ -519,7 +589,19 @@ Set the log level of the `sudo` command to `OFF=0`.
 
 #### `-a`
 
-Can be used with the `path` command type to force setting priority to android bin and library paths in `$PATH` and `$LD_LIBRARY_PATH` variables. This can be useful for cases when the `command` is an absolute path but does not exist in the `/system` partition but still needs priority to be set to android paths or if the `command` is a just the basename and you want to run the binary in `/system` partition instead of the one in termux bin path since that will be found first during the search since the `$PATH` variable will be set to priority to android paths.
+Set priority to `android` paths for [`path`](#path) and [`script`](#script) command types. The `$PATH` variable will contain all android bin paths followed all termux bin paths. The `$LD_PRELOAD` variable will not be set. Check the [`$PATH` and `$LD_LIBRARY_PATH` Priorities](#path-and-ld_library_path-priorities) section for more info.
+
+
+
+#### `-A`
+
+Set priority to `android` paths for [`asu`](#asu), [`path`](#path) and [`script`](#script) command types. The `$PATH` variable will contain only `/system/bin` path. The `$LD_PRELOAD` variable will not be set. Check the [`$PATH` and `$LD_LIBRARY_PATH` Priorities](#path-and-ld_library_path-priorities) section for more info.
+
+
+
+#### `-AA`
+
+Set priority to `android` paths for [`asu`](#asu), [`path`](#path) and [`script`](#script) command types. The `$PATH` variable will contain all android bin paths. The `$LD_PRELOAD` variable will not be set. Check the [`$PATH` and `$LD_LIBRARY_PATH` Priorities](#path-and-ld_library_path-priorities) section for more info.
 
 
 
@@ -661,6 +743,24 @@ Can be used with the `script` command type with the [`-i`](#-i) option to use th
 
 
 
+#### `-t`
+
+Set priority to `termux` paths for [`path`](#path) and [`script`](#script) command types. The `$PATH` variable will contain all termux bin paths followed all android bin paths. The `$LD_PRELOAD` variable will contain `$TERMUX__PREFIX/lib/libtermux-exec.so`. Check the [`$PATH` and `$LD_LIBRARY_PATH` Priorities](#path-and-ld_library_path-priorities) section for more info.
+
+
+
+#### `-T`
+
+Set priority to `termux` paths for [`su`](#su), [`path`](#path) and [`script`](#script) command types. The `$PATH` variable will contain only `$TERMUX__PREFIX/bin` path. The `$LD_PRELOAD` variable will contain `$TERMUX__PREFIX/lib/libtermux-exec.so`. Check the [`$PATH` and `$LD_LIBRARY_PATH` Priorities](#path-and-ld_library_path-priorities) section for more info.
+
+
+
+#### `-TT`
+
+Set priority to `termux` paths for [`su`](#su), [`path`](#path) and [`script`](#script) command types. The `$PATH` variable will contain all termux bin paths. The `$LD_PRELOAD` variable will contain `$TERMUX__PREFIX/lib/libtermux-exec.so`. Check the [`$PATH` and `$LD_LIBRARY_PATH` Priorities](#path-and-ld_library_path-priorities) section for more info.
+
+
+
 #### `--comma-alternative`
 
 Set the comma alternative character to be used for the [`-r`](#-r) option instead of the default.
@@ -675,13 +775,13 @@ Enable dry running of the `sudo` script. This will not execute any commands, nor
 
 #### `--export-paths`
 
-Set the additional paths to export in `$PATH` variable, separated with colons `:`. The string passed must not start or end with or contain two consecutive colons `:`.
+Set the additional paths to export in `$PATH` variable, separated with colons `:`. The string passed must not start or end with or contain two consecutive colons `:`. This overrides `$SUDO_ADDITIONAL_PATHS_TO_EXPORT`.
 
 
 
 #### `--export-ld-lib-paths`
 
-Set the additional paths to export in `$LD_LIBRARY_PATH` variable, separated with colons `:`. The string passed must not start or end with or contain two consecutive colons `:`.
+Set the additional paths to export in `$LD_LIBRARY_PATH` variable, separated with colons `:`. The string passed must not start or end with or contain two consecutive colons `:`. This overrides `$SUDO_ADDITIONAL_LD_LIBRARY_PATHS_TO_EXPORT`.
 
 
 
@@ -917,9 +1017,9 @@ The `--work-dir=<path>` option can be used to set the absolute path for working 
 
 ### Shell Home
 
-The default `$HOME` directory for `sudo shell` and `sudo post shell` is `/data/data/com.termux/files/home/.suroot`. The [`--shell-home`](#--shell-home) and [`--post-shell-home`](#--post-shell-home) options or the exported environmental variables `$SUDO_SHELL_HOME` and `$SUDO_POST_SHELL_HOME` can be used to change the default directory. The home directory should ideally be different from the termux home directory to keep `config`, `rc` and `history` files separate for the `root` user and the `termux` user. The home directory should also be owned by the `root` user and have `0700` permission so that `non-root` users cannot access it for security reasons and hence termux home should ideally not be used.
+The default `$HOME` directory for `sudo shell` and `sudo post shell` is `/data/data/com.termux/files/home/.suroot`. The [`--shell-home`](#--shell-home) and [`--post-shell-home`](#--post-shell-home) options or the exported environment variables `$SUDO_SHELL_HOME` and `$SUDO_POST_SHELL_HOME` can be used to change the default directory. The home directory should ideally be different from the termux home directory to keep `config`, `rc` and `history` files separate for the `root` user and the `termux` user. The home directory should also be owned by the `root` user and have `0700` permission so that `non-root` users cannot access it for security reasons and hence termux home should ideally not be used.
 
-Check the [Modifying Default Values](#modifying-default-values) section for more info on `sudo` environmental variables and modifying default values.
+Check the [Modifying Default Values](#modifying-default-values) section for more info on `sudo` environment variables and modifying default values.
 
 If the home directory is under the termux files directory, then it must not be one of the following directories: `~/.{cache,config,local,termux}` and `$PREFIX/*`.
 
@@ -943,7 +1043,7 @@ The following shell `rc` files are used for different shells depending on if `su
 
 - If the homes are different, then `sudo` shells and `termux` shells will have different `rc` files, stored in their own homes.
 
-- If the homes are shared and the shell has no [`--rc`](#--rc) param or environmental variable for `rc` files, then `sudo` shells and `termux` shells will have to share the same `RCFILE`, implied by `(shared)` and `(hard-coded)` (by the shell) columns, otherwise will be different.
+- If the homes are shared and the shell has no [`--rc`](#--rc) param or environment variable for `rc` files, then `sudo` shells and `termux` shells will have to share the same `RCFILE`, implied by `(shared)` and `(hard-coded)` (by the shell) columns, otherwise will be different.
 
 For shells that do not have `rc` files have their columns set to `-`.
 
@@ -989,7 +1089,7 @@ The following shell `history` files are used for different shells depending on i
 
 - If the homes are different, then `sudo` shells and `termux` shells will have different `history` files, stored in their own homes.
 
-- If the homes are shared and the shell has no environmental variable for `history` files, then `sudo` shells and `termux` shells will have to share the same `HISTFILE`, implied by `(shared)` and `(hard-coded)` (by the shell) columns, otherwise will be different.
+- If the homes are shared and the shell has no environment variable for `history` files, then `sudo` shells and `termux` shells will have to share the same `HISTFILE`, implied by `(shared)` and `(hard-coded)` (by the shell) columns, otherwise will be different.
 
 For shells that do not have `history` files have their columns set to `-`. For shells whose history cannot be disabled have their `Disable Method` column set to `(not possible)`.
 
@@ -1032,7 +1132,7 @@ The `history` file parent directory and `history` file will not be created autom
 
 ### Modifying Default Values
 
-Check the [sudo.config](sudo.config) file to see the environmental variables that can be used to change the default values. If the `sudo.config` file exits at `~/.config/sudo/sudo.config`, then `sudo` will automatically source it whenever it is run. It must have `termux` user ownership or be readable by it.
+Check the [sudo.config](sudo.config) file to see the environment variables that can be used to change the default values. If the `sudo.config` file exits at `~/.config/sudo/sudo.config`, then `sudo` will automatically source it whenever it is run. It must have `termux` user ownership or be readable by it.
 
 You can download it from the `master` branch and set it up by running the following commands. If you are on an older version, you may want to extract it from its [release](https://github.com/agnostic-apollo/sudo/releases) instead.
 
@@ -1053,7 +1153,7 @@ You can also use `GUI` based text editor android apps that support `SAF`. Termux
 Note that the android default `SAF` `Document` file picker may not support hidden file or directories like `~/.config` which start with a dot `.`, so if you try to use it to open files for a text editor app, then that directory will not show. You can instead create a symlink for  `~/.config` at `~/config_sym` so that it is shown. Use `ln -s ~/.config ~/config_sym` to create it.
 
 
-If you use the `bash` shell in termux terminal session, you can optionally export the environmental variables like `$SUDO_SHELL_HOME` and `$SUDO_POST_SHELL_HOME` in the `~/.bashrc` file by adding `export SUDO_SHELL_HOME="/path/to/home"` and `export SUDO_POST_SHELL_HOME="/path/to/home"` lines to it so that they are automatically set whenever you start a terminal session. However, the `~/.bashrc` and `rc` files of other shells will not be sourced if you are running commands from `Termux:Tasker` or `RUN_COMMAND Intent`, and so it is advisable to use the `sudo.config` file instead, which will be sourced in all cases, regardless of how `sudo` is run.
+If you use the `bash` shell in termux terminal session, you can optionally export the environment variables like `$SUDO_SHELL_HOME` and `$SUDO_POST_SHELL_HOME` in the `~/.bashrc` file by adding `export SUDO_SHELL_HOME="/path/to/home"` and `export SUDO_POST_SHELL_HOME="/path/to/home"` lines to it so that they are automatically set whenever you start a terminal session. However, the `~/.bashrc` and `rc` files of other shells will not be sourced if you are running commands from `Termux:Tasker` or `RUN_COMMAND Intent`, and so it is advisable to use the `sudo.config` file instead, which will be sourced in all cases, regardless of how `sudo` is run.
 
 Note that `$SUDO_SHELL_PS1` and `$SUDO_POST_SHELL_PS1` values will not work if `$PS1` variable is overridden in `rc` files in `$PREFIX/etc/` or in `sudo shell` and `sudo post shell` homes. Check [RC File Variables](#rc-file-variables) section for more details.
 
@@ -1813,7 +1913,7 @@ Moreover, linux distros removed support for starting interactive shells with the
 
 - [RC File Variables](#r-c-file-variables)
 - [Arguments and Result Data Limits](#arguments-and-result-data-limits)
-- [PATH and LD_LIBRARY_PATH Priorities](#path-and-ld_library_path-priorities)
+- [`$PATH` and `$LD_LIBRARY_PATH` Priorities](#path-and-ld_library_path-priorities)
 - [`tpath` and `apath` functions](#tpath-and-apath-functions)
 - [`export` and `unset` functions](#export-and-unset-functions)
 - [`su` search paths](#su-search-paths)
@@ -1842,15 +1942,15 @@ Make sure in your `rc` files like `~/.suroot/.bashrc` file for `bash` (where `~/
 
 &nbsp;
 
-#### `$PATH` or `$LD_LIBRARY_PATH`
+#### `$PATH` and `$LD_LIBRARY_PATH` RC File Variables
 
-Check the [PATH and LD_LIBRARY_PATH Priorities](#path-and-ld_library_path-priorities) section for more info on what these variables are.
+Check the [`$PATH` and `$LD_LIBRARY_PATH` Priorities](#path-and-ld_library_path-priorities) section for more info on what these variables are.
 
-For the `$PATH` or `$LD_LIBRARY_PATH` variables, either remove their variable set lines completely or if necessary only append any required paths to the existing variable values like `export PATH="$PATH:/dir1:/dir2"` and `export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/dir1:/dir2"` instead of overriding them with `export PATH="/dir1:/dir2"` and `export LD_LIBRARY_PATH="/dir1:/dir2"` in your `rc` files.
+For the `$PATH` and `$LD_LIBRARY_PATH` variables, either remove their variable set lines completely or if necessary only append any required paths to the existing variable values like `export PATH="$PATH:/dir1:/dir2"` and `export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/dir1:/dir2"` instead of overriding them with `export PATH="/dir1:/dir2"` and `export LD_LIBRARY_PATH="/dir1:/dir2"` in your `rc` files.
 
 &nbsp;
 
-#### `$PS1`
+#### `$PS1` RC File Variables
 
 The `$PS1` variable, short for [Prompt String 1], defines the characters you see at the start of the "line" when typing commands in shells running interactively like `bash` or `zsh`. For `termux` `bash` shell, this defaults to `$ `. For `termux` `zsh` shell, this defaults to `% `.
 
@@ -1908,37 +2008,75 @@ The argument data limits also apply for the [RUN_COMMAND Intent] intent.
 
 
 
-### PATH and LD_LIBRARY_PATH Priorities
+### `$PATH` and `$LD_LIBRARY_PATH` Priorities
 
-The word executable will be used henceforth for binaries, scripts and any other executable files.
+**Check [Termux Execution Environment](https://github.com/termux/termux-packages/wiki/Termux-execution-environment) docs before continuing for info on how execution and dynamic linking happens in Termux, including issues/errors related to them and what path related environment variables are exported by Android and Termux by default.**
 
-`Termux` executables currently exist at `/data/data/com.termux/files/usr/bin` and `/data/data/com.termux/files/usr/bin/applets` `Termux` libraries exist at `/data/data/com.termux/files/usr/lib`.
+#### Path Environment Variables Exported By `sudo`
 
-`Android` executables normally exist at `/system/bin` and/or `/system/xbin` `Android` libraries exist at `/system/lib` and/or `/system/lib64`.
+The `sudo` script exports variables depending on the flags passed. If flags are not passed, then the [`su`](#su) and [`script`](#script) command types export variables as per [`-t`](#-t) flag, the [`asu`](#asu) command type export variables as per [`-a`](#-a) flag and the [`path`](#path) command types export variables as per [`-t`](#-t) flag if executable `canonical` path is under `$TERMUX__ROOTFS` directory, otherwise as per [`-a`](#-a) flag.
 
-When `sudo su` commands is run, then the termux executables paths are prepended to android executables paths in the `$PATH` variable. The termux library paths are prepended to android library paths in the `$LD_LIBRARY_PATH` variable. This gives priority to termux paths.
+The `$PATH` variable value will depend on the flag passed and will vary depending on Android version. If custom paths are passed with [`--export-paths`](#--export-paths) or `$SUDO_ADDITIONAL_PATHS_TO_EXPORT`, they will be still set or appended to `$PATH`.
 
-When `sudo asu` commands is run, then the android executables paths are prepended to termux executables paths in the `$PATH` variable. The android library paths are prepended to termux library paths in the `$LD_LIBRARY_PATH` variable. This gives priority to android paths.
+The `$LD_LIBRARY_PATH` variable will not be set for Android `>= 7` for any flags, since `DT_RUNPATH` is used by termux. It will contain `$TERMUX__PREFIX/lib` for Android `< 7`, but only for [`-a`](#-a), [`-t`](#-t), [`-T`](#-t-1) and [`-TT`](#-tt) flags, i.e for priority flags for which termux `bin` paths exist in `$PATH` as `DT_RUNPATH` is not used by termux for Android `< 7` packages. However, if custom paths are passed with [`--export-ld-lib-paths`](#--export-ld-lib-paths) or `$SUDO_ADDITIONAL_LD_LIBRARY_PATHS_TO_EXPORT`, they will still be set or appended to `$LD_LIBRARY_PATH`.
 
-The `$PATH` variable sets the paths to search for executables when commands are executed. The `$LD_LIBRARY_PATH` variable sets the paths to search for libraries for dynamic linking required by the commands that are executed. The path that appears first in both the variables is searched first and if the required binary, executable or library is found, that is the one thats used without looking further.
+The `$LD_PRELOAD` variable will contain `$TERMUX__PREFIX/lib/libtermux-exec.so` only for [`-t`](#-t), [`-T`](#-t-1), [`-TT`](#-tt) flags.
+
+So as per [Path Environment Variables Exported By Android](https://github.com/termux/termux-packages/wiki/Termux-execution-environment#path-environment-variables-exported-by-android) and [Path Environment Variables Exported By Termux](https://github.com/termux/termux-packages/wiki/Termux-execution-environment#path-environment-variables-exported-by-termux), for a `64-bit` Android `>= 11`, the `sudo` script would export the following variables depending on the flags passed.
+
+- [`-a`](#-a)  
+    - `$PATH`: All android bin paths followed all termux bin paths: `/product/bin:/apex/com.android.runtime/bin:/apex/com.android.art/bin:/system_ext/bin:/system/bin:/system/xbin:/odm/bin:/vendor/bin:/vendor/xbin:/data/data/com.termux/files/usr/bin:/data/data/com.termux/files/usr/bin/applets`  
+    - `$LD_LIBRARY_PATH`:  
+        - Android `>= 7`: Not set by default.  
+        - Android `< 7`: `/data/data/com.termux/files/usr/lib`  
+    - `$LD_PRELOAD`: Not set by default.  
+- [`-A`](#-a-1)  
+    - `$PATH`: Only android system bin path: `/system/bin`  
+    - `$LD_LIBRARY_PATH`: Not set by default.  
+    - `$LD_PRELOAD`: Not set by default.  
+- [`-AA`](#-aa)  
+    - `$PATH`: All android bin paths: `/product/bin:/apex/com.android.runtime/bin:/apex/com.android.art/bin:/system_ext/bin:/system/bin:/system/xbin:/odm/bin:/vendor/bin:/vendor/xbin`  
+    - `$LD_LIBRARY_PATH`: Not set by default.  
+    - `$LD_PRELOAD`: Not set by default.  
+- [`-t`](#-t)  
+    - `$PATH`: All termux bin paths followed all android bin paths: `/data/data/com.termux/files/usr/bin:/data/data/com.termux/files/usr/bin/applets:/product/bin:/apex/com.android.runtime/bin:/apex/com.android.art/bin:/system_ext/bin:/system/bin:/system/xbin:/odm/bin:/vendor/bin:/vendor/xbin`  
+    - `$LD_LIBRARY_PATH`:  
+        - Android `>= 7`: Not set by default.  
+        - Android `< 7`: `/data/data/com.termux/files/usr/lib`  
+    - `$LD_PRELOAD`: `/data/data/com.termux/files/usr/lib/libtermux-exec.so`.  
+- [`-T`](#-t-1)  
+    - `$PATH`: Only termux primary `bin` path: `/data/data/com.termux/files/usr/bin`  
+    - `$LD_LIBRARY_PATH`:  
+        - Android `>= 7`: Not set by default.  
+        - Android `< 7`: `/data/data/com.termux/files/usr/lib`  
+    - `$LD_PRELOAD`: `/data/data/com.termux/files/usr/lib/libtermux-exec.so`.  
+- [`-TT`](#-tt)  
+    - `$PATH`: All termux bin paths: `/data/data/com.termux/files/usr/bin:/data/data/com.termux/files/usr/bin/applets`  
+    - `$LD_LIBRARY_PATH`:  
+        - Android `>= 7`: Not set by default.  
+        - Android `< 7`: `/data/data/com.termux/files/usr/lib`  
+    - `$LD_PRELOAD`: `/data/data/com.termux/files/usr/lib/libtermux-exec.so`.  
+
 &nbsp;
 
-There are a few important things to consider when using `sudo` with termux.
+If [`-t`](#-t) mode is engaged, like for `sudo su` command, then the `termux` bin paths will be prepended to `android` bin paths in the `$PATH` variable, which would give priority to `termux` binaries. That means that if an executable is executed that exists in both `termux` and `android` bin directories, then the `termux` one will be executed since it would be found first during the search. For example, running `ls` would execute `$TERMUX__PREFIX/bin/ls`.
 
-A executable that you want to run may exist in both termux and android executable paths but you may want to run a specific one. If you want to run the termux one instead of the the android one then run `sudo su` command and then run the command to run the executable. If you want to run the android one instead of the the termux one then run `sudo asu` command and then run the command to run the executable. However in both cases, if you write the absolute path of the executable instead of just writing its basename, the executable at the path you wrote will be executed even if the other ones path exist before in the `$PATH` variable.
+If [`-a`](#-a) mode is engaged, like for `sudo asu` command, then the `android` bin paths will be prepended to `termux` bin paths in the `$PATH` variable, which would give priority to `android` binaries. That means that if an executable is executed that exists in both `termux` and `android` bin directories, then the `android` one will be executed since it would be found first during the search. For example, running `ls` would execute `/system/bin/ls`.
 
-Another thing to consider is that dynamic library linking errors may occur when executables try to link to the wrong library. Executables should be linked with libraries they are compatible with and that define all the needed functions needed by the executable. Executables that exist in termux executable path should ideally be linked with libraries that exist in termux library path. Executables that exist in android executable path should ideally be linked with libraries that exist in android library path.
+Note that if an absolute path to an executable is executed, like `/system/bin/ls`, then the `$PATH` variable will be not be used and its path priority will be irrelevant.
 
-When an executable is run, the paths in the `$LD_LIBRARY_PATH` variable are searched for the library that is required and whichever matching library is found first is used, even if that library is not compatible with the executable. If the library is indeed incompatible a linking error occurs with errors that may include words like `CANNOT LINK EXECUTABLE` and `cannot locate symbol some_symbol referenced by /lib....`.
+The same priority rules would apply for `$LD_LIBRARY_PATH`. If a library exists in both `termux` and `android` library directories, then the first one found will be used depending on the priority of paths in the variable regardless of if its compatible or not.
 
-So if an executable in android executable path tries to link with a library in termux library paths to which it is incompatible with, then a linking error will occur. This is likely to happen with some executables including the android `dumpsys` or `input` binaries among others. A linking error may occur the other way around too, when a termux executable tries to link with libraries in android library path. To prevent these linking error from occurring in most situations, separate `sudo su` and `sudo asu` commands exist, which set the correct order of paths in the `$PATH` and `$LD_LIBRARY_PATH` variables so that normally termux executables are linked with termux libraries and android executables are linked with android libraries whenever either command is run.
+- To ensure only binaries under `$TERMUX__PREFIX/bin` directory are executed, pass the [`-T`](#-t-1) flag. **This will have consistent behaviour with shells starts by the Termux app.**  
+- To ensure only binaries under any `termux` directory (`$TERMUX__PREFIX/bin` or `$TERMUX__PREFIX/bin/applets`) are executed, pass the [`-TT`](#-tt) flag.  
+- To ensure only binaries under `/system/bin` directory are executed, pass the [`-A`](#-a-1) flag.  
+- To ensure only binaries under any `android` bin directory are executed, pass the [`-AA`](#-aa) flag. **This will have consistent behaviour with shells starts by android [`adb`](https://developer.android.com/tools/adb).**  
+- While running in a shell as the `termux` user, to run a single `android` system command as the `root` user, use the [`path`](#path) command with the [`-A`](#-a-1) or [`-AA`](#-aa) flag as `sudo -A <command>`, like `sudo -A ls -lhdZ .` to execute `/system/bin/ls`.  
+- You can also use the [`tpath` and `apath` functions](#tpath-and-apath-functions) if they are defined in the `rc` file of your interactive shell to shift priorities without starting a new shell.  
+
 &nbsp;
 
-However, another way to automatically prioritize android libraries is by running the `path` command type with `sudo <command>`. If the `command` exists in the `/system` partition, then android library paths are prepended to termux library paths in the `$LD_LIBRARY_PATH` variable automatically. An absolute path is not needed to be passed for this to work as the `$PATH_TO_EXPORT` is automatically searched. This is helpful for situations when you are already in a `sudo su` shell and do not want to shift to the `sudo asu` shell or unset `$LD_LIBRARY_PATH` to run just one executable in android executables paths.
-
-You can also use the `tpath` and `apath` functions if they are defined in the `rc` file of your interactive shell to shift priorities.
-
-Normally `sudo su` will work fine without problem when dropping to `sudo` shell. But if you want to specifically run an executable in the android executable paths instead of the one in termux executable paths or are getting linking errors when running android executables with `sudo su`, then try using `sudo asu` and then running the required command or use `sudo <command>` or `sudo -a <command>`.
+If getting the linker error `CANNOT LINK EXECUTABLE`, with sub errors like `library <library> not found` and `cannot locate symbol <symbol> referenced by <executable/dependency_library>`, check Termux [`Dynamic Library Linking And Errors`](https://github.com/termux/termux-packages/wiki/Termux-execution-environment#dynamic-library-linking-and-errors) docs, especially [`Package dependencies are outdated`](https://github.com/termux/termux-packages/wiki/Termux-execution-environment#package-dependencies-are-outdated) and [`$LD_LIBRARY_PATH` contains incompatible directory paths](https://github.com/termux/termux-packages/wiki/Termux-execution-environment#ld_library_path-contains-incompatible-directory-paths) sections. Make sure packages are upto date and `$LD_LIBRARY_PATH` is not being set containing termux and android default library paths on Android `>= 7`. For Android `< 7`, since `$LD_LIBRARY_PATH` needs to be set, if a library exists in both termux and android system library path, which would cause conflicts.
 
 ## &nbsp;
 
@@ -1948,11 +2086,13 @@ Normally `sudo su` will work fine without problem when dropping to `sudo` shell.
 
 ### `tpath` and `apath` functions
 
-For the shells `bash zsh dash sh fish ksh`, additional functions named `tpath` and `apath` are added to their `rc` files if the `sudo` script creates the `rc` files, they are not added otherwise. You can call these functions to set priorities from inside interactive shell sessions only when running `sudo su`, `sudo asu` or `sudo -is <core_script` commands, since they depend on some environmental variables set by the `sudo` script and are not hard-coded in case of future changes.
+For the shells `bash zsh dash sh fish ksh`, additional functions named `tpath` and `apath` are added to their `rc` files if the `sudo` script creates the `rc` files, they are not added otherwise. You can call these functions to set priorities from inside interactive shell sessions only when running `sudo su`, `sudo asu` or `sudo -is <core_script` commands, since they depend on some environment variables set by the `sudo` script and are not hard-coded in case of future changes.
 
-The `tpath` function will set priority to termux bin and library paths in `$PATH` and `$LD_LIBRARY_PATH` variables.
+The `tpath` function will set priority to termux bin paths in `$PATH` variable.
 
-The `apath` function will set priority to android bin and library paths in `$PATH` and `$LD_LIBRARY_PATH` variables.
+The `apath` function will set priority to android bin paths in `$PATH` variable.
+
+The functions will use the inverted value for the priority flags passed for which current `sudo` instance was started with. For example, if `sudo` was run with [`-a`](#-a) flags, then running `tpath` would result in variables being set as per [`-t`](#-t) flag and running `apath` would invert them back to values as per [`-a`](#-a) flag. If `sudo` was started with [`-T`](#-t-1), then running `apath` would result in variables being set as per [`-A`](#-a-1) flag and running `tpath` would invert them back to values as per [`-T`](#-t-1) flag.
 
 The functions allows the users to quickly switch priorities without having to switch between `sudo su` and `sudo asu` shells.
 

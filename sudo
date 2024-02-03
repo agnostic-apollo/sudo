@@ -67,13 +67,11 @@ TERMUX_PREFIX_BASENAME="usr"
 TERMUX_PREFIX="$TERMUX_FILES/$TERMUX_PREFIX_BASENAME"
 TERMUX_BIN="$TERMUX_PREFIX/bin"
 TERMUX_BIN_APPLETS="$TERMUX_PREFIX/bin/applets"
-TERMUX_PATH="$TERMUX_BIN:$TERMUX_BIN_APPLETS"
 TERMUX_LD_LIBRARY_PATH="$TERMUX_PREFIX/lib"
+TERMUX_LD_PRELOAD="$TERMUX_LD_LIBRARY_PATH/libtermux-exec.so"
 TMPDIR="$TERMUX_PREFIX/tmp"
 SYS_XBIN="/system/xbin"
 SYS_BIN="/system/bin"
-ANDROID_PATH="$SYS_XBIN:$SYS_BIN"
-ANDROID_OTHER_BIN_PATHS="/sbin:/vendor/bin:/system/sbin"
 BASH_SHELL_PATH="$TERMUX_BIN/bash"
 TERM="xterm-256color"
 
@@ -153,6 +151,8 @@ SUDO_NOOP_COMMAND=0 # Default: `0`
 SUDO_DRY_RUN=0 # Default: `0`
 COMMAND_TYPE="path" # Default: `path`
 COMMAND_TYPE_PATH_FORCED=0 # Default: `0`
+A_FLAG_PASSED=0 # Default: `0`
+T_FLAG_PASSED=0 # Default: `0`
 
 ROOTFS_PREVIOUS_STATE_RO=0 # Default to `0` (true)
 SYSTEM_PREVIOUS_STATE_RO=0 # Default to `0` (true)
@@ -187,7 +187,9 @@ SLEEP_AFTER_SUDO=0 # Default: `0`
 SLEEP_ONLY_ON_FAILURE=0 # Default: `0`
 DISABLE_ARGUMENTS_LOGGING=0 # Default: `0`
 SET_SUDO_SHELL_TERMINAL_TITLE=0 # Default: `0`
-FORCE_SET_PRIORITY_TO_ANDROID_PATHS=0 # Default: `0`
+PATH_PRIORITY="default" # Default: `default`
+SET_SECONDARY_PRIORITY_PATHS=1 # Default: `1`
+SET_SECONDARY_PATHS=1 # Default: `1`
 
 SUDO_SHELL="" # Default: ``
 SUDO_SHELL_BASENAME="" # Default: ``
@@ -283,6 +285,11 @@ sudo_main() {
     # if they were not already exported
     sudo_set_default_variables || return $?
 
+
+    # Set pre required variables to be used by this script
+    sudo_set_pre_required_variables || return $?
+
+
     # Process the command arguments passed to sudo
     sudo_process_arguments "$@" || return $?
 
@@ -329,6 +336,8 @@ sudo_run() {
     fi
 
     export SUDO_SCRIPT_PATH
+
+
 
     # If COMMAND_TYPE equals "su" or "asu"
     if [[ "$COMMAND_TYPE" == "su" ]] || [[ "$COMMAND_TYPE" == "asu" ]]; then
@@ -484,10 +493,7 @@ sudo_run() {
     sudo_setup_sudo_shell_home_and_working_environment_wrapper
     return_value=$?
     if [ $return_value -ne 0 ]; then
-        # If SUDO_TEMP_DIRECTORY_FD is set, then close it
-        if [ -n "$SUDO_TEMP_DIRECTORY_FD" ]; then
-            exec {SUDO_TEMP_DIRECTORY_FD}>&-
-        fi
+        sudo_cleanup_temp_directory_fd_path
         return $return_value
     fi
 
@@ -913,47 +919,14 @@ sudo_set_su_run_command() {
 
 }
 
-sudo_set_required_variables() {
+sudo_set_pre_required_variables() {
 
     local return_value
-
-    # Do not modify unless you known what you are doing
-
-    sudo_log_literal 3 "\nRunning sudo_set_required_variables"
-
-    # Set LD_PRELOAD
-    export LD_PRELOAD="$TERMUX_PREFIX/lib/libtermux-exec.so"
-
-    SUDO_LD_PRELOAD="$LD_PRELOAD"
-
-    local remove_duplicates_in_path_variable=0
-    local remove_duplicates_in_ld_library_path_variable=0
-
-    # Store PATH and LD_LIBRARY_PATH
-    OLD_PATH="$PATH"
-    OLD_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
-
-
-    # Set PATH
-    PATH="$TERMUX_PATH:$SYS_XBIN:$SYS_BIN"
-
-    sudo_log 3 "PATH=\"$PATH\""
-
-    # Find machine arch
-    ARCH="$(dpkg --print-architecture)"
-    return_value=$?
-    if [ $return_value -ne 0 ]; then
-        sudo_log_errors "Failed to find machine arch"
-        return $return_value
-    fi
-
-    sudo_log 3 "ARCH=\"$ARCH\""
-
 
     # Find android sdk/os version
     # Termux app exports ANDROID__BUILD_VERSION_SDK for `>= v0.119.0`
     if [[ ! "$ANDROID__BUILD_VERSION_SDK" =~ $VALID_NUMBER_REGEX ]]; then
-        ANDROID__BUILD_VERSION_SDK="$(getprop "ro.build.version.sdk")"
+        ANDROID__BUILD_VERSION_SDK="$(unset LD_LIBRARY_PATH; unset LD_PRELOAD; getprop "ro.build.version.sdk")"
         return_value=$?
         if [ $return_value -ne 0 ] || [[ ! "$ANDROID__BUILD_VERSION_SDK" =~ $VALID_NUMBER_REGEX ]]; then
             sudo_log_errors "Failure while finding \"ro.build.version.sdk\" property"
@@ -966,6 +939,52 @@ sudo_set_required_variables() {
     fi
 
     sudo_log 3 "ANDROID__BUILD_VERSION_SDK=\"$ANDROID__BUILD_VERSION_SDK\""
+
+
+
+    # Set LD_LIBRARY_PATH for all external commands that may be run
+    # If on Android `< 7`
+    if [ "$ANDROID__BUILD_VERSION_SDK" -lt 24 ]; then
+        # Set only termux library path
+        LD_LIBRARY_PATH="$TERMUX_LD_LIBRARY_PATH"
+    else
+        # Do not set termux or android library paths
+        LD_LIBRARY_PATH=""
+    fi
+
+    SUDO_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
+
+    sudo_log 3 "LD_LIBRARY_PATH=\"$LD_LIBRARY_PATH\""
+
+    return 0
+
+}
+
+sudo_set_required_variables() {
+
+    local return_value
+
+    # Do not modify unless you known what you are doing
+
+    sudo_log_literal 3 "\nRunning sudo_set_required_variables"
+
+    # Set LD_PRELOAD
+    export LD_PRELOAD="$TERMUX_LD_PRELOAD"
+
+    SUDO_LD_PRELOAD="$LD_PRELOAD"
+
+    local remove_duplicates_in_path_variable=0
+    local remove_duplicates_in_ld_library_path_variable=0
+
+    # Store PATH and LD_LIBRARY_PATH
+    OLD_PATH="$PATH"
+    OLD_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
+
+
+    # Set PATH
+    PATH="$TERMUX_BIN:$TERMUX_BIN_APPLETS:$SYS_XBIN:$SYS_BIN"
+
+    sudo_log 3 "PATH=\"$PATH\""
 
 
     # Set current working directory
@@ -993,35 +1012,27 @@ sudo_set_required_variables() {
 
 
 
-    # Set LD_LIBRARY_PATH
-    # If ARCH is 64 bit
-    if [[ "$ARCH" == *64 ]]; then
-        LD_LIBRARY_PATH="$TERMUX_LD_LIBRARY_PATH:/system/lib64:/system/lib"
+    # Set path priority variables to use depending on android or termux priority
+    sudo_set_path_priority_variables "$SET_SECONDARY_PATHS"
+
+
+
+    # Set variables for PATH_TO_EXPORT
+    if [[ "$SET_SECONDARY_PRIORITY_PATHS" == "1" ]]; then
+        # Set termux followed by android paths to give termux paths priority for `-t` flag
+        TERMUX_PRIORITY_PATH="$TERMUX_PATH:$ANDROID_PATH"
+
+        # Set android followed by termux paths to give android paths priority for `-a` flag
+        ANDROID_PRIORITY_PATH="$ANDROID_PATH:$TERMUX_PATH"
     else
-        LD_LIBRARY_PATH="$TERMUX_LD_LIBRARY_PATH:/system/lib"
+        # Set only termux paths for `-T` and `-TT` flag
+        # No need to add SU_BIN_PATH as termux su wrapper in TERMUX_BIN would override it
+        TERMUX_PRIORITY_PATH="$TERMUX_PATH"
+
+        # Set only android paths for `-A` and `-AA` flag
+        ANDROID_PRIORITY_PATH="$ANDROID_PATH"
     fi
 
-    SUDO_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
-
-    sudo_log 3 "LD_LIBRARY_PATH=\"$LD_LIBRARY_PATH\""
-
-    # Set ANDROID_PATH
-
-    # If SU_BIN_PATH is not empty, then append it to ANDROID_PATH
-    if [ -n "$SU_BIN_PATH" ]; then
-        ANDROID_PATH+=":$SU_BIN_PATH"
-    fi
-
-    # If ANDROID_OTHER_BIN_PATHS is not empty, then append it to ANDROID_PATH
-    if [ -n "$ANDROID_OTHER_BIN_PATHS" ]; then
-        ANDROID_PATH+=":$ANDROID_OTHER_BIN_PATHS"
-    fi
-
-    # Set TERMUX_PRIORITY_PATH with priority to termux binary and executable paths
-    TERMUX_PRIORITY_PATH="$TERMUX_PATH:$ANDROID_PATH"
-
-    # Set ANDROID_PRIORITY_PATH with priority to android binary and executable paths
-    ANDROID_PRIORITY_PATH="$ANDROID_PATH:$TERMUX_PATH"
 
     # If SUDO_EXPORT_ALL_EXISTING_PATHS_IN_PATH_VARIABLE is enabled and OLD_PATH is not empty, then append it to PATH variables
     if [[ "$SUDO_EXPORT_ALL_EXISTING_PATHS_IN_PATH_VARIABLE" == "1" ]] && [ -n "$OLD_PATH" ]; then
@@ -1036,6 +1047,7 @@ sudo_set_required_variables() {
         ANDROID_PRIORITY_PATH+=":$SUDO_ADDITIONAL_PATHS_TO_EXPORT"
         remove_duplicates_in_path_variable=1
     fi
+
 
     # Remove_duplicates_in_path_variable is only enabled if custom paths are added to the PATH variables
     # This will reduce execution time since an external call to awk with a subshell will be made
@@ -1058,20 +1070,23 @@ sudo_set_required_variables() {
     fi
 
 
-    # Set LD_LIBRARY_PATH_TO_EXPORT
-    # If ARCH is 64 bit
-    if [[ "$ARCH" == *64 ]]; then
-        ANDROID_LD_LIBRARY_PATH="/system/lib64:/system/lib"
-    # If ARCH is 32 bit
+    # If on Android `< 7`
+    if [ "$ANDROID__BUILD_VERSION_SDK" -lt 24 ]; then
+        # Set only termux library path for all `-t`, `-T` and `-TT` flags
+        TERMUX_PRIORITY_LD_LIBRARY_PATH="$TERMUX_LD_LIBRARY_PATH"
+
+        # Set only termux library path for `-a` flag but not for `-A` and `-AA` flags
+        if [[ "$SET_SECONDARY_PRIORITY_PATHS" == "1" ]]; then
+            ANDROID_PRIORITY_LD_LIBRARY_PATH="$TERMUX_LD_LIBRARY_PATH"
+        else
+            ANDROID_PRIORITY_LD_LIBRARY_PATH=""
+        fi
     else
-        ANDROID_LD_LIBRARY_PATH="/system/lib"
+        # Do not set termux or android library paths for any flags
+        TERMUX_PRIORITY_LD_LIBRARY_PATH=""
+        ANDROID_PRIORITY_LD_LIBRARY_PATH=""
     fi
 
-    # Set TERMUX_PRIORITY_LD_LIBRARY_PATH with priority to termux library paths
-    TERMUX_PRIORITY_LD_LIBRARY_PATH="$TERMUX_LD_LIBRARY_PATH:$ANDROID_LD_LIBRARY_PATH"
-
-    # Set ANDROID_PRIORITY_LD_LIBRARY_PATH with priority to android library paths
-    ANDROID_PRIORITY_LD_LIBRARY_PATH="$ANDROID_LD_LIBRARY_PATH:$TERMUX_LD_LIBRARY_PATH"
 
     # If SUDO_EXPORT_ALL_EXISTING_PATHS_IN_LD_LIBRARY_PATH_VARIABLE is enabled and OLD_LD_LIBRARY_PATH is not empty, then append it to LD_LIBRARY_PATH variables
     if [[ "$SUDO_EXPORT_ALL_EXISTING_PATHS_IN_LD_LIBRARY_PATH_VARIABLE" == "1" ]] && [ -n "$OLD_LD_LIBRARY_PATH" ]; then
@@ -1086,6 +1101,7 @@ sudo_set_required_variables() {
         ANDROID_PRIORITY_LD_LIBRARY_PATH+=":$SUDO_ADDITIONAL_LD_LIBRARY_PATHS_TO_EXPORT"
         remove_duplicates_in_ld_library_path_variable=1
     fi
+
 
     # Remove_duplicates_in_path_variable is only enabled if custom paths are added to the LD_LIBRARY_PATH variables
     # This will reduce execution time since an external call to awk with a subshell will be made
@@ -1108,8 +1124,9 @@ sudo_set_required_variables() {
     fi
 
 
+
     # Set TERMUX_PRIORITY_LD_PRELOAD_COMMAND to set LD_PRELOAD to libtermux-exec.so
-    TERMUX_PRIORITY_LD_PRELOAD_COMMAND="export LD_PRELOAD='$TERMUX_PREFIX/lib/libtermux-exec.so';"
+    TERMUX_PRIORITY_LD_PRELOAD_COMMAND="export LD_PRELOAD='$LD_PRELOAD';"
 
     # Set ANDROID_PRIORITY_LD_PRELOAD_COMMAND to unset LD_PRELOAD
     ANDROID_PRIORITY_LD_PRELOAD_COMMAND="unset LD_PRELOAD;"
@@ -1275,14 +1292,76 @@ sudo_set_required_variables() {
 }
 
 ##
+# Set termux and android path priority variables that should be used
+# depending on required priority.
+# .
+# The `ARCH` variable must be set.
+# .
+# sudo_set_path_priority_variables `set_secondary_paths`
+sudo_set_path_priority_variables() {
+
+    local set_secondary_paths="$1"
+
+    # Set TERMUX_PATH
+    if [[ "$set_secondary_paths" == "1" ]]; then
+        TERMUX_PATH="$TERMUX_BIN:$TERMUX_BIN_APPLETS"
+    else
+        TERMUX_PATH="$TERMUX_BIN"
+    fi
+
+
+    # Set ANDROID_PATH
+    if [[ "$set_secondary_paths" == "1" ]]; then
+        # If android >= 11
+        if [ "$ANDROID__BUILD_VERSION_SDK" -ge 30 ]; then
+            # - https://cs.android.com/android/platform/superproject/+/android-11.0.0_r1:bionic/libc/include/paths.h;l=50
+            # - https://cs.android.com/android/platform/superproject/+/android-14.0.0_r1:bionic/libc/include/paths.h;l=50
+            ANDROID_PATH="/product/bin:/apex/com.android.runtime/bin:/apex/com.android.art/bin:/system_ext/bin:/system/bin:/system/xbin:/odm/bin:/vendor/bin:/vendor/xbin"
+        # If android >= 10
+        elif [ "$ANDROID__BUILD_VERSION_SDK" -ge 29 ]; then
+            # - https://cs.android.com/android/platform/superproject/+/android-10.0.0_r1:bionic/libc/include/paths.h;l=50
+            ANDROID_PATH="/sbin:/system/sbin:/product/bin:/apex/com.android.runtime/bin:/system/bin:/system/xbin:/odm/bin:/vendor/bin:/vendor/xbin"
+        # If android >= 9
+        elif [ "$ANDROID__BUILD_VERSION_SDK" -ge 28 ]; then
+            # - https://cs.android.com/android/platform/superproject/+/android-9.0.0_r1:bionic/libc/include/paths.h;l=41
+            ANDROID_PATH="/sbin:/system/sbin:/system/bin:/system/xbin:/odm/bin:/vendor/bin:/vendor/xbin"
+        # If android >= 8
+        elif [ "$ANDROID__BUILD_VERSION_SDK" -ge 26 ]; then
+            # - https://cs.android.com/android/platform/superproject/+/android-8.0.0_r1:bionic/libc/include/paths.h;l=39
+            ANDROID_PATH="/sbin:/system/sbin:/system/bin:/system/xbin:/vendor/bin:/vendor/xbin"
+        # If android < 8   
+        # - https://cs.android.com/android/platform/superproject/+/android-7.0.0_r1:bionic/libc/include/paths.h;l=37    
+        else
+            ANDROID_PATH="/sbin:/vendor/bin:/system/sbin:/system/bin:/system/xbin"
+        fi
+
+        # If SU_BIN_PATH is not empty and if it does not already exist in ANDROID_PATH, then append it to ANDROID_PATH
+        if [ -n "$SU_BIN_PATH" ] && [[ "$SU_BIN_PATH" != *:* ]] && [[ ":$ANDROID_PATH:" != *":$SU_BIN_PATH:"* ]]; then
+            ANDROID_PATH+=":$SU_BIN_PATH"
+        fi
+    else
+        ANDROID_PATH="$SYS_BIN"
+    fi
+
+    return 0
+
+}
+
+##
 # Function that should be called before running su commands.
 # This will unset variable so that some su binaries like the ones provided by magisk run successfully.
 # .
 # sudo_unset_pre_su_variables
 ##
 sudo_unset_pre_su_variables() {
+
     unset LD_PRELOAD
-    unset LD_LIBRARY_PATH
+    if [ "$ANDROID__BUILD_VERSION_SDK" -ge 24 ]; then
+        unset LD_LIBRARY_PATH
+    fi
+
+    return 0
+
 }
 
 ##
@@ -1292,8 +1371,12 @@ sudo_unset_pre_su_variables() {
 # sudo_set_post_su_variables
 ##
 sudo_set_post_su_variables() {
+
     LD_PRELOAD="$SUDO_LD_PRELOAD"
     LD_LIBRARY_PATH="$SUDO_LD_LIBRARY_PATH"
+
+    return 0
+
 }
 
 ##
@@ -1420,6 +1503,22 @@ sudo_set_su_env_command_variables_to_export() {
 
 }
 
+sudo_add_export_or_unset_var_command() {
+
+    local var_to_update="$1"
+    local var_to_export="$2"
+    local var_value="$3"
+
+    if [ -n "$var_value" ]; then
+        printf -v "$var_to_update" "%s" "${!var_to_update}export $var_to_export='${var_value//\'/\'\\\'\'}';"$'\n'
+    else
+        # Do not export empty variable as it will appear in environ
+        # And unset it if it already exists
+        printf -v "$var_to_update" "%s" "${!var_to_update}unset $var_to_export;"$'\n'
+    fi
+
+}
+
 sudo_set_pre_sudo_shell_commands_to_run() {
 
     local return_value
@@ -1428,20 +1527,46 @@ sudo_set_pre_sudo_shell_commands_to_run() {
 
     local priority
 
-    # If COMMAND_TYPE equals "asu"
-    if [[ "$COMMAND_TYPE" == "asu" ]]; then
-        # Set PRE_SUDO_SHELL_COMMANDS_TO_RUN with priority to android bin and library paths
-        sudo_log 3 "Setting PRE_SUDO_SHELL_COMMANDS_TO_RUN with priority to android bin and library paths since COMMAND_TYPE is \"asu\""
-        priority="android"
-    # If COMMAND_TYPE equals "path" and (SUDO_PATH_COMMAND is in /system partition or FORCE_SET_PRIORITY_TO_ANDROID_PATHS is enabled)
-    elif [[ "$COMMAND_TYPE" == "path" ]] && { [[ "$SUDO_PATH_COMMAND" =~ $VALID_PATH_IN_SYSTEM_PARTITION_REGEX ]] || [[ "$FORCE_SET_PRIORITY_TO_ANDROID_PATHS" == "1" ]]; }; then
-        # Set PRE_SUDO_SHELL_COMMANDS_TO_RUN with priority to android bin and library paths
-        sudo_log 3 "Setting PRE_SUDO_SHELL_COMMANDS_TO_RUN with priority to android bin and library paths since COMMAND_TYPE is \"path\" and SUDO_PATH_COMMAND is in \"/system\" partition or FORCE_SET_PRIORITY_TO_ANDROID_PATHS is enabled"
-        priority="android"
-    else
-        # Set PRE_SUDO_SHELL_COMMANDS_TO_RUN with priority to termux bin and library paths
-        sudo_log 3 "Setting PRE_SUDO_SHELL_COMMANDS_TO_RUN with priority to termux bin and library paths"
+    # Set PRE_SUDO_SHELL_COMMANDS_TO_RUN with priority to required bin and library paths
+
+    # If COMMAND_TYPE equals "su"
+    if [[ "$COMMAND_TYPE" == "su" ]]; then
         priority="termux"
+        sudo_log 3 "Setting PRE_SUDO_SHELL_COMMANDS_TO_RUN with priority to \"termux\" bin and library paths for COMMAND_TYPE \"su\""
+
+    # If COMMAND_TYPE equals "asu"
+    elif [[ "$COMMAND_TYPE" == "asu" ]]; then
+        priority="android"
+        sudo_log 3 "Setting PRE_SUDO_SHELL_COMMANDS_TO_RUN with priority to \"android\" bin and library paths for COMMAND_TYPE \"asu\""
+
+    # If COMMAND_TYPE equals "path"
+    elif [[ "$COMMAND_TYPE" == "path" ]]; then
+        # If PATH_PRIORITY is android or termux
+        if [[ "$PATH_PRIORITY" == "android" ]] || [[ "$PATH_PRIORITY" == "termux" ]]; then
+            priority="$PATH_PRIORITY"
+            sudo_log 3 "Setting PRE_SUDO_SHELL_COMMANDS_TO_RUN with priority to \"$priority\" bin and library paths for COMMAND_TYPE \"path\" since PATH_PRIORITY is \"$PATH_PRIORITY\""
+        # If PATH_PRIORITY is default
+        else
+            # If SUDO_CANONICAL_PATH_COMMAND is under termux rootfs
+            if [[ "$SUDO_CANONICAL_PATH_COMMAND" == "$TERMUX_FILES"/* ]]; then
+                priority="termux"
+                sudo_log 3 "Setting PRE_SUDO_SHELL_COMMANDS_TO_RUN with priority to \"termux\" bin and library paths for COMMAND_TYPE \"path\" since SUDO_PATH_COMMAND is under termux rootfs"
+            else
+                priority="android"
+                sudo_log 3 "Setting PRE_SUDO_SHELL_COMMANDS_TO_RUN with priority to \"android\" bin and library paths for COMMAND_TYPE \"path\" since SUDO_PATH_COMMAND is not under termux rootfs"
+            fi
+        fi
+
+    # If COMMAND_TYPE equals "script"
+    else
+        # If PATH_PRIORITY is android
+        if [[ "$PATH_PRIORITY" == "android" ]]; then
+            priority="android"
+        # If PATH_PRIORITY is default or termux    
+        else
+            priority="termux"
+        fi
+        sudo_log 3 "Setting PRE_SUDO_SHELL_COMMANDS_TO_RUN with priority to \"$priority\" bin and library paths for COMMAND_TYPE \"script\" since PATH_PRIORITY is \"$PATH_PRIORITY\""
     fi
 
     # Set priority_dependent_variables with new priority if needed
@@ -1450,12 +1575,15 @@ sudo_set_pre_sudo_shell_commands_to_run() {
     # Set PRE_SUDO_SHELL_COMMANDS_TO_RUN
     # Set variables that need to be exported when running the sudo shell
     PRE_SUDO_SHELL_COMMANDS_TO_RUN=""
-    PRE_SUDO_SHELL_COMMANDS_TO_RUN+="export TERMUX_PRIORITY_PATH='${TERMUX_PRIORITY_PATH//\'/\'\\\'\'}';"$'\n'
-    PRE_SUDO_SHELL_COMMANDS_TO_RUN+="export TERMUX_PRIORITY_LD_LIBRARY_PATH='${TERMUX_PRIORITY_LD_LIBRARY_PATH//\'/\'\\\'\'}';"$'\n'
-    PRE_SUDO_SHELL_COMMANDS_TO_RUN+="export ANDROID_PRIORITY_PATH='${ANDROID_PRIORITY_PATH//\'/\'\\\'\'}';"$'\n'
-    PRE_SUDO_SHELL_COMMANDS_TO_RUN+="export ANDROID_PRIORITY_LD_LIBRARY_PATH='${ANDROID_PRIORITY_LD_LIBRARY_PATH//\'/\'\\\'\'}';"$'\n'
+
     PRE_SUDO_SHELL_COMMANDS_TO_RUN+="export PATH='${PATH_TO_EXPORT//\'/\'\\\'\'}';"$'\n'
-    PRE_SUDO_SHELL_COMMANDS_TO_RUN+="export LD_LIBRARY_PATH='${LD_LIBRARY_PATH_TO_EXPORT//\'/\'\\\'\'}';"$'\n'
+    PRE_SUDO_SHELL_COMMANDS_TO_RUN+="export TERMUX_PRIORITY_PATH='${TERMUX_PRIORITY_PATH//\'/\'\\\'\'}';"$'\n'
+    PRE_SUDO_SHELL_COMMANDS_TO_RUN+="export ANDROID_PRIORITY_PATH='${ANDROID_PRIORITY_PATH//\'/\'\\\'\'}';"$'\n'
+
+    sudo_add_export_or_unset_var_command "PRE_SUDO_SHELL_COMMANDS_TO_RUN" "LD_LIBRARY_PATH" "$LD_LIBRARY_PATH_TO_EXPORT" || return $?
+    sudo_add_export_or_unset_var_command "PRE_SUDO_SHELL_COMMANDS_TO_RUN" "TERMUX_PRIORITY_LD_LIBRARY_PATH" "$TERMUX_PRIORITY_LD_LIBRARY_PATH" || return $?
+    sudo_add_export_or_unset_var_command "PRE_SUDO_SHELL_COMMANDS_TO_RUN" "ANDROID_PRIORITY_LD_LIBRARY_PATH" "$ANDROID_PRIORITY_LD_LIBRARY_PATH" || return $?
+
     PRE_SUDO_SHELL_COMMANDS_TO_RUN+="export PREFIX='$TERMUX_PREFIX';"$'\n'
     PRE_SUDO_SHELL_COMMANDS_TO_RUN+="export TMPDIR='$TMPDIR';"$'\n'
     PRE_SUDO_SHELL_COMMANDS_TO_RUN+="export HOME='${SUDO_SHELL_HOME//\'/\'\\\'\'}';"$'\n'
@@ -1528,12 +1656,15 @@ sudo_set_pre_sudo_post_shell_commands_to_run() {
     # Set PRE_SUDO_POST_SHELL_COMMANDS_TO_RUN
     # Set variables that need to be exported when running the sudo post shell
     PRE_SUDO_POST_SHELL_COMMANDS_TO_RUN=""
-    PRE_SUDO_POST_SHELL_COMMANDS_TO_RUN+="export TERMUX_PRIORITY_PATH='${TERMUX_PRIORITY_PATH//\'/\'\\\'\'}';"$'\n'
-    PRE_SUDO_POST_SHELL_COMMANDS_TO_RUN+="export TERMUX_PRIORITY_LD_LIBRARY_PATH='${TERMUX_PRIORITY_LD_LIBRARY_PATH//\'/\'\\\'\'}';"$'\n'
-    PRE_SUDO_POST_SHELL_COMMANDS_TO_RUN+="export ANDROID_PRIORITY_PATH='${ANDROID_PRIORITY_PATH//\'/\'\\\'\'}';"$'\n'
-    PRE_SUDO_POST_SHELL_COMMANDS_TO_RUN+="export ANDROID_PRIORITY_LD_LIBRARY_PATH='${ANDROID_PRIORITY_LD_LIBRARY_PATH//\'/\'\\\'\'}';"$'\n'
+
     PRE_SUDO_POST_SHELL_COMMANDS_TO_RUN+="export PATH='${PATH_TO_EXPORT//\'/\'\\\'\'}';"$'\n'
-    PRE_SUDO_POST_SHELL_COMMANDS_TO_RUN+="export LD_LIBRARY_PATH='${LD_LIBRARY_PATH_TO_EXPORT//\'/\'\\\'\'}';"$'\n'
+    PRE_SUDO_POST_SHELL_COMMANDS_TO_RUN+="export TERMUX_PRIORITY_PATH='${TERMUX_PRIORITY_PATH//\'/\'\\\'\'}';"$'\n'
+    PRE_SUDO_POST_SHELL_COMMANDS_TO_RUN+="export ANDROID_PRIORITY_PATH='${ANDROID_PRIORITY_PATH//\'/\'\\\'\'}';"$'\n'
+
+    sudo_add_export_or_unset_var_command "PRE_SUDO_POST_SHELL_COMMANDS_TO_RUN" "LD_LIBRARY_PATH" "$LD_LIBRARY_PATH_TO_EXPORT" || return $?
+    sudo_add_export_or_unset_var_command "PRE_SUDO_POST_SHELL_COMMANDS_TO_RUN" "TERMUX_PRIORITY_LD_LIBRARY_PATH" "$TERMUX_PRIORITY_LD_LIBRARY_PATH" || return $?
+    sudo_add_export_or_unset_var_command "PRE_SUDO_POST_SHELL_COMMANDS_TO_RUN" "ANDROID_PRIORITY_LD_LIBRARY_PATH" "$ANDROID_PRIORITY_LD_LIBRARY_PATH" || return $?
+
     PRE_SUDO_POST_SHELL_COMMANDS_TO_RUN+="export PREFIX='$TERMUX_PREFIX';"$'\n'
     PRE_SUDO_POST_SHELL_COMMANDS_TO_RUN+="export TMPDIR='$TMPDIR';"$'\n'
     PRE_SUDO_POST_SHELL_COMMANDS_TO_RUN+="export HOME='${SUDO_POST_SHELL_HOME//\'/\'\\\'\'}';"$'\n'
@@ -1578,8 +1709,8 @@ sudo_set_sudo_command_path() {
         return 1
     fi
 
-    # If FORCE_SET_PRIORITY_TO_ANDROID_PATHS is enabled
-    if [[ "$FORCE_SET_PRIORITY_TO_ANDROID_PATHS" == "1" ]]; then
+    # If PATH_PRIORITY is android
+    if [[ "$PATH_PRIORITY" == "android" ]]; then
         # Set priority_dependent_variables to android for PATH_TO_EXPORT used by the sudo_find_absolute_path_for_executable_and_validate function
         # We do this now and later in the sudo_set_pre_sudo_shell_commands_to_run function as well once the final SUDO_PATH_COMMAND has been set
         sudo_set_priority_dependent_variables "android" || return $?
@@ -1590,7 +1721,7 @@ sudo_set_sudo_command_path() {
     # If USE_ROOT_FOR_PATH_SEARCH_AND_VALIDATION is enabled
     if [[ "$USE_ROOT_FOR_PATH_SEARCH_AND_VALIDATION" == "1" ]]; then
         sudo_unset_pre_su_variables
-        SUDO_ABSOLUTE_PATH_COMMAND="$($SU_ENV_COMMAND "source '${SUDO_SCRIPT_PATH//\'/\'\\\'\'}'; CURRENT_WORKING_DIR='${CURRENT_WORKING_DIR//\'/\'\\\'\'}'; sudo_find_absolute_path_for_executable_and_validate \"SUDO_ABSOLUTE_PATH_COMMAND\" \"SUDO_PATH_COMMAND\" '${SUDO_PATH_COMMAND//\'/\'\\\'\'}' '${PATH_TO_EXPORT//\'/\'\\\'\'}' \"$TERMUX_PREFIX\" \"$TERMUX_HOME\" 1" < /dev/null)"
+        SUDO_ABSOLUTE_PATH_COMMAND="$($SU_ENV_COMMAND "source '${SUDO_SCRIPT_PATH//\'/\'\\\'\'}'; ANDROID__BUILD_VERSION_SDK='${ANDROID__BUILD_VERSION_SDK//\'/\'\\\'\'}'; CURRENT_WORKING_DIR='${CURRENT_WORKING_DIR//\'/\'\\\'\'}'; sudo_find_absolute_path_for_executable_and_validate \"SUDO_ABSOLUTE_PATH_COMMAND\" \"SUDO_PATH_COMMAND\" '${SUDO_PATH_COMMAND//\'/\'\\\'\'}' '${PATH_TO_EXPORT//\'/\'\\\'\'}' \"$TERMUX_PREFIX\" \"$TERMUX_HOME\" 1" < /dev/null)"
         return_value=$?
         sudo_set_post_su_variables
     else
@@ -1617,20 +1748,23 @@ sudo_set_sudo_command_path() {
     fi
 
 
-    # Find canonical path to be used for setting priority in sudo_set_pre_sudo_shell_commands_to_run
-    SUDO_CANONICAL_PATH_COMMAND="$(readlink -m -- "$SUDO_ABSOLUTE_PATH_COMMAND")"
-    return_value=$?
-    if [ $return_value -ne 0 ] || [[ ! "$SUDO_CANONICAL_PATH_COMMAND" =~ $VALID_ABSOLUTE_PATH_REGEX ]]; then
-        sudo_log_errors "Failure while finding canonical path to sudo path commmand"
-        sudo_log_errors "SUDO_CANONICAL_PATH_COMMAND = \"$SUDO_CANONICAL_PATH_COMMAND\""
-        if [ $return_value -eq 0 ]; then
-            return_value=1
+    # If PATH_PRIORITY is default
+    if [[ "$PATH_PRIORITY" != "android" ]] && [[ "$PATH_PRIORITY" != "termux" ]]; then
+        # Find canonical path to be used for setting priority in sudo_set_pre_sudo_shell_commands_to_run
+        SUDO_CANONICAL_PATH_COMMAND="$(readlink -m -- "$SUDO_ABSOLUTE_PATH_COMMAND")"
+        return_value=$?
+        if [ $return_value -ne 0 ] || [[ ! "$SUDO_CANONICAL_PATH_COMMAND" =~ $VALID_ABSOLUTE_PATH_REGEX ]]; then
+            sudo_log_errors "Failure while finding canonical path to sudo path commmand"
+            sudo_log_errors "SUDO_CANONICAL_PATH_COMMAND = \"$SUDO_CANONICAL_PATH_COMMAND\""
+            if [ $return_value -eq 0 ]; then
+                return_value=1
+            fi
+            return $return_value
         fi
-        return $return_value
-    fi
 
-    if [[ "$SUDO_CANONICAL_PATH_COMMAND" != "$SUDO_ABSOLUTE_PATH_COMMAND" ]]; then
-        sudo_log 2 "SUDO_CANONICAL_PATH_COMMAND=\"$SUDO_CANONICAL_PATH_COMMAND\""
+        if [[ "$SUDO_CANONICAL_PATH_COMMAND" != "$SUDO_ABSOLUTE_PATH_COMMAND" ]]; then
+            sudo_log 2 "SUDO_CANONICAL_PATH_COMMAND=\"$SUDO_CANONICAL_PATH_COMMAND\""
+        fi
     fi
 
     return 0
@@ -2658,7 +2792,7 @@ sudo_set_shell_rcfile() {
 
     # RCFILE are usually unique for different shells
     # If shell_home equals TERMUX_HOME and shell has no --rc param or
-    # environmental variable, then termux shells and sudo shells will
+    # environment variable, then termux shells and sudo shells will
     # have to share rc files.
 
     # Was going to add support for tcsh but decided not to after reading the following and having a chuckle
@@ -2705,7 +2839,7 @@ sudo_set_shell_rcfile() {
     elif [[ " bash dash sh ksh python php python2 " == *" $shell_basename "* ]]; then
         # If shell_home equals TERMUX_HOME, then set the RCFILE with "sudo_" appended to it
         # so that termux shell and sudo shell rc files are not shared since --rc params or
-        # environmental variables can be used to define the path to the rc file
+        # environment variables can be used to define the path to the rc file
         local shell_rcfile_subname
         if [[ "$shell_home" == "$TERMUX_HOME" ]]; then
             shell_rcfile_subname="sudo_${shell_basename}"
@@ -2721,7 +2855,7 @@ sudo_set_shell_rcfile() {
 
         # If shell is python, python2
         elif [[ " python python2 " == *" $shell_basename "* ]]; then
-            # Use the PYTHONSTARTUP environmental variable to pass the path to rcfile
+            # Use the PYTHONSTARTUP environment variable to pass the path to rcfile
             SHELL_RCFILE="$shell_home/.${shell_rcfile_subname}rc"
             SHELL_RCFILE_COMMANDS="export PYTHONSTARTUP='${SHELL_RCFILE//\'/\'\\\'\'}';"
 
@@ -2733,7 +2867,7 @@ sudo_set_shell_rcfile() {
 
         # If shell is dash, sh, ksh
         else
-            # Use the PYTHONSTARTUP environmental variable to pass the path to rcfile
+            # Use the PYTHONSTARTUP environment variable to pass the path to rcfile
             SHELL_RCFILE="$shell_home/.${shell_rcfile_subname}rc"
             SHELL_RCFILE_COMMANDS="export ENV='${SHELL_RCFILE//\'/\'\\\'\'}';"
         fi
@@ -3013,7 +3147,7 @@ sudo_set_shell_histfile() {
         elif [[ "$shell_basename" == "ruby" ]]; then
             # irb uses "~/.irb_history" file to store history by default
             # If rvm is used, then its "~/.irb-history"
-            # There are no params or environmental variables that can be used to set history settings
+            # There are no params or environment variables that can be used to set history settings
             # History settings can be changed by defining following config options in "~/.irbrc" file
             # IRB.conf[:HISTORY_FILE] = "~/.irb_history"
             # IRB.conf[:SAVE_HISTORY] = 1000
@@ -3022,7 +3156,7 @@ sudo_set_shell_histfile() {
         # If shell is pry
         elif [[ "$shell_basename" == "pry" ]]; then
             # pry uses "~/.pry_history" file to store history by default
-            # There are no params or environmental variables that can be used to set history settings
+            # There are no params or environment variables that can be used to set history settings
             # History settings can be changed by defining following config options in "~/.pryrc" file
             # Pry.config.history_file = "~/.pry_history"
             # Pry.config.history_load = true
@@ -3156,8 +3290,8 @@ sudo_set_shell_histfile() {
 
         # If shell is ruby, lua5.2, lua5.3, lua5.4, php, python2
         elif [[ " ruby lua5.2 lua5.3 lua5.4 php python2 " == *" $shell_basename "* ]]; then
-            # The shell does not have a history file or does not use it or cannot be disabled using any params or environmental variables
-            sudo_log 3 "The \"$shell_basename\" shell does not have a history file or does not use it or cannot be disabled using any params or environmental variables"
+            # The shell does not have a history file or does not use it or cannot be disabled using any params or environment variables
+            sudo_log 3 "The \"$shell_basename\" shell does not have a history file or does not use it or cannot be disabled using any params or environment variables"
 
         else
             sudo_log_errors "shell_basename \"$shell_basename\" not handled while running \"sudo_set_shell_histfile\""
@@ -3363,7 +3497,7 @@ sudo_setup_sudo_shell_home_and_working_environment_wrapper() {
 
     SETUP_SUDO_TEMP_DIRECTORY=0
     SUDO_TEMP_DIRECTORY_FD=""
-
+    SUDO_TEMP_DIRECTORY_FD_PATH=""
 
     # If COMMAND_TYPE equals "script" and
     if [[ "$COMMAND_TYPE" == "script" ]]; then
@@ -3372,33 +3506,45 @@ sudo_setup_sudo_shell_home_and_working_environment_wrapper() {
 
         # If SETUP_SUDO_TEMP_DIRECTORY is enabled
         if [[ "$SETUP_SUDO_TEMP_DIRECTORY" == "1" ]]; then
-
-            # Find an unused fd that is passed to su which the function sudo_setup_sudo_temp_directory will use to write the SUDO_TEMP_DIRECTORY value
-            # which is later read after su returns
-            # stdout cannot be used to return SUDO_TEMP_DIRECTORY from su using a subshell due to logging and possibly other output to stdout
-            sudo_get_unsed_file_descriptor "SUDO_TEMP_DIRECTORY_FD"
-            return_value=$?
-            if [ $return_value -ne 0 ] || [[ ! "$SUDO_TEMP_DIRECTORY_FD" =~ $VALID_NUMBER_REGEX ]]; then
-                sudo_log_errors "Failure while getting an unused file descriptor to write SUDO_TEMP_DIRECTORY"
-                sudo_log_errors "SUDO_TEMP_DIRECTORY_FD = \"$SUDO_TEMP_DIRECTORY_FD\""
-                if [ $return_value -eq 0 ]; then
-                    return_value=1
+            if [ "$ANDROID__BUILD_VERSION_SDK" -lt 24 ]; then
+                SUDO_TEMP_DIRECTORY_FD_PATH="$(mktemp --tmpdir="$TMPDIR" "$SUDO_TEMP_DIRECTORY_PREFIX.path.XXXXXX")"
+                return_value=$?
+                if [ $return_value -ne 0 ] || [[ ! "$SUDO_TEMP_DIRECTORY_FD_PATH" =~ $VALID_ABSOLUTE_PATH_REGEX ]]; then
+                    sudo_log_errors "Failure while running mktemp to create SUDO_TEMP_DIRECTORY_FD_PATH"
+                    sudo_log_errors "SUDO_TEMP_DIRECTORY_FD_PATH=\"$SUDO_TEMP_DIRECTORY_FD_PATH\""
+                    if [ $return_value -eq 0 ]; then
+                        return_value=1
+                    fi
+                    return $return_value
                 fi
-                return $return_value
-            fi
+            else
+                # Find an unused fd that is passed to su which the function sudo_setup_sudo_temp_directory will use to write the SUDO_TEMP_DIRECTORY value
+                # which is later read after su returns
+                # stdout cannot be used to return SUDO_TEMP_DIRECTORY from su using a subshell due to logging and possibly other output to stdout
+                sudo_get_unsed_file_descriptor "SUDO_TEMP_DIRECTORY_FD"
+                return_value=$?
+                if [ $return_value -ne 0 ] || [[ ! "$SUDO_TEMP_DIRECTORY_FD" =~ $VALID_NUMBER_REGEX ]]; then
+                    sudo_log_errors "Failure while getting an unused file descriptor to write SUDO_TEMP_DIRECTORY"
+                    sudo_log_errors "SUDO_TEMP_DIRECTORY_FD = \"$SUDO_TEMP_DIRECTORY_FD\""
+                    if [ $return_value -eq 0 ]; then
+                        return_value=1
+                    fi
+                    return $return_value
+                fi
 
-            # Android fd directory is /proc/self/fd
-            # Using $$ instead of self so that su can access it
-            SUDO_TEMP_DIRECTORY_FD_PATH="/proc/$$/fd/$SUDO_TEMP_DIRECTORY_FD"
+                # Android fd directory is /proc/self/fd
+                # Using $$ instead of self so that su can access it
+                SUDO_TEMP_DIRECTORY_FD_PATH="/proc/$$/fd/$SUDO_TEMP_DIRECTORY_FD"
 
-            sudo_log 3 "SUDO_TEMP_DIRECTORY_FD_PATH=\"$SUDO_TEMP_DIRECTORY_FD_PATH\""
+                sudo_log 3 "SUDO_TEMP_DIRECTORY_FD_PATH=\"$SUDO_TEMP_DIRECTORY_FD_PATH\""
 
-            # Write empty string to fd just to create it
-            eval "exec $SUDO_TEMP_DIRECTORY_FD<" <(echo -n "")
-            return_value=$?
-            if [ $return_value -ne 0 ]; then
-                sudo_log_errors "Failure while opening SUDO_TEMP_DIRECTORY_FD \"$SUDO_TEMP_DIRECTORY_FD\" to write SUDO_TEMP_DIRECTORY"
-                return $return_value
+                # Write empty string to fd just to create it
+                eval "exec $SUDO_TEMP_DIRECTORY_FD<" <(echo -n "")
+                return_value=$?
+                if [ $return_value -ne 0 ]; then
+                    sudo_log_errors "Failure while opening SUDO_TEMP_DIRECTORY_FD \"$SUDO_TEMP_DIRECTORY_FD\" to write SUDO_TEMP_DIRECTORY"
+                    return $return_value
+                fi
             fi
         fi
     fi
@@ -3418,6 +3564,8 @@ sudo_setup_sudo_shell_home_and_working_environment_wrapper() {
 
 
     local -a SU_ENV_COMMAND_ADDITIONAL_VARIABLES_TO_EXPORT_ARRAY=(
+        ANDROID__BUILD_VERSION_SDK
+
         SUDO_SHELL_HOME_PARENT_DIR
         SUDO_SHELL_HOME
 
@@ -3517,14 +3665,35 @@ sudo_setup_sudo_shell_home_and_working_environment_wrapper() {
 
         sudo_log 3 "SUDO_TEMP_DIRECTORY=\"$SUDO_TEMP_DIRECTORY\""
 
+
+        sudo_cleanup_temp_directory_fd_path
+    fi
+
+    return 0
+
+}
+
+sudo_cleanup_temp_directory_fd_path() {
+
+    local return_value
+
+    if [ "$ANDROID__BUILD_VERSION_SDK" -lt 24 ]; then
+        # If SUDO_TEMP_DIRECTORY_FD_PATH exists, then delete it
+        if [ -f "$SUDO_TEMP_DIRECTORY_FD_PATH" ]; then
+            rm -f "$SUDO_TEMP_DIRECTORY_FD_PATH"
+            return_value=$?
+            if [ $return_value -ne 0 ]; then
+                sudo_log_errors "Failure to delete SUDO_TEMP_DIRECTORY_FD_PATH \"$SUDO_TEMP_DIRECTORY_FD_PATH\""
+                return $return_value
+            fi
+        fi
+    else
         # If SUDO_TEMP_DIRECTORY_FD is set, then close it
         if [ -n "$SUDO_TEMP_DIRECTORY_FD" ]; then
             exec {SUDO_TEMP_DIRECTORY_FD}>&-
             SUDO_TEMP_DIRECTORY_FD=""
         fi
     fi
-
-    return 0
 
 }
 
@@ -4099,7 +4268,7 @@ sudo_setup_sudo_temp_directory() {
     printf "%s" "$SUDO_TEMP_DIRECTORY" > "$SUDO_TEMP_DIRECTORY_FD_PATH"
     return_value=$?
     if [ $return_value -ne 0 ]; then
-        sudo_log_errors "Failure while writing SUDO_TEMP_DIRECTORY to SUDO_TEMP_DIRECTORY_FD \"$SUDO_TEMP_DIRECTORY_FD\""
+        sudo_log_errors "Failure while writing SUDO_TEMP_DIRECTORY to SUDO_TEMP_DIRECTORY_FD_PATH \"$SUDO_TEMP_DIRECTORY_FD_PATH\""
         return $return_value
     fi
 
@@ -5295,7 +5464,7 @@ sudo_process_arguments() {
     local OPTIND
 
     # Parse options to sudo command
-    while getopts ":hqvabBcdDeEfFHilLnNoOpPrRsS-:" opt; do
+    while getopts ":hqvaAbBcdDeEfFHilLnNoOpPrRsStT-:" opt; do
         case ${opt} in
             -)
                 long_optargs="${OPTARG#*=}"
@@ -5782,7 +5951,22 @@ sudo_process_arguments() {
                 ;;
             a)
                 sudo_log_args "Parsing option: '-${opt}'"
-                FORCE_SET_PRIORITY_TO_ANDROID_PATHS=1
+                A_FLAG_PASSED=1
+                PATH_PRIORITY="android"
+                ;;
+            A)
+                sudo_log_args "Parsing option: '-${opt}'"
+                A_FLAG_PASSED=1
+                PATH_PRIORITY="android"
+
+                if [ "$SET_SECONDARY_PRIORITY_PATHS" == "1" ]; then
+                    # If first '-A' option passed
+                    SET_SECONDARY_PATHS=0
+                else
+                    # If '-AA' passed
+                    SET_SECONDARY_PATHS=1
+                fi
+                SET_SECONDARY_PRIORITY_PATHS=0
                 ;;
             b)
                 sudo_log_args "Parsing option: '-${opt}'"
@@ -5877,6 +6061,25 @@ sudo_process_arguments() {
                 sudo_log_args "Parsing option: '-${opt}'"
                 SAME_SUDO_POST_SHELL_AS_SUDO_SHELL=1
                 ;;
+            t)
+                sudo_log_args "Parsing option: '-${opt}'"
+                T_FLAG_PASSED=1
+                PATH_PRIORITY="termux"
+                ;;
+            T)
+                sudo_log_args "Parsing option: '-${opt}'"
+                T_FLAG_PASSED=1
+                PATH_PRIORITY="termux"
+
+                if [ "$SET_SECONDARY_PRIORITY_PATHS" == "1" ]; then
+                    # If first '-T' option passed
+                    SET_SECONDARY_PATHS=0
+                else
+                    # If '-TT' passed
+                    SET_SECONDARY_PATHS=1
+                fi
+                SET_SECONDARY_PRIORITY_PATHS=0
+                ;;
             \?)
                 sudo_log_arg_errors "Unknown option: '-${OPTARG}'"
                 sudo_exit_on_error || return $?
@@ -5897,6 +6100,17 @@ sudo_process_arguments() {
                 sudo_log_arg_errors "Unknown arguments to \"$COMMAND_TYPE\": '$*'"
                 sudo_exit_on_error || return $?
             fi
+
+            if [[ "$COMMAND_TYPE" == "su" ]] && [[ "$A_FLAG_PASSED" == "1" ]]; then
+                sudo_log_arg_errors "Cannot pass '-a|-A' flags to 'su' command, use '-t|-T' flags instead"
+                sudo_exit_on_error || return $?
+            fi
+
+            if [[ "$COMMAND_TYPE" == "asu" ]] && [[ "$T_FLAG_PASSED" == "1" ]]; then
+                sudo_log_arg_errors "Cannot pass '-t|-T' flags to 'asu' command, use '-a|-A' flags instead"
+                sudo_exit_on_error || return $?
+            fi
+
         # If COMMAND_TYPE equals "path" or "script"
         elif [[ "$COMMAND_TYPE" == "path" ]] || [[ "$COMMAND_TYPE" == "script" ]]; then
             # Set rest of the arguments to the sudo script as SUDO_COMMAND
@@ -5968,6 +6182,7 @@ sudo_process_arguments() {
             done
             shift $# # Remove all remaining arguments from arguments array
         fi
+
     # Else show help
     else
         if [[ "$COMMAND_TYPE" == "script" ]]; then
@@ -6001,8 +6216,19 @@ Available command_options:
   [ -q | --quiet ]   Set log level to 'OFF'.
   [ -v | -vv ]       Set log level to 'DEBUG', 'VERBOSE'.
   [ --version ]      Display version.
-  [ -a ]             Force set priority to android paths for path
-                     command type.
+  [ -a ]             Set priority to android paths for 'path' and
+                     'script' command types. The '$PATH' variable will
+                     contain all android bin paths followed all termux
+                     bin paths. The `$LD_PRELOAD` variable will not be
+                     set.
+  [ -A ]             Set priority to android paths for 'asu', 'path'
+                     and 'script' command types. The '$PATH' variable
+                     will contain only `/system/bin` path. The
+                     `$LD_PRELOAD` variable will not be set.
+  [ -AA ]            Set priority to android paths for 'asu', 'path'
+                     and 'script' command types. The '$PATH' variable
+                     will contain all android bin paths. The
+                     `$LD_PRELOAD` variable will not be set.
   [ -b ]             Go back to last activity after running core_script.
   [ -B ]             Run core_script in background.
   [ -c ]             Clear shell after running core_script.
@@ -6030,16 +6256,31 @@ Available command_options:
   [ -R ]             Use root for searching and validating paths.
   [ -s ]             Set 'script' as command type.
   [ -S ]             Same sudo post shell as sudo shell.
+  [ -t ]             Set priority to termux paths for 'path' and
+                     'script' command types. The '$PATH' variable will
+                     contain all termux bin paths followed all android
+                     bin paths. The `$LD_PRELOAD` variable will
+                     contain `$TERMUX__PREFIX/lib/libtermux-exec.so`.
+  [ -T ]             Set priority to termux paths for 'su', 'path'
+                     and 'script' command types. The '$PATH' variable
+                     will contain only '$TERMUX__PREFIX/bin' path.
+                     The `$LD_PRELOAD` variable will contain
+                     `$TERMUX__PREFIX/lib/libtermux-exec.so`.
+  [ -TT ]            Set priority to termux paths for 'su', 'path'
+                     and 'script' command types. The '$PATH' variable
+                     will contain all termux bin paths. The
+                     `$LD_PRELOAD` variable will contain
+                     `$TERMUX__PREFIX/lib/libtermux-exec.so`.
   [ --comma-alternative=<alternative> ]
                      Comma alternative character to be used for
                      the '-r' option instead of the default.
   [ --dry-run ]
                      Do not execute sudo commands.
   [ --export-paths=<paths> ]
-                     Additional paths to export in PATH variable,
+                     Additional paths to export in '$PATH' variable,
                      separated with colons ':'.
   [ --export-ld-lib-paths=<paths> ]
-                     Additional paths to export in LD_LIBRARY_PATH
+                     Additional paths to export in '$LD_LIBRARY_PATH'
                      variable, separated with colons ':'.
   [ --force-remount-ro ]
                      Force remount rootfs and system partitions back
@@ -6172,7 +6413,11 @@ starting starting with './' or '../' (like './script.sh') or the
 executable 'basename' in a directory listed in the final '$PATH'
 variable that is to be exported by the 'sudo' command depending on
 priority set.
-exists in '/system' partition.
+The priority is set based on '-a|-A|-AA' or '-t|-T|-TT' flags, and
+if flags are not passed, then the priority for bin paths in `$PATH`
+variable is given to termux paths followed by android paths if
+executable canonical path is under '$TERMUX__ROOTFS' directory,
+otherwise to android paths followed by termux paths.
 To call the 'su' binary, run the 'sudo -p su [user]' command.
 
 
@@ -6195,6 +6440,8 @@ is considered as a path to script file that should be passed to
 Use the '--shell' option to set the script shell to use.
 Use the '--post-shell' option to set the interactive shell to use if
 '-i' option is passed.
+The priority is given to termux paths unless '-a|-A|-AA' or
+'-t|-T|-TT' flags are passed.
 
 
 Run "exit" command of your shell to exit interactive shells and return
