@@ -4,13 +4,13 @@
 
 The device must be rooted and ideally `Termux` must have been granted root permissions by your root manager app like [SuperSU] or [Magisk] for the `sudo` script to work.
 
-Make sure to read the [Worthy Of Note](#worthy-of-note) section, **specially the [RC File Variables](#rc-file-variables) section. This is very important, specially if you were previously using [termux-sudo by st42]**.
+Make sure to read the [Worthy Of Note](#worthy-of-note) section, **specially the [RC File Variables](#rc-file-variables) section. This is very important, specially if you were previously using [`termux-sudo` by `st42`]**.
 
 To use `sudo` with [Termux:Tasker] plugin and [RUN_COMMAND Intent], check [Termux:Tasker] `Setup Instructions` section for details on how to set them up. The [Tasker App] or your plugin host app must be granted `com.termux.permission.RUN_COMMAND` permission. The `sudo` script must be installed at `$PREFIX/bin/sudo`. The `allow-external-apps` property must also be set to `true` in `~/.termux/termux.properties` file since the `$PREFIX/bin/sudo` absolute path is outside the `~/.termux/tasker/` directory. For android `>= 10`, the [Termux App] should also be granted `Draw Over Apps` permission so that foreground commands automatically start executing without the user having to manually click the `Termux` notification in the status bar dropdown notifications list for the commands to start. Check [Templates](#templates) section for template tasks that can be run used to run `sudo` from `Termux:Tasker` plugin and `RUN_COMMAND Intent`.
 
-Note that this `sudo by agnostic-apollo`, [termux-sudo by st42] and [tsu by cswl] are competing packages/scripts and ideally only one of them should be used. Also note that when you install or update `tsu`, it creates a symlink at `$PREFIX/bin/sudo` for its own `sudo` command. So installing or updating `tsu` after installing `sudo by agnostic-apollo` will replace the `sudo by agnostic-apollo` script file with the `tsu` symlink and installing `sudo by agnostic-apollo` if you have already installed `tsu` will break its own `sudo` command.
+Note that this `sudo` by `agnostic-apollo`, [`termux-sudo` by `st42`] and [`tsu` by `cswl`] are conflicting packages/scripts and ideally only one of them should be used. Also note that when you install or update `tsu`, it creates a symlink at `$PREFIX/bin/sudo` for its own `sudo` command. So installing or updating `tsu` after installing `sudo by agnostic-apollo` will replace the `sudo by agnostic-apollo` script file with the `tsu` symlink and installing `sudo by agnostic-apollo` if you have already installed `tsu` will break its own `sudo` command.
 
-If you want to run commands in `termux` user context, check [tudo].
+If you want to run commands in `termux` user context, check [`tudo`].
 
 ### Contents
 - [Dependencies](#dependencies)
@@ -1871,8 +1871,9 @@ This will ensure that the exported `$PS1` variables will not be overridden by `r
 
 &nbsp;
 
-##### `termux-sudo by st42`
-If you were **previously using [termux-sudo by st42]**, then it would have automatically created the `~/.suroot/.bashrc` file with entries like the following. You should either remove those lines if you haven't exported custom values yourself or remove the file entirely if you haven't made changes to it yourself.
+##### Transition from `termux-sudo` by `st42`
+
+If you were **previously using [`termux-sudo` by `st42`]**, then it would have automatically created the `~/.suroot/.bashrc` file with entries like the following. You should either remove those lines if you haven't exported custom values yourself or remove the file entirely if you haven't made changes to it yourself.
 
 ```
 export LD_LIBRARY_PATH=$PRE/usr/lib
@@ -2061,8 +2062,8 @@ Check [CHANGELOG.md](CHANGELOG.md) file for the **Changelog**.
 
 ### Credits
 
-- [termux-sudo by st42]
-- [tsu by cswl]
+- [`termux-sudo` by `st42`]
+- [`tsu` by `cswl`]
 
 ---
 
@@ -2095,10 +2096,11 @@ Check [CHANGELOG.md](CHANGELOG.md) file for the **Changelog**.
 [SuperSU]: https://forum.xda-developers.com/t/beta-2017-10-01-supersu-v2-82-sr5.2868133/
 [Magisk]: https://github.com/topjohnwu/Magisk
 
-[tudo]: https://github.com/agnostic-apollo/tudo
+[`tudo`]: https://github.com/agnostic-apollo/tudo
+[`termux-sudo` by `st42`]: https://gitlab.com/st42/termux-sudo
+[`tsu` by `cswl`]: https://github.com/cswl/tsu
+
 [RUN_COMMAND Intent]: https://github.com/termux/termux-app/blob/master/app/src/main/java/com/termux/app/RunCommandService.java
-[termux-sudo by st42]: https://gitlab.com/st42/termux-sudo
-[tsu by cswl]: https://github.com/cswl/tsu
 
 [Process Substitution]: https://en.wikipedia.org/wiki/Process_substitution
 [Here Document]: https://en.wikipedia.org/wiki/Here_document
