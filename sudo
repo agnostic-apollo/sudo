@@ -1726,9 +1726,15 @@ sudo_set_sudo_command_path() {
     # If USE_ROOT_FOR_PATH_SEARCH_AND_VALIDATION is enabled
     if [[ "$USE_ROOT_FOR_PATH_SEARCH_AND_VALIDATION" == "1" ]]; then
         sudo_unset_pre_su_variables
-        SUDO_ABSOLUTE_PATH_COMMAND="$($SU_ENV_COMMAND "source '${SUDO_SCRIPT_PATH//\'/\'\\\'\'}'; ANDROID__BUILD_VERSION_SDK='${ANDROID__BUILD_VERSION_SDK//\'/\'\\\'\'}'; CURRENT_WORKING_DIR='${CURRENT_WORKING_DIR//\'/\'\\\'\'}'; sudo_find_absolute_path_for_executable_and_validate \"SUDO_ABSOLUTE_PATH_COMMAND\" \"SUDO_PATH_COMMAND\" '${SUDO_PATH_COMMAND//\'/\'\\\'\'}' '${PATH_TO_EXPORT//\'/\'\\\'\'}' \"$TERMUX_PREFIX\" \"$TERMUX_HOME\" 1" < /dev/null)"
+        SUDO_ABSOLUTE_PATH_COMMAND="$($SU_ENV_COMMAND "source '${SUDO_SCRIPT_PATH//\'/\'\\\'\'}'; \
+ANDROID__BUILD_VERSION_SDK='${ANDROID__BUILD_VERSION_SDK//\'/\'\\\'\'}'; \
+CURRENT_WORKING_DIR='${CURRENT_WORKING_DIR//\'/\'\\\'\'}'; \
+sudo_find_absolute_path_for_executable_and_validate \"SUDO_ABSOLUTE_PATH_COMMAND\" \"SUDO_PATH_COMMAND\" '${SUDO_PATH_COMMAND//\'/\'\\\'\'}' '${PATH_TO_EXPORT//\'/\'\\\'\'}' \"$TERMUX_PREFIX\" \"$TERMUX_HOME\" 1" 2>&1 < /dev/null)"
         return_value=$?
         sudo_set_post_su_variables
+        if [ $return_value -ne 0 ] && [ $return_value -ne 112 ]; then
+            [ -n "$SUDO_ABSOLUTE_PATH_COMMAND" ] && echo "$SUDO_ABSOLUTE_PATH_COMMAND" 1>&2
+        fi
     else
         sudo_find_absolute_path_for_executable_and_validate "SUDO_ABSOLUTE_PATH_COMMAND" "SUDO_PATH_COMMAND" "$SUDO_PATH_COMMAND" "$PATH_TO_EXPORT" "$TERMUX_PREFIX" "$TERMUX_HOME" 0
         return_value=$?
@@ -2466,6 +2472,7 @@ sudo_set_script_argument_for_script_shell() {
 sudo_create_sudo_temp_file() {
 
     local return_value
+    local su_output
 
     # If argument count is not 5
     if [ $# -ne 5 ]; then
@@ -2526,9 +2533,10 @@ sudo_create_sudo_temp_file() {
         # and redirect stdout to file at path to write to it
         sudo_log 3 "Creating $label file at \"$path\""
         sudo_unset_pre_su_variables
-        $SU_ENV_COMMAND "cat \"$temp_file_fd_path\" > '${path//\'/\'\\\'\'}'"
+        su_output=$($SU_ENV_COMMAND "cat \"$temp_file_fd_path\" > '${path//\'/\'\\\'\'}'" 2>&1 < /dev/null)
         return_value=$?
         sudo_set_post_su_variables
+        { [ $return_value -ne 0 ] && [ -n "$su_output" ]; } && sudo_log_errors "$su_output"
     fi
 
     # If temp_file_fd is set, then close it
@@ -2545,8 +2553,14 @@ sudo_create_sudo_temp_file() {
     if [[ $SUDO_LOG_LEVEL -ge 2 ]] && [[ "$log_content" == "1" ]]  && [[ "$decode_content" != "1" ]]; then
         local file_contents=""
         sudo_unset_pre_su_variables
-        file_contents="$($SU_ENV_COMMAND "cat '${path//\'/\'\\\'\'}'" < /dev/null)"
+        file_contents=$($SU_ENV_COMMAND "cat '${path//\'/\'\\\'\'}'" 2>&1 < /dev/null)
+        return_value=$?
         sudo_set_post_su_variables
+        if [ $return_value -ne 0 ]; then
+            [ -n "$file_contents" ] && echo "$file_contents" 1>&2
+            sudo_log_errors "Failure while reading $label file at \"$path\""
+            return $return_value
+        fi
         sudo_log 2 $'\n'"${label}_CONTENTS=\`$file_contents\`"
     fi
 
@@ -2557,6 +2571,7 @@ sudo_create_sudo_temp_file() {
 sudo_set_sudo_shell() {
 
     local return_value
+    local su_output
 
     sudo_log_literal 3 "\nRunning sudo_set_sudo_shell"
 
@@ -2568,9 +2583,11 @@ sudo_set_sudo_shell() {
         # If USE_ROOT_FOR_PATH_SEARCH_AND_VALIDATION is enabled
         if [[ "$USE_ROOT_FOR_PATH_SEARCH_AND_VALIDATION" == "1" ]]; then
             sudo_unset_pre_su_variables
-            SUDO_SHELL="$($SU_ENV_COMMAND "source '${SUDO_SCRIPT_PATH//\'/\'\\\'\'}'; sudo_validate_shell \"SUDO_SHELL\" '${SUDO_SHELL//\'/\'\\\'\'}' '${SUDO_SUPPORTED_SHELLS//\'/\'\\\'\'}' \"$TERMUX_PREFIX\" \"$TERMUX_BIN\" \"$TERMUX_HOME\"" < /dev/null)"
+            SUDO_SHELL="$($SU_ENV_COMMAND "source '${SUDO_SCRIPT_PATH//\'/\'\\\'\'}'; \
+sudo_validate_shell \"SUDO_SHELL\" '${SUDO_SHELL//\'/\'\\\'\'}' '${SUDO_SUPPORTED_SHELLS//\'/\'\\\'\'}' \"$TERMUX_PREFIX\" \"$TERMUX_BIN\" \"$TERMUX_HOME\"" 2>&1 < /dev/null)"
             return_value=$?
             sudo_set_post_su_variables
+            { [ $return_value -ne 0 ] && [ -n "$SUDO_SHELL" ]; } && sudo_log_errors "$SUDO_SHELL"
         else
             SUDO_SHELL="$(sudo_validate_shell "SUDO_SHELL" "$SUDO_SHELL" "$SUDO_SUPPORTED_SHELLS" "$TERMUX_PREFIX" "$TERMUX_BIN" "$TERMUX_HOME")"
             return_value=$?
@@ -2625,9 +2642,11 @@ sudo_set_sudo_post_shell() {
         # If USE_ROOT_FOR_PATH_SEARCH_AND_VALIDATION is enabled
         if [[ "$USE_ROOT_FOR_PATH_SEARCH_AND_VALIDATION" == "1" ]]; then
             sudo_unset_pre_su_variables
-            SUDO_POST_SHELL="$($SU_ENV_COMMAND "source '${SUDO_SCRIPT_PATH//\'/\'\\\'\'}'; sudo_validate_shell \"SUDO_POST_SHELL\" '${SUDO_POST_SHELL//\'/\'\\\'\'}' '${SUDO_SUPPORTED_POST_SHELLS//\'/\'\\\'\'}' \"$TERMUX_PREFIX\" \"$TERMUX_BIN\" \"$TERMUX_HOME\"" < /dev/null)"
+            SUDO_POST_SHELL="$($SU_ENV_COMMAND "source '${SUDO_SCRIPT_PATH//\'/\'\\\'\'}'; \
+sudo_validate_shell \"SUDO_POST_SHELL\" '${SUDO_POST_SHELL//\'/\'\\\'\'}' '${SUDO_SUPPORTED_POST_SHELLS//\'/\'\\\'\'}' \"$TERMUX_PREFIX\" \"$TERMUX_BIN\" \"$TERMUX_HOME\"" 2>&1 < /dev/null)"
             return_value=$?
             sudo_set_post_su_variables
+            { [ $return_value -ne 0 ] && [ -n "$SUDO_POST_SHELL" ]; } && sudo_log_errors "$SUDO_POST_SHELL"
         else
             SUDO_POST_SHELL="$(sudo_validate_shell "SUDO_POST_SHELL" "$SUDO_POST_SHELL" "$SUDO_SUPPORTED_POST_SHELLS" "$TERMUX_PREFIX" "$TERMUX_BIN" "$TERMUX_HOME")"
             return_value=$?
@@ -3458,9 +3477,10 @@ sudo_set_shell_command() {
             # If USE_ROOT_FOR_PATH_SEARCH_AND_VALIDATION is enabled
             if [[ "$USE_ROOT_FOR_PATH_SEARCH_AND_VALIDATION" == "1" ]]; then
                 sudo_unset_pre_su_variables
-                SUDO_POST_SHELL="$($SU_ENV_COMMAND "source '${SUDO_SCRIPT_PATH//\'/\'\\\'\'}'; sudo_run_file_type_tests_on_path \"$shell_dependency_label\" '${shell_dependency//\'/\'\\\'\'}' 1 1 1 \"frx\"" < /dev/null)"
+                SUDO_POST_SHELL="$($SU_ENV_COMMAND "source '${SUDO_SCRIPT_PATH//\'/\'\\\'\'}'; sudo_run_file_type_tests_on_path \"$shell_dependency_label\" '${shell_dependency//\'/\'\\\'\'}' 1 1 1 \"frx\"" 2>&1 < /dev/null)"
                 return_value=$?
                 sudo_set_post_su_variables
+                { [ $return_value -ne 0 ] && [ -n "$SUDO_POST_SHELL" ]; } && sudo_log_errors "$SUDO_POST_SHELL"
             else
                 sudo_run_file_type_tests_on_path "$shell_dependency_label" "$shell_dependency" 1 1 1 "frx"
                 return_value=$?
@@ -3476,9 +3496,10 @@ sudo_set_shell_command() {
             # If USE_ROOT_FOR_PATH_SEARCH_AND_VALIDATION is enabled
             if [[ "$USE_ROOT_FOR_PATH_SEARCH_AND_VALIDATION" == "1" ]]; then
                 sudo_unset_pre_su_variables
-                SUDO_POST_SHELL="$($SU_ENV_COMMAND "source '${SUDO_SCRIPT_PATH//\'/\'\\\'\'}'; sudo_run_file_type_tests_on_path \"$shell_interactive_dependency_label\" '${shell_interactive_dependency//\'/\'\\\'\'}' 1 1 1 \"frx\"" < /dev/null)"
+                SUDO_POST_SHELL="$($SU_ENV_COMMAND "source '${SUDO_SCRIPT_PATH//\'/\'\\\'\'}'; sudo_run_file_type_tests_on_path \"$shell_interactive_dependency_label\" '${shell_interactive_dependency//\'/\'\\\'\'}' 1 1 1 \"frx\"" 2>&1 < /dev/null)"
                 return_value=$?
                 sudo_set_post_su_variables
+                { [ $return_value -ne 0 ] && [ -n "$SUDO_POST_SHELL" ]; } && sudo_log_errors "$SUDO_POST_SHELL"
             else
                 sudo_run_file_type_tests_on_path "$shell_interactive_dependency_label" "$shell_interactive_dependency" 1 1 1 "frx"
                 return_value=$?
@@ -3497,6 +3518,7 @@ sudo_set_shell_command() {
 sudo_setup_sudo_shell_home_and_working_environment_wrapper() {
 
     local return_value
+    local su_output
 
     sudo_log_literal 3 "\n\n\nRunning sudo_setup_sudo_shell_home_and_working_environment_wrapper stage 1"
 
@@ -3626,9 +3648,10 @@ sudo_setup_sudo_shell_home_and_working_environment_wrapper() {
 
     # Run sudo_setup_sudo_shell_home_and_working_environment that sets up the sudo environment
     sudo_unset_pre_su_variables
-    $SU_ENV_COMMAND "source '${SUDO_SCRIPT_PATH//\'/\'\\\'\'}'; sudo_setup_sudo_shell_home_and_working_environment"
+    su_output=$($SU_ENV_COMMAND "source '${SUDO_SCRIPT_PATH//\'/\'\\\'\'}'; sudo_setup_sudo_shell_home_and_working_environment;" 2>&1 < /dev/null)
     return_value=$?
     sudo_set_post_su_variables
+    [ -n "$su_output" ] && echo "$su_output"
     if [ $return_value -ne 0 ]; then
         sudo_log_errors "Failure while running \"sudo_setup_sudo_shell_home_and_working_environment\""
         return $return_value
@@ -4317,6 +4340,8 @@ sudo_trap() {
 
 sudo_remove_sudo_temp_directory() {
 
+    local su_output
+
     # If SUDO_TEMP_DIRECTORY is a valid absolute path and SU_ENV_COMMAND is set and
     # DO_NOT_DELETE_SUDO_TEMP_DIRECTORY_ON_EXIT is not enabled and
     # Sudo command failed
@@ -4326,8 +4351,9 @@ sudo_remove_sudo_temp_directory() {
         # Remove SUDO_TEMP_DIRECTORY in case it wasn't already removed
         sudo_log_literal 3 "\nRemoving SUDO_TEMP_DIRECTORY in case it wasn't already removed"
         sudo_unset_pre_su_variables
-        $SU_ENV_COMMAND "rm -rf '${SUDO_TEMP_DIRECTORY//\'/\'\\\'\'}'"
+        su_output=$($SU_ENV_COMMAND "rm -rf '${SUDO_TEMP_DIRECTORY//\'/\'\\\'\'}'" 2>&1 < /dev/null)
         sudo_set_post_su_variables
+        { [ $return_value -ne 0 ] && [ -n "$su_output" ]; } && sudo_log_errors "$su_output"
         SUDO_TEMP_DIRECTORY=""
     fi
 
