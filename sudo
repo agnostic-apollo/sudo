@@ -1285,6 +1285,11 @@ sudo_set_required_variables() {
             [ -n "$SYSTEM_PARTITION_RW_DEPENDENT_PATHS" ] && sudo_log_errors "The system \"/system\" partition cannot be mounted as rw to be used for$SYSTEM_PARTITION_RW_DEPENDENT_PATHS since in android >= 10 the system partition is an ext4 dedup filesystem"
             return 1
         fi
+
+        if [ -n "$SYSTEM_PARTITION_RW_DEPENDENT_PATHS" ] && [[ "$(mount)" == *"/.magisk/mirror/system"* ]]; then
+             sudo_log_errors "The system \"/system\" partition cannot be mounted as rw to be used for$SYSTEM_PARTITION_RW_DEPENDENT_PATHS since magisk system mirror is a read-only partition"
+            return 1
+        fi
     fi
 
     return 0

@@ -332,6 +332,14 @@ sudo_tests_set_required_variables() {
 
 
 
+    if [[ "$(mount)" == *"/.magisk/mirror/system"* ]]; then
+        SUDO_TESTS_SYSTEM_PARTITION_IS_RO=1
+    else
+        SUDO_TESTS_SYSTEM_PARTITION_IS_RO=0
+    fi
+
+
+
     # Set traps to run commands before exiting sudo_tests
     trap 'sudo_tests_cleanup' EXIT
     trap 'sudo_tests_cleanup TERM' TERM
@@ -733,7 +741,7 @@ echo "VARIABLE_2=\`$VARIABLE_2\`"
     output="$(sudo -s --shell-home="$sudo_test_temp_shell_home" 'cd "$HOME"; pwd;' 2>&1)"
     return_value=$?
     # If android >= 10
-    if [ "$ANDROID__BUILD_VERSION_SDK" -ge 29 ]; then
+    if [ "$ANDROID__BUILD_VERSION_SDK" -ge 29 ] || [[ "$SUDO_TESTS_SYSTEM_PARTITION_IS_RO" == "1" ]]; then
         validate_sudo_test 1 $return_value "$output" "" "The system \"/system\" partition cannot be mounted as rw to be used for SUDO_SHELL_HOME \"$sudo_test_temp_shell_home\"" "*"
     else
         validate_sudo_test 0 $return_value "$output" "$sudo_test_temp_shell_home"
@@ -747,7 +755,7 @@ echo "VARIABLE_2=\`$VARIABLE_2\`"
     output="$(sudo -si --post-shell-home="$sudo_test_temp_post_shell_home" --post-shell-stdin-string='exit' --post-shell-pre-commands='cd "$HOME"; pwd;' 2>&1)"
     return_value=$?
     # If android >= 10
-    if [ "$ANDROID__BUILD_VERSION_SDK" -ge 29 ]; then
+    if [ "$ANDROID__BUILD_VERSION_SDK" -ge 29 ] || [[ "$SUDO_TESTS_SYSTEM_PARTITION_IS_RO" == "1" ]]; then
         validate_sudo_test 1 $return_value "$output" "" "The system \"/system\" partition cannot be mounted as rw to be used for SUDO_POST_SHELL_HOME \"$sudo_test_temp_post_shell_home\"" "*"
     else
         validate_sudo_test 0 $return_value "$output" "$sudo_test_temp_post_shell_home"$'\n'"# exit"$'\n'"exit"
@@ -1686,7 +1694,7 @@ sudo_tests_remove_sudo_tests_temp_directories() {
             fi
 
             # If SUDO_TESTS_DIRECTORY is in system "/system" partition
-            if [[ "$SUDO_TESTS_DIRECTORY" =~ $VALID_PATH_IN_SYSTEM_PARTITION_REGEX ]]; then
+            if [[ "$SUDO_TESTS_DIRECTORY" =~ $VALID_PATH_IN_SYSTEM_PARTITION_REGEX ]] && [[ "$SUDO_TESTS_SYSTEM_PARTITION_IS_RO" != "1" ]]; then
                 system_partition_dependent_paths+=" \"$SUDO_TESTS_DIRECTORY\""
             fi
         done
