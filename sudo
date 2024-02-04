@@ -4623,7 +4623,7 @@ sudo_create_modify_validate_directory() {
         # Set directory ownership
         if [[ "$directory_chown_command_options" != "-" ]]; then
             IFS=$'\n'
-            local -a directory_chown_command_options_array=( $(xargs -r -n1 -- printf -- "%s\n" <<< "$directory_chown_command_options") )
+            local -a directory_chown_command_options_array=( $(printf -- "%s" "$directory_chown_command_options" | xargs -r -n1 -- printf -- "%s\n") )
             IFS=$' \t\n'
             sudo_log 3 "Setting \"${directory_chown_command_options_array[*]}\" ownership to $directory_path_label directory at \"$directory_path\" directory"
             chown "${directory_chown_command_options_array[@]}" "$directory_path"
@@ -4637,7 +4637,7 @@ sudo_create_modify_validate_directory() {
         # Set directory permissions
         if [[ "$directory_chmod_command_options" != "-" ]]; then
             IFS=$'\n'
-            local -a directory_chmod_command_options_array=( $(xargs -r -n1 -- printf -- "%s\n" <<< "$directory_chmod_command_options") )
+            local -a directory_chmod_command_options_array=( $(printf -- "%s" "$directory_chmod_command_options" | xargs -r -n1 -- printf -- "%s\n") )
             IFS=$' \t\n'
             sudo_log 3 "Setting \"${directory_chmod_command_options_array[*]}\" permissions to $directory_path_label directory at \"$directory_path\" directory"
             chmod "${directory_chmod_command_options_array[@]}" "$directory_path"
@@ -4651,7 +4651,7 @@ sudo_create_modify_validate_directory() {
         # Set subdirectories ownership
         if [[ "$sub_directories_chown_command_options" != "-" ]]; then
             IFS=$'\n'
-            local -a sub_directories_chown_command_options_array=( $(xargs -r -n1 -- printf -- "%s\n" <<< "$sub_directories_chown_command_options") )
+            local -a sub_directories_chown_command_options_array=( $(printf -- "%s" "$sub_directories_chown_command_options" | xargs -r -n1 -- printf -- "%s\n") )
             IFS=$' \t\n'
             sudo_log 3 "Setting \"${sub_directories_chown_command_options_array[*]}\" ownership to $directory_path_label directory at \"$directory_path\" subdirectories"
             find "$directory_path" -type d -print0 | xargs -0 -r -- chown "${sub_directories_chown_command_options_array[@]}" --
@@ -4665,7 +4665,7 @@ sudo_create_modify_validate_directory() {
         # Set subdirectories permissions
         if [[ "$sub_directories_chmod_command_options" != "-" ]]; then
             IFS=$'\n'
-            local -a sub_directories_chmod_command_options_array=( $(xargs -r -n1 -- printf -- "%s\n" <<< "$sub_directories_chmod_command_options") )
+            local -a sub_directories_chmod_command_options_array=( $(printf -- "%s" "$sub_directories_chmod_command_options" | xargs -r -n1 -- printf -- "%s\n") )
             IFS=$' \t\n'
             sudo_log 3 "Setting \"${sub_directories_chmod_command_options_array[*]}\" permissions to $directory_path_label directory at \"$directory_path\" subdirectories"
             find "$directory_path" -type d -print0 | xargs -0 -r -- chmod "${sub_directories_chmod_command_options_array[@]}" --
@@ -4679,7 +4679,7 @@ sudo_create_modify_validate_directory() {
         # Set subfiles ownership
         if [[ "$sub_files_chown_command_options" != "-" ]]; then
             IFS=$'\n'
-            local -a sub_files_chown_command_options_array=( $(xargs -r -n1 -- printf -- "%s\n" <<< "$sub_files_chown_command_options") )
+            local -a sub_files_chown_command_options_array=( $(printf -- "%s" "$sub_files_chown_command_options" | xargs -r -n1 -- printf -- "%s\n") )
             IFS=$' \t\n'
             sudo_log 3 "Setting \"${sub_files_chown_command_options_array[*]}\" ownership to $directory_path_label directory at \"$directory_path\" subfiles"
             find "$directory_path" -type f -print0 | xargs -0 -r -- chown "${sub_files_chown_command_options_array[@]}" --
@@ -4693,7 +4693,7 @@ sudo_create_modify_validate_directory() {
         # Set subfiles permissions
         if [[ "$sub_files_chmod_command_options" != "-" ]]; then
             IFS=$'\n'
-            local -a sub_files_chmod_command_options_array=( $(xargs -r -n1 -- printf -- "%s\n" <<< "$sub_files_chmod_command_options") )
+            local -a sub_files_chmod_command_options_array=( $(printf -- "%s" "$sub_files_chmod_command_options" | xargs -r -n1 -- printf -- "%s\n") )
             IFS=$' \t\n'
             sudo_log 3 "Setting \"${sub_files_chmod_command_options_array[*]}\" permissions to $directory_path_label directory at \"$directory_path\" subfiles"
             find "$directory_path" -type f -print0 | xargs -0 -r -- chmod "${sub_files_chmod_command_options_array[@]}" --
@@ -4779,7 +4779,7 @@ sudo_create_modify_validate_file() {
             local -a file_creation_command_options_array
             if [[ "$file_creation_command_options" != "-" ]]; then
                 IFS=$'\n'
-                file_creation_command_options_array=( $(xargs -r -n1 -- printf -- "%s\n" <<< "$file_creation_command_options") )
+                file_creation_command_options_array=( $(printf -- "%s" "$file_creation_command_options" | xargs -r -n1 -- printf -- "%s\n") )
                 IFS=$' \t\n'
             fi
 
@@ -4814,7 +4814,7 @@ sudo_create_modify_validate_file() {
         # Set file ownership
         if [[ "$file_chown_command_options" != "-" ]]; then
             IFS=$'\n'
-            local -a file_chown_command_options_array=( $(xargs -r -n1 -- printf -- "%s\n" <<< "$file_chown_command_options") )
+            local -a file_chown_command_options_array=( $(printf -- "%s" "$file_chown_command_options" | xargs -r -n1 -- printf -- "%s\n") )
             IFS=$' \t\n'
             sudo_log 3 "Setting \"${file_chown_command_options_array[*]}\" ownership to $file_path_label \"$file_path\" file"
             chown "${file_chown_command_options_array[@]}" "$file_path"
@@ -4828,7 +4828,7 @@ sudo_create_modify_validate_file() {
         # Set file permissions
         if [[ "$file_chmod_command_options" != "-" ]]; then
             IFS=$'\n'
-            local -a file_chmod_command_options_array=( $(xargs -r -n1 -- printf -- "%s\n" <<< "$file_chmod_command_options") )
+            local -a file_chmod_command_options_array=( $(printf -- "%s" "$file_chmod_command_options" | xargs -r -n1 -- printf -- "%s\n") )
             IFS=$' \t\n'
             sudo_log 3 "Setting \"${file_chmod_command_options_array[*]}\" permissions to $file_path_label \"$file_path\" file"
             chmod "${file_chmod_command_options_array[@]}" "$file_path"
@@ -5699,7 +5699,7 @@ sudo_process_arguments() {
                         if  [[ "$PARSE_COMMANDS_AS_PER_RUN_COMMAND_INTENT_RULES" == "1" ]]; then
                             sudo_replace_comma_alternative_chars_with_commas_in_string "val" "$val"
                         fi
-                        IFS=$'\n' val_arr=( $(xargs -r -n1 -- printf -- "%s\n" <<<"$val") )
+                        IFS=$'\n' val_arr=( $(printf -- "%s" "$val" | xargs -r -n1 -- printf -- "%s\n") )
                         IFS=$' \t\n'
                         SUDO_POST_SHELL_INTERACTIVE_ADDITIONAL_COMMAND_OPTIONS=( "${val_arr[@]}" )
                         ;;
@@ -5819,7 +5819,7 @@ sudo_process_arguments() {
                         if  [[ "$PARSE_COMMANDS_AS_PER_RUN_COMMAND_INTENT_RULES" == "1" ]]; then
                             sudo_replace_comma_alternative_chars_with_commas_in_string "val" "$val"
                         fi
-                        IFS=$'\n' val_arr=( $(xargs -r -n1 -- printf -- "%s\n" <<<"$val") )
+                        IFS=$'\n' val_arr=( $(printf -- "%s" "$val" | xargs -r -n1 -- printf -- "%s\n") )
                         IFS=$' \t\n'
                         SUDO_SHELL_ADDITIONAL_COMMAND_OPTIONS=( "${val_arr[@]}" )
                         ;;
@@ -5891,7 +5891,7 @@ sudo_process_arguments() {
                         if  [[ "$PARSE_COMMANDS_AS_PER_RUN_COMMAND_INTENT_RULES" == "1" ]]; then
                             sudo_replace_comma_alternative_chars_with_commas_in_string "val" "$val"
                         fi
-                        IFS=$'\n' val_arr=( $(xargs -r -n1 -- printf -- "%s\n" <<<"$val") )
+                        IFS=$'\n' val_arr=( $(printf -- "%s" "$val" | xargs -r -n1 -- printf -- "%s\n") )
                         IFS=$' \t\n'
                         SUDO_SU_ENV_ADDITIONAL_COMMAND_OPTIONS=( "${val_arr[@]}" )
                         ;;
@@ -5915,7 +5915,7 @@ sudo_process_arguments() {
                         if  [[ "$PARSE_COMMANDS_AS_PER_RUN_COMMAND_INTENT_RULES" == "1" ]]; then
                             sudo_replace_comma_alternative_chars_with_commas_in_string "val" "$val"
                         fi
-                        IFS=$'\n' val_arr=( $(xargs -r -n1 -- printf -- "%s\n" <<<"$val") )
+                        IFS=$'\n' val_arr=( $(printf -- "%s" "$val" | xargs -r -n1 -- printf -- "%s\n") )
                         IFS=$' \t\n'
                         SUDO_SU_RUN_ADDITIONAL_COMMAND_OPTIONS=( "${val_arr[@]}" )
                         ;;
