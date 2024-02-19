@@ -1,0 +1,23 @@
+{
+    "control": {
+        "Package": "sudo",
+        "Version": "@SUDO_PKG__VERSION@",
+        "Architecture": "@SUDO_PKG__ARCH@",
+        "Maintainer": "@agnostic-apollo",
+        "Depends": "bash",
+        "Conflicts": "tsu",
+        "Replaces": "tsu",
+        "Homepage": "https://github.com/agnostic-apollo/sudo",
+        "Description": "A wrapper script to execute commands as the 'root (superuser)' user in the @TERMUX_APP__NAME@ app, like to drop to an interactive shell for any of the supported shells, or to execute shell script files or their text passed as an argument."
+    },
+
+    "installation_prefix": "@TERMUX__PREFIX@",
+    "control_files_dir": "build/output/packaging/debian",
+
+    "data_files": {
+        "": {
+            "source": "build/output/usr",
+            "source_recurse": true
+        }
+    }
+}

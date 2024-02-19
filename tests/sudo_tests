@@ -180,17 +180,31 @@ sudo_tests_main() {
 
     local return_value
 
+    # Find the sudo script path
+    SUDO_SCRIPT_PATH="$(command -v sudo)"
+    return_value=$?
+    if [ $return_value -ne 0 ] || [[ ! "$SUDO_SCRIPT_PATH" =~ $VALID_ABSOLUTE_PATH_REGEX ]]; then
+        sudo_log_errors "Failure while finding SUDO_SCRIPT_PATH"
+        sudo_log_errors "SUDO_SCRIPT_PATH=\"$SUDO_SCRIPT_PATH\""
+        if [ $return_value -eq 0 ]; then
+            return_value=1
+        fi
+        return $return_value
+    fi
+
     # Source the sudo script
-    if [ ! -x /data/data/com.termux/files/usr/bin/sudo ]; then
-        sudo_tests_log_errors "Failed to find \"/data/data/com.termux/files/usr/bin/sudo\""
+    if [ ! -x "$SUDO_SCRIPT_PATH" ]; then
+        sudo_tests_log_errors "The SUDO_SCRIPT_PATH \"$SUDO_SCRIPT_PATH\" found is not executable"
         return 1
     else
-        source /data/data/com.termux/files/usr/bin/sudo
-        sudo_set_default_variables
+        # shellcheck source=sudo
+        source "$SUDO_SCRIPT_PATH" || return $?
+        sudo_set_termux_env_variables || return $?
+        sudo_set_sudo_default_variables || return $?
     fi
 
     local -a SUDO_TESTS_REQUIRED_VARIABLES_ARRAY=(
-        TERMUX_FILES
+        TERMUX_ROOTFS
         TERMUX_PREFIX
         TERMUX_HOME
         TERMUX_LD_LIBRARY_PATH
@@ -199,11 +213,11 @@ sudo_tests_main() {
     local var
 
     for var in "${SUDO_TESTS_REQUIRED_VARIABLES_ARRAY[@]}"; do
-    # If var is not set
-    if [ -z "${!var}" ]; then
-        sudo_tests_log_errors "The required variable \"$var\" for sudo_tests is not set"
-        return 1
-    fi
+        # If var is not set
+        if [ -z "${!var}" ]; then
+            sudo_tests_log_errors "The required variable \"$var\" for sudo_tests is not set"
+            return 1
+        fi
     done
 
 
@@ -257,6 +271,9 @@ sudo_tests_run() {
 sudo_tests_set_pre_required_variables() {
 
     local return_value
+
+    termux_core__bash__termux_scoped_env_variable get-value "TERMUX_APP__PACKAGE_NAME" \
+        ss="$TERMUX_ENV__SS_TERMUX_APP" "PACKAGE_NAME" r+="^[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z][a-zA-Z0-9_]*)+$" "@TERMUX_APP__PACKAGE_NAME@" "com.termux" || return $?
 
     # Find android sdk/os version
     # Termux app exports ANDROID__BUILD_VERSION_SDK for `>= v0.119.0`
@@ -529,8 +546,8 @@ sudo_tests_run_path_tests() {
 
 
     run_sudo_test 7 && \
-    output="$(sudo dumpsys activity services | grep -aE 'ServiceRecord\{.*com\.termux/.*\.app\.TermuxService\}')"
-    validate_sudo_test 0 $? "$output" "*" "com.termux/.app.TermuxService" "*"
+    output="$(sudo dumpsys activity services | grep -aE 'ServiceRecord\{.*'"${TERMUX_APP__PACKAGE_NAME//./\\.}"'/.*\}')"
+    validate_sudo_test 0 $? "$output" "*" "$TERMUX_APP__PACKAGE_NAME/" "*"
 
 
 
