@@ -1655,8 +1655,14 @@ sudo_set_pre_sudo_shell_commands_to_run() {
     sudo_add_export_or_unset_var_command "PRE_SUDO_SHELL_COMMANDS_TO_RUN" "TERMUX_PRIORITY_LD_LIBRARY_PATH" "$TERMUX_PRIORITY_LD_LIBRARY_PATH" || return $?
     sudo_add_export_or_unset_var_command "PRE_SUDO_SHELL_COMMANDS_TO_RUN" "ANDROID_PRIORITY_LD_LIBRARY_PATH" "$ANDROID_PRIORITY_LD_LIBRARY_PATH" || return $?
 
-    PRE_SUDO_SHELL_COMMANDS_TO_RUN+="export PREFIX='$TERMUX_PREFIX';"$'\n'
-    PRE_SUDO_SHELL_COMMANDS_TO_RUN+="export TMPDIR='$TMPDIR';"$'\n'
+    PRE_SUDO_SHELL_COMMANDS_TO_RUN+="export ${TERMUX_ENV__S_TERMUX}ROOTFS='${TERMUX_ROOTFS//\'/\'\\\'\'}';"$'\n'
+    PRE_SUDO_SHELL_COMMANDS_TO_RUN+="export ${TERMUX_ENV__S_TERMUX}HOME='${TERMUX_HOME//\'/\'\\\'\'}';"$'\n'
+    PRE_SUDO_SHELL_COMMANDS_TO_RUN+="export ${TERMUX_ENV__S_TERMUX}PREFIX='${TERMUX_PREFIX//\'/\'\\\'\'}';"$'\n'
+    # If `$PREFIX` already exported when running `sudo`, only then export it
+    [[ ! "$PREFIX" =~ $VALID_ROOTFS_OR_ABSOLUTE_PATH_REGEX ]] && \
+        PRE_SUDO_SHELL_COMMANDS_TO_RUN+="export PREFIX='${TERMUX_PREFIX//\'/\'\\\'\'}';"$'\n'
+
+    PRE_SUDO_SHELL_COMMANDS_TO_RUN+="export TMPDIR='${TMPDIR//\'/\'\\\'\'}';"$'\n'
     PRE_SUDO_SHELL_COMMANDS_TO_RUN+="export HOME='${SUDO_SHELL_HOME//\'/\'\\\'\'}';"$'\n'
     PRE_SUDO_SHELL_COMMANDS_TO_RUN+="export TERM='${TERM//\'/\'\\\'\'}';"$'\n'
     PRE_SUDO_SHELL_COMMANDS_TO_RUN+="export LANG='${LANG//\'/\'\\\'\'}';"$'\n'
@@ -1736,8 +1742,14 @@ sudo_set_pre_sudo_post_shell_commands_to_run() {
     sudo_add_export_or_unset_var_command "PRE_SUDO_POST_SHELL_COMMANDS_TO_RUN" "TERMUX_PRIORITY_LD_LIBRARY_PATH" "$TERMUX_PRIORITY_LD_LIBRARY_PATH" || return $?
     sudo_add_export_or_unset_var_command "PRE_SUDO_POST_SHELL_COMMANDS_TO_RUN" "ANDROID_PRIORITY_LD_LIBRARY_PATH" "$ANDROID_PRIORITY_LD_LIBRARY_PATH" || return $?
 
-    PRE_SUDO_POST_SHELL_COMMANDS_TO_RUN+="export PREFIX='$TERMUX_PREFIX';"$'\n'
-    PRE_SUDO_POST_SHELL_COMMANDS_TO_RUN+="export TMPDIR='$TMPDIR';"$'\n'
+    PRE_SUDO_POST_SHELL_COMMANDS_TO_RUN+="export ${TERMUX_ENV__S_TERMUX}ROOTFS='${TERMUX_ROOTFS//\'/\'\\\'\'}';"$'\n'
+    PRE_SUDO_POST_SHELL_COMMANDS_TO_RUN+="export ${TERMUX_ENV__S_TERMUX}HOME='${TERMUX_HOME//\'/\'\\\'\'}';"$'\n'
+    PRE_SUDO_POST_SHELL_COMMANDS_TO_RUN+="export ${TERMUX_ENV__S_TERMUX}PREFIX='${TERMUX_PREFIX//\'/\'\\\'\'}';"$'\n'
+    # If `$PREFIX` already exported when running `sudo`, only then export it
+    [[ ! "$PREFIX" =~ $VALID_ROOTFS_OR_ABSOLUTE_PATH_REGEX ]] && \
+        PRE_SUDO_POST_SHELL_COMMANDS_TO_RUN+="export PREFIX='${TERMUX_PREFIX//\'/\'\\\'\'}';"$'\n'
+
+    PRE_SUDO_POST_SHELL_COMMANDS_TO_RUN+="export TMPDIR='${TMPDIR//\'/\'\\\'\'}';"$'\n'
     PRE_SUDO_POST_SHELL_COMMANDS_TO_RUN+="export HOME='${SUDO_POST_SHELL_HOME//\'/\'\\\'\'}';"$'\n'
     PRE_SUDO_POST_SHELL_COMMANDS_TO_RUN+="export TERM='${TERM//\'/\'\\\'\'}';"$'\n'
     PRE_SUDO_POST_SHELL_COMMANDS_TO_RUN+="export LANG='${LANG//\'/\'\\\'\'}';"$'\n'
