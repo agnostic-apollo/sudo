@@ -2086,7 +2086,7 @@ If getting the linker error `CANNOT LINK EXECUTABLE`, with sub errors like `libr
 
 ### `tpath` and `apath` functions
 
-For the shells `bash zsh dash sh fish ksh`, additional functions named `tpath` and `apath` are added to their `rc` files if the `sudo` script creates the `rc` files, they are not added otherwise. You can call these functions to set priorities from inside interactive shell sessions only when running `sudo su`, `sudo asu` or `sudo -is <core_script` commands, since they depend on some environment variables set by the `sudo` script and are not hard-coded in case of future changes.
+For the shells `bash zsh dash sh ksh fish`, additional functions named `tpath` and `apath` are added to their `rc` files under the `sudo` shell home if `rc` files did not already exist when `sudo` is run for the first time for a shell and its home, otherwise they are not added if `rc` file already existed. You can call these functions to set priorities from inside interactive shell sessions only when running `sudo su`, `sudo asu` or `sudo -is <core_script` commands, since they depend on some environment variables set by the `sudo` script and are not hard-coded in case of future changes.
 
 The `tpath` function will set priority to termux bin paths in `$PATH` variable.
 
@@ -2096,7 +2096,25 @@ The functions will use the inverted value for the priority flags passed for whic
 
 The functions allows the users to quickly switch priorities without having to switch between `sudo su` and `sudo asu` shells.
 
-If you already have an existing `rc` file for your shell like `~/.suroot/.bashrc` and want to add the functions to it. Just temporarily move (not copy) the file to somewhere else and run `sudo su` command with the optional [`--shell`](#--shell) option, then copy the functions from the new `rc` file created by `sudo` to your old file, then remove the new file and move the old file back.
+If you already have an existing `rc` file for your shell like `~/.suroot/.bashrc` and want to add the functions to it. Either add them manually as per the functions below depending on your shell's syntax or just temporarily move (not copy) the file to somewhere else and run `sudo su` command with the optional [`--shell`](#--shell) option, then copy the functions from the new `rc` file created by `sudo` to your old file, then remove the new file and move the old file back.
+
+**IMPORTANT:** If you updated from `sudo` version `<= 2.0.0` to `>= 3.0.0`, then you will have to manually update the `tpath` and `apath` functions in the respective shell's `rc` files under `sudo` shell home as older versions used hardcoded paths instead of `SUDO__` scoped environment variables that are dynamically exported for the current Termux rootfs and Android version when `sudo` is run.
+
+The following functions are added for the `bash zsh dash sh ksh` shells. The `fish` shell has a different syntax.
+
+```shell
+tpath() {
+    export PATH="$SUDO__TERMUX_PRIORITY_PATH";
+    export LD_LIBRARY_PATH="$SUDO__TERMUX_PRIORITY_LD_LIBRARY_PATH";
+    export LD_PRELOAD="$SUDO__TERMUX_LD_PRELOAD";
+}
+
+apath() {
+    export PATH="$SUDO__ANDROID_PRIORITY_PATH";
+    export LD_LIBRARY_PATH="$SUDO__ANDROID_PRIORITY_LD_LIBRARY_PATH";
+    unset LD_PRELOAD;
+}
+```
 
 ## &nbsp;
 

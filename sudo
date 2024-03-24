@@ -1648,13 +1648,13 @@ sudo_set_pre_sudo_shell_commands_to_run() {
     PRE_SUDO_SHELL_COMMANDS_TO_RUN=""
 
     PRE_SUDO_SHELL_COMMANDS_TO_RUN+="export PATH='${PATH_TO_EXPORT//\'/\'\\\'\'}';"$'\n'
-    PRE_SUDO_SHELL_COMMANDS_TO_RUN+="export TERMUX_PRIORITY_PATH='${TERMUX_PRIORITY_PATH//\'/\'\\\'\'}';"$'\n'
-    PRE_SUDO_SHELL_COMMANDS_TO_RUN+="export ANDROID_PRIORITY_PATH='${ANDROID_PRIORITY_PATH//\'/\'\\\'\'}';"$'\n'
+    PRE_SUDO_SHELL_COMMANDS_TO_RUN+="export SUDO__TERMUX_PRIORITY_PATH='${TERMUX_PRIORITY_PATH//\'/\'\\\'\'}';"$'\n'
+    PRE_SUDO_SHELL_COMMANDS_TO_RUN+="export SUDO__ANDROID_PRIORITY_PATH='${ANDROID_PRIORITY_PATH//\'/\'\\\'\'}';"$'\n'
 
     sudo_add_export_or_unset_var_command "PRE_SUDO_SHELL_COMMANDS_TO_RUN" "LD_LIBRARY_PATH" "$LD_LIBRARY_PATH_TO_EXPORT" || return $?
-    sudo_add_export_or_unset_var_command "PRE_SUDO_SHELL_COMMANDS_TO_RUN" "TERMUX_PRIORITY_LD_LIBRARY_PATH" "$TERMUX_PRIORITY_LD_LIBRARY_PATH" || return $?
-    sudo_add_export_or_unset_var_command "PRE_SUDO_SHELL_COMMANDS_TO_RUN" "ANDROID_PRIORITY_LD_LIBRARY_PATH" "$ANDROID_PRIORITY_LD_LIBRARY_PATH" || return $?
-
+    sudo_add_export_or_unset_var_command "PRE_SUDO_SHELL_COMMANDS_TO_RUN" "SUDO__TERMUX_PRIORITY_LD_LIBRARY_PATH" "$TERMUX_PRIORITY_LD_LIBRARY_PATH" || return $?
+    sudo_add_export_or_unset_var_command "PRE_SUDO_SHELL_COMMANDS_TO_RUN" "SUDO__ANDROID_PRIORITY_LD_LIBRARY_PATH" "$ANDROID_PRIORITY_LD_LIBRARY_PATH" || return $?
+ 
     PRE_SUDO_SHELL_COMMANDS_TO_RUN+="export ${TERMUX_ENV__S_TERMUX}ROOTFS='${TERMUX_ROOTFS//\'/\'\\\'\'}';"$'\n'
     PRE_SUDO_SHELL_COMMANDS_TO_RUN+="export ${TERMUX_ENV__S_TERMUX}HOME='${TERMUX_HOME//\'/\'\\\'\'}';"$'\n'
     PRE_SUDO_SHELL_COMMANDS_TO_RUN+="export ${TERMUX_ENV__S_TERMUX}PREFIX='${TERMUX_PREFIX//\'/\'\\\'\'}';"$'\n'
@@ -1679,6 +1679,7 @@ sudo_set_pre_sudo_shell_commands_to_run() {
     if [ -n "$LD_PRELOAD_COMMAND" ]; then
         PRE_SUDO_SHELL_COMMANDS_TO_RUN+="$LD_PRELOAD_COMMAND"$'\n'
     fi
+    PRE_SUDO_SHELL_COMMANDS_TO_RUN+="export SUDO__TERMUX_LD_PRELOAD='${TERMUX_LD_PRELOAD//\'/\'\\\'\'}';"$'\n'
 
     # If SUDO_SHELL_RCFILE_COMMANDS is not empty, then append it to PRE_SUDO_SHELL_COMMANDS_TO_RUN
     if [ -n "$SUDO_SHELL_RCFILE_COMMANDS" ]; then
@@ -1735,12 +1736,12 @@ sudo_set_pre_sudo_post_shell_commands_to_run() {
     PRE_SUDO_POST_SHELL_COMMANDS_TO_RUN=""
 
     PRE_SUDO_POST_SHELL_COMMANDS_TO_RUN+="export PATH='${PATH_TO_EXPORT//\'/\'\\\'\'}';"$'\n'
-    PRE_SUDO_POST_SHELL_COMMANDS_TO_RUN+="export TERMUX_PRIORITY_PATH='${TERMUX_PRIORITY_PATH//\'/\'\\\'\'}';"$'\n'
-    PRE_SUDO_POST_SHELL_COMMANDS_TO_RUN+="export ANDROID_PRIORITY_PATH='${ANDROID_PRIORITY_PATH//\'/\'\\\'\'}';"$'\n'
+    PRE_SUDO_POST_SHELL_COMMANDS_TO_RUN+="export SUDO__TERMUX_PRIORITY_PATH='${TERMUX_PRIORITY_PATH//\'/\'\\\'\'}';"$'\n'
+    PRE_SUDO_POST_SHELL_COMMANDS_TO_RUN+="export SUDO__ANDROID_PRIORITY_PATH='${ANDROID_PRIORITY_PATH//\'/\'\\\'\'}';"$'\n'
 
     sudo_add_export_or_unset_var_command "PRE_SUDO_POST_SHELL_COMMANDS_TO_RUN" "LD_LIBRARY_PATH" "$LD_LIBRARY_PATH_TO_EXPORT" || return $?
-    sudo_add_export_or_unset_var_command "PRE_SUDO_POST_SHELL_COMMANDS_TO_RUN" "TERMUX_PRIORITY_LD_LIBRARY_PATH" "$TERMUX_PRIORITY_LD_LIBRARY_PATH" || return $?
-    sudo_add_export_or_unset_var_command "PRE_SUDO_POST_SHELL_COMMANDS_TO_RUN" "ANDROID_PRIORITY_LD_LIBRARY_PATH" "$ANDROID_PRIORITY_LD_LIBRARY_PATH" || return $?
+    sudo_add_export_or_unset_var_command "PRE_SUDO_POST_SHELL_COMMANDS_TO_RUN" "SUDO__TERMUX_PRIORITY_LD_LIBRARY_PATH" "$TERMUX_PRIORITY_LD_LIBRARY_PATH" || return $?
+    sudo_add_export_or_unset_var_command "PRE_SUDO_POST_SHELL_COMMANDS_TO_RUN" "SUDO__ANDROID_PRIORITY_LD_LIBRARY_PATH" "$ANDROID_PRIORITY_LD_LIBRARY_PATH" || return $?
 
     PRE_SUDO_POST_SHELL_COMMANDS_TO_RUN+="export ${TERMUX_ENV__S_TERMUX}ROOTFS='${TERMUX_ROOTFS//\'/\'\\\'\'}';"$'\n'
     PRE_SUDO_POST_SHELL_COMMANDS_TO_RUN+="export ${TERMUX_ENV__S_TERMUX}HOME='${TERMUX_HOME//\'/\'\\\'\'}';"$'\n'
@@ -1759,6 +1760,7 @@ sudo_set_pre_sudo_post_shell_commands_to_run() {
     if [ -n "$LD_PRELOAD_COMMAND" ]; then
         PRE_SUDO_POST_SHELL_COMMANDS_TO_RUN+="$LD_PRELOAD_COMMAND"$'\n'
     fi
+    PRE_SUDO_POST_SHELL_COMMANDS_TO_RUN+="export SUDO__TERMUX_LD_PRELOAD='${TERMUX_LD_PRELOAD//\'/\'\\\'\'}';"$'\n'
 
     # If SUDO_POST_SHELL_RCFILE_COMMANDS is not empty, then append it to PRE_SUDO_POST_SHELL_COMMANDS_TO_RUN
     if [ -n "$SUDO_POST_SHELL_RCFILE_COMMANDS" ]; then
@@ -3076,9 +3078,9 @@ funcsave -q unset
     # shellcheck disable=SC2016
     FISH_SHELL_TPATH_FUNCTION='
 function tpath
-    export PATH="$TERMUX_PRIORITY_PATH";
-    export LD_LIBRARY_PATH="$TERMUX_PRIORITY_LD_LIBRARY_PATH";
-    export LD_PRELOAD="$TERMUX__PREFIX/lib/libtermux-exec.so";
+    export PATH="$SUDO__TERMUX_PRIORITY_PATH";
+    export LD_LIBRARY_PATH="$SUDO__TERMUX_PRIORITY_LD_LIBRARY_PATH";
+    export LD_PRELOAD="$SUDO__TERMUX_LD_PRELOAD";
 end
 '
 
@@ -3086,8 +3088,8 @@ end
     # shellcheck disable=SC2016
     FISH_SHELL_APATH_FUNCTION='
 function apath
-    export PATH="$ANDROID_PRIORITY_PATH";
-    export LD_LIBRARY_PATH="$ANDROID_PRIORITY_LD_LIBRARY_PATH";
+    export PATH="$SUDO__ANDROID_PRIORITY_PATH";
+    export LD_LIBRARY_PATH="$SUDO__ANDROID_PRIORITY_LD_LIBRARY_PATH";
     '"$ANDROID_PRIORITY_LD_PRELOAD_COMMAND"'
 end
 '
@@ -3108,9 +3110,9 @@ end
         # shellcheck disable=SC2016
         GENERAL_SHELL_TPATH_FUNCTION='
 tpath() {
-    export PATH="$TERMUX_PRIORITY_PATH";
-    export LD_LIBRARY_PATH="$TERMUX_PRIORITY_LD_LIBRARY_PATH";
-    export LD_PRELOAD="$TERMUX__PREFIX/lib/libtermux-exec.so";
+    export PATH="$SUDO__TERMUX_PRIORITY_PATH";
+    export LD_LIBRARY_PATH="$SUDO__TERMUX_PRIORITY_LD_LIBRARY_PATH";
+    export LD_PRELOAD="$SUDO__TERMUX_LD_PRELOAD";
 }
 '
 
@@ -3119,8 +3121,8 @@ tpath() {
         # shellcheck disable=SC2016
         GENERAL_SHELL_APATH_FUNCTION='
 apath() {
-    export PATH="$ANDROID_PRIORITY_PATH";
-    export LD_LIBRARY_PATH="$ANDROID_PRIORITY_LD_LIBRARY_PATH";
+    export PATH="$SUDO__ANDROID_PRIORITY_PATH";
+    export LD_LIBRARY_PATH="$SUDO__ANDROID_PRIORITY_LD_LIBRARY_PATH";
     '"$ANDROID_PRIORITY_LD_PRELOAD_COMMAND"'
 }
 '
