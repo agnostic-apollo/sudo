@@ -1136,11 +1136,21 @@ Check the [sudo.config](sudo.config) file to see the environment variables that 
 
 You can download it from the `master` branch and set it up by running the following commands. If you are on an older version, you may want to extract it from its [release](https://github.com/agnostic-apollo/sudo/releases) instead.
 
-```
+```shell
 config_directory=~/.config/sudo
 mkdir -p "$config_directory" && \
 chmod 700 -R "$config_directory" && \
 curl -L 'https://github.com/agnostic-apollo/sudo/raw/master/sudo.config' -o "$config_directory/sudo.config" && \
+chmod 600 "$config_directory/sudo.config"
+```
+
+If you installed `sudo` with a Termux package manager, like with the `apt`/`pkg` command, then you can also copy it from the on-device examples directory for `sudo`.
+
+```shell
+config_directory=~/.config/sudo
+mkdir -p "$config_directory" && \
+chmod 700 -R "$config_directory" && \
+cp "${TERMUX__PREFIX:-$PREFIX}/share/doc/sudo/examples/sudo.config" "$config_directory/sudo.config" && \
 chmod 600 "$config_directory/sudo.config"
 ```
 
@@ -1152,10 +1162,19 @@ You can also use `GUI` based text editor android apps that support `SAF`. Termux
 
 Note that the android default `SAF` `Document` file picker may not support hidden file or directories like `~/.config` which start with a dot `.`, so if you try to use it to open files for a text editor app, then that directory will not show. You can instead create a symlink for  `~/.config` at `~/config_sym` so that it is shown. Use `ln -s ~/.config ~/config_sym` to create it.
 
+&nbsp;
 
 If you use the `bash` shell in termux terminal session, you can optionally export the environment variables like `$SUDO_SHELL_HOME` and `$SUDO_POST_SHELL_HOME` in the `~/.bashrc` file by adding `export SUDO_SHELL_HOME="/path/to/home"` and `export SUDO_POST_SHELL_HOME="/path/to/home"` lines to it so that they are automatically set whenever you start a terminal session. However, the `~/.bashrc` and `rc` files of other shells will not be sourced if you are running commands from `Termux:Tasker` or `RUN_COMMAND Intent`, and so it is advisable to use the `sudo.config` file instead, which will be sourced in all cases, regardless of how `sudo` is run.
 
 Note that `$SUDO_SHELL_PS1` and `$SUDO_POST_SHELL_PS1` values will not work if `$PS1` variable is overridden in `rc` files in `$PREFIX/etc/` or in `sudo shell` and `sudo post shell` homes. Check [RC File Variables](#rc-file-variables) section for more details.
+
+&nbsp;
+
+The following variables will be available when the `sudo-config` file is sourced.
+
+- `$SUDO__TERMUX_ROOTFS` for the Termux rootfs (`$TERMUX__ROOTFS`).
+- `$SUDO__TERMUX_HOME` for the Termux home (`$TERMUX__HOME`), not the `sudo` shell home.
+- `$SUDO__TERMUX_PREFIX` for the Termux prefix (`$TERMUX__PREFIX`).
 
 ---
 

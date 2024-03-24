@@ -340,7 +340,12 @@ sudo_main() {
     sudo_config_file="$TERMUX_HOME/.config/sudo/sudo.config"
     sudo_config_file_sourced=0
     if [ -f "$sudo_config_file" ] && [ -r "$sudo_config_file" ]; then
-        source "$sudo_config_file"
+        # Set variables provided for sudo.config
+        SUDO__TERMUX_ROOTFS="$TERMUX_ROOTFS"
+        SUDO__TERMUX_HOME="$TERMUX_HOME"
+        SUDO__TERMUX_PREFIX="$TERMUX_PREFIX"
+
+        source "$sudo_config_file" || return $?
         sudo_config_file_sourced=1
     fi
 
