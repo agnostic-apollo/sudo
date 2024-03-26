@@ -1,0 +1,10 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+
+
+
+Files:
+ *
+Comment:
+ The `sudo` repository is released under the `MIT` license, unless specified
+ differently in a file/directory or in any additional `Files` sections below.
+License: [MIT](licenses/agnostic-apollo__sudo__MIT.md)
