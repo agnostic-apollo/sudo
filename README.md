@@ -46,16 +46,18 @@ If you want to run commands in `termux` user context, check [`tudo`].
 
 
 
-### Dependencies
+## Dependencies
 
-- [Termux App]
+Using `sudo` in Termux shells only has the following dependencies.
 
-Using `sudo` directly from inside `termux` terminal session does not have any specific version requirements, other than `bash` version `>= 4.1`.
-However, to use `sudo` with [Termux:Tasker] plugin and [RUN_COMMAND Intent] requires the following versions to be installed. Check [Passing Arguments](#passing-arguments) section and [Termux:Tasker] `Setup Instructions` section for details.
+- [Termux App] version: minimum `>= 0.100`, **recommended `>= 0.119.0`**.
+- [`bash`](https://www.gnu.org/software/bash/manual/bash.html) version: `>= 4.1`.
+- A `su` binary that supports the `-c`, `--shell`, `--preserve-environment` and `--mount-master` options. [Magisk](https://github.com/topjohnwu/Magisk) and [SuperSU](https://su.chainfire.eu/) are recommended and their `su` binaries support the required options. Note that the [limited `su` provided by Android debug builds](https://cs.android.com/android/platform/superproject/+/master:system/extras/su/su.cpp) for `adb root` does not support these options. Check [`su` search paths](#su-search-paths) for more info.
 
-- [Termux App] version `>= 0.100`
-- [Tasker App] version `>= 5.9.4.beta`
-- [Termux:Tasker] version `>= 0.5`
+However, to use `sudo` with [Termux:Tasker] plugin and [RUN_COMMAND Intent] requires the following app versions to be installed. Check [Passing Arguments](#passing-arguments) section and [Termux:Tasker `Setup Instructions`](https://github.com/termux/termux-tasker#setup-instructions) section for details.
+
+- [Tasker App] version: `>= 5.9.4.beta`
+- [Termux:Tasker] version: `>= 0.5`
 
 ---
 
@@ -2292,7 +2294,7 @@ Check [CHANGELOG.md](CHANGELOG.md) file for the **Changelog**.
 [`termux-sudo` by `st42`]: https://gitlab.com/st42/termux-sudo
 [`tsu` by `cswl`]: https://github.com/cswl/tsu
 
-[RUN_COMMAND Intent]: https://github.com/termux/termux-app/blob/master/app/src/main/java/com/termux/app/RunCommandService.java
+[RUN_COMMAND Intent]: https://github.com/termux/termux-app/wiki/RUN_COMMAND-Intent
 
 [Process Substitution]: https://en.wikipedia.org/wiki/Process_substitution
 [Here Document]: https://en.wikipedia.org/wiki/Here_document

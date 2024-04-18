@@ -50,7 +50,7 @@
 
 A task that provides templates for running `sudo` script commands with the `RUN_COMMAND` intent in `superuser (root)` context in termux. The commands are run using the Tasker `TermuxCommand()` function of the `Tasker Function` action and with the `am` command with the `Run Shell` action and are referred as intent actions in this task. This task requires Termux:Tasker version `>= 0.5`. Tasker must be granted `com.termux.permission.RUN_COMMAND` permission. The `sudo` script must be installed at `$PREFIX/bin/sudo`. The `allow-external-apps` property must also be set to `true` in `~/.termux/termux.properties` file, otherwise any commands received via the `RUN_COMMAND` intent will not be executed by Termux. For android `>= 10`, Termux must also be granted `Draw Over Apps` permissions so that foreground commands automatically start executing without the user having to manually click the `Termux` notification in the status bar dropdown notifications list for the commands to start. The device must be rooted and ideally `Termux` must have been granted root permissions by your root manager app like `SuperSU` or `Magisk` for the `sudo` script to work.
 
-Check [Termux:Tasker Github](https://github.com/termux/termux-tasker) and [RunCommand Intent](https://github.com/termux/termux-app/blob/master/app/src/main/java/com/termux/app/RunCommandService.java) for more details on `RUN_COMMAND` intent configuration.
+Check [Termux:Tasker Github](https://github.com/termux/termux-tasker) and [RunCommand Intent](https://github.com/termux/termux-app/wiki/RUN_COMMAND-Intent) for more details on `RUN_COMMAND` intent configuration.
 
 Check [sudo](https://github.com/agnostic-apollo/sudo) for more details for the `sudo` script.
 
@@ -105,7 +105,7 @@ Task Name: Termux RUN_COMMAND Intent Sudo Templates
 Actions:
     <A task that provides templates for running `sudo` script commands with the `RUN_COMMAND` intent in `superuser (root)` context in termux. The commands are run using the Tasker `TermuxCommand()` function of the `Tasker Function` action and with the `am` command with the `Run Shell` action and are referred as intent actions in this task. This task requires Termux:Tasker version `>= 0.5`. Tasker must be granted `com.termux.permission.RUN_COMMAND` permission. The `sudo` script must be installed at `$PREFIX/bin/sudo`. The `allow-external-apps` property must also be set to `true` in `~/.termux/termux.properties` file, otherwise any commands received via the `RUN_COMMAND` intent will not be executed by Termux. For android `>= 10`, Termux must also be granted `Draw Over Apps` permissions so that foreground commands automatically start executing without the user having to manually click the `Termux` notification in the status bar dropdown notifications list for the commands to start. The device must be rooted and ideally `Termux` must have been granted root permissions by your root manager app like `SuperSU` or `Magisk` for the `sudo` script to work.
     
-    Check [Termux:Tasker Github](https://github.com/termux/termux-tasker) and [RunCommand Intent](https://github.com/termux/termux-app/blob/master/app/src/main/java/com/termux/app/RunCommandService.java) for more details on `RUN_COMMAND` intent configuration.
+    Check [Termux:Tasker Github](https://github.com/termux/termux-tasker) and [RunCommand Intent](https://github.com/termux/termux-app/wiki/RUN_COMMAND-Intent) for more details on `RUN_COMMAND` intent configuration.
     
     Check [sudo](https://github.com/agnostic-apollo/sudo) for more details for the `sudo` script.
     
