@@ -1,9 +1,11 @@
 #!/data/data/com.termux/files/usr/bin/bash
 
 # Title:         sudo
-# Description:   A wrapper script to drop to the supported shells or
-#                execute shell script files or their text passed as
-#                an argument with superuser (root) context in termux.
+# Description:   A wrapper script to execute commands as the
+#                'root (superuser)' user in the Termux app, like to
+#                drop to an interactive shell for any of the supported
+#                shells, or to execute shell script files or their
+#                text passed as an argument.
 # Usage:         Run "sudo --help" for detailed list of usages.
 # Bash version:  4.1 or higher
 # Credits:       https://gitlab.com/st42/termux-sudo
@@ -6606,9 +6608,10 @@ sudo_process_arguments() {
 sudo_show_help() {
 
     cat <<'SUDO_HELP_EOF'
-sudo is a wrapper script to drop to the supported shells or execute
-shell script files or their text passed as an argument with super
-user (root) context in termux.
+sudo is a wrapper script to execute commands as the 'root (superuser)'
+user in the Termux App, like to drop to an interactive shell for any
+of the supported shells, or to execute shell script files or their
+text passed as an argument.
 
 
 Usage:
@@ -6797,10 +6800,11 @@ sudo_show_help_extra() {
     cat <<'SUDO_HELP_EOF'
 
 
-The 'su' command type drops to an interactive shell in superuser (root)
-context for any of the supported interactive shells. To drop to a root
-'bash' shell, just run 'sudo su'. The priority will be set to termux
-bin and library paths in '$PATH' and '$LD_LIBRARY_PATH' variables.
+The 'su' command type drops to an interactive shell as the
+'root (superuser)' user for any of the supported interactive shells.
+To drop to a root 'bash' shell, just run 'sudo su'. The priority will
+be set to termux bin and library paths in '$PATH' and
+'$LD_LIBRARY_PATH' variables.
 Use the '--shell' option to set the interactive shell to use.
 
 
@@ -6810,8 +6814,8 @@ instead the priority will be set to android bin and library paths in
 Use the '--shell' option to set the interactive shell to use.
 
 
-The 'path' command type runs a single command in superuser (root)
-context. You can use it just by running 'sudo <command> [command_args]'
+The 'path' command type runs a single command as the 'root (superuser)'
+user. You can use it just by running 'sudo <command> [command_args]'
 where 'command' is the executable you want to run and 'command_args'
 are any optional arguments to it. The 'command' will be run within a
 'bash' shell.
