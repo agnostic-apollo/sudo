@@ -20,7 +20,6 @@ If you want to run commands as the `Termux app (u<userid>_a<appid>)` user, check
 
 ### Contents
 
-- [Install](#install)
 - [Current Features](#current-features)
 - [Help](#help)
 - [Command Types](#command-types)
@@ -36,58 +35,6 @@ If you want to run commands as the `Termux app (u<userid>_a<appid>)` user, check
 - [Issues](#issues)
 - [Worthy Of Note](#worthy-of-note)
 - [Tests](#tests)
-
----
-
-&nbsp;
-
-
-
-
-
-### Install
-
-The `sudo` file should be placed in termux `bin` directory `${TERMUX__PREFIX:-$PREFIX}/bin`.  
-It should have `termux` `uid:gid` ownership and have executable `700` permission before it can be run directly without `bash`.  
-
-1. Download the `sudo` file.  
-
-    - Download to termux bin directory directly from github using `curl` using a non-root termux shell.  
-        Run `pkg install curl` to install `curl` first.  
-        - Latest release:  
-
-            `curl -L 'https://github.com/agnostic-apollo/sudo/releases/latest/download/sudo' -o "${TERMUX__PREFIX:-$PREFIX}/bin/sudo"`  
-
-        - Specific release:  
-
-            `curl -L 'https://github.com/agnostic-apollo/sudo/releases/download/v0.1.0/sudo' -o "${TERMUX__PREFIX:-$PREFIX}/bin/sudo"`  
-
-        - Master Branch *may be unstable*:  
-
-            `curl -L 'https://github.com/agnostic-apollo/sudo/raw/master/sudo' -o "${TERMUX__PREFIX:-$PREFIX}/bin/sudo"`  
-
-    - Download `sudo` file manually from github to the android download directory and then copy it to termux bin directory.  
-
-        You can download the `sudo` file from a github release from the `Assets` dropdown menu.  
-
-        You can also download it from a specific github branch/tag by opening the `sudo` file from the `Code` section.  
-        Right-click or hold the `Raw` button at the top and select `Download/Save link`.  
-
-        Then copy the file to termux bin directory using `cat` command below or use a root file browser to manually place it.  
-
-         `cat "/sdcard/Download/sudo" > "${TERMUX__PREFIX:-$PREFIX}/bin/sudo"`  
-
-2. Set `termux` ownership and executable permissions.  
-
-    - If you used a `curl` or `cat` to copy the file, then use a non-root termux shell to set ownership and permissions with `chown` and `chmod` commands respectively:  
-
-        `export termux_bin_path="${TERMUX__PREFIX:-$PREFIX}/bin"; export owner="$(stat -c "%u" "$termux_bin_path")"; chown "$owner:$owner" "$termux_bin_path/sudo" && chmod 700 "$termux_bin_path/sudo";`  
-
-    - If you used a root file browser to copy the file, then use `su` to start a root shell to set ownership and permissions with `chown` and `chmod` commands respectively:  
-
-        `export termux_bin_path="${TERMUX__PREFIX:-$PREFIX}/bin"; export owner="$(stat -c "%u" "$termux_bin_path")"; su -c "chown \"$owner:$owner\" \"$termux_bin_path/sudo\" && chmod 700 \"$termux_bin_path/sudo\"";`  
-
-    - Or manually set them with your root file browser. You can find `termux` `uid` and `gid` by running the command `id -u` in a non-root termux shell or by checking the properties of the termux `bin` directory from your root file browser.  
 
 ---
 
