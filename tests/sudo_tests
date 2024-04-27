@@ -118,7 +118,7 @@ bash ~/sudo_tests -vv script
 bash ~/sudo_tests -vv script bash 1
 
 # Run only script command type bash shell test 1 with sudo log level 'VERBOSE'
-SUDO_LOG_LEVEL=3 bash ~/sudo_tests -vv script bash 1
+SUDO__LOG_LEVEL=3 bash ~/sudo_tests -vv script bash 1
 
 # For some tests **sometimes** where *-stdin-string option is used to pass a string to an interactive shell using stdin,
 # the stdout is returned in an unsynchronized manner which fails the validation, possibly due to magisk su or maybe an android 10 issue
@@ -134,9 +134,11 @@ SUDO_TESTS_HELP_EXTRA
 ### Set Default Variables Start
 
 SUDO_TESTS_MAX_LOG_LEVEL=4 # Default: `4` (VVERBOSE=4)
+# shellcheck disable=SC2153
+SUDO_TESTS_LOG_LEVEL="$SUDO_TESTS__LOG_LEVEL"
 { [[ ! "$SUDO_TESTS_LOG_LEVEL" =~ ^[0-9]+$ ]] || [[ "$SUDO_TESTS_LOG_LEVEL" -gt "$SUDO_TESTS_MAX_LOG_LEVEL" ]]; } && \
 SUDO_TESTS_LOG_LEVEL=1 # Default: `1` (OFF=0, NORMAL=1, DEBUG=2, VERBOSE=3, VVERBOSE=4)
-SUDO_TESTS_LOG_ARGS=${SUDO_TESTS_LOG_ARGS:-0} # Default: `0` (Export or manually set to `1` if you want to debug arguments received)
+SUDO_TESTS_LOG_ARGS="${SUDO_TESTS__LOG_ARGS:-0}" # Default: `0` (Export or manually set to `1` if you want to debug arguments received)
 
 SUDO_TESTS_COMMAND_TYPE="" # Default: ``
 SUDO_TESTS_NOOP_COMMAND=0 # Default: `0`
@@ -338,8 +340,11 @@ sudo_tests_set_required_variables() {
         return $return_value
     fi
 
-    export SUDO_SHELL_HOME="$SUDO_TESTS_WORKING_DIR/.shell_home.$SUDO_TESTS_TEMP_DIRECTORY_SUFFIX"
-    export SUDO_POST_SHELL_HOME="$SUDO_TESTS_WORKING_DIR/.post_shell_home.$SUDO_TESTS_TEMP_DIRECTORY_SUFFIX"
+    SUDO_SHELL_HOME="$SUDO_TESTS_WORKING_DIR/.shell_home.$SUDO_TESTS_TEMP_DIRECTORY_SUFFIX"
+    SUDO_POST_SHELL_HOME="$SUDO_TESTS_WORKING_DIR/.post_shell_home.$SUDO_TESTS_TEMP_DIRECTORY_SUFFIX"
+
+    export SUDO__SHELL_HOME="$SUDO_SHELL_HOME"
+    export SUDO__POST_SHELL_HOME="$SUDO_POST_SHELL_HOME"
 
     SUDO_SHELL_HOME_BASENAME="${SUDO_SHELL_HOME##*/}" # Strip longest match of */ from start
     SUDO_POST_SHELL_HOME_BASENAME="${SUDO_POST_SHELL_HOME##*/}" # Strip longest match of */ from start
@@ -663,12 +668,12 @@ echo "Hi, $name." 1>&2
 
     run_sudo_test 14 && \
     output="$(sudo -sf 'echo "Running $1 $2 script: $(basename "$0")"' "$shell" "shell")"
-    validate_sudo_test 0 $? "$output" "Running $shell shell script: sudo_core_script"
+    validate_sudo_test 0 $? "$output" "Running $shell shell script: sudo_script__core_script"
 
 
     run_sudo_test 15 && \
-    output="$(sudo -sf --script-name="sudo_core_script_custom" 'echo "Running $1 $2 script: $(basename "$0")"' "$shell" "shell")"
-    validate_sudo_test 0 $? "$output" "Running $shell shell script: sudo_core_script_custom"
+    output="$(sudo -sf --script-name="sudo_script__core_script_custom" 'echo "Running $1 $2 script: $(basename "$0")"' "$shell" "shell")"
+    validate_sudo_test 0 $? "$output" "Running $shell shell script: sudo_script__core_script_custom"
 
 
 

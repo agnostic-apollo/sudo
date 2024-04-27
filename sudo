@@ -89,55 +89,55 @@ sudo_set_sudo_default_variables() {
 ### It is highly advisable to use the sudo.config file instead to modify the default values
 
 # Set SUDO_SHELL_HOME which will be used as sudo shell home directory
-[ -n "$SUDO_SHELL_HOME" ] && custom_sudo_shell_home_set=1
-SUDO_SHELL_HOME="${SUDO_SHELL_HOME:-$TERMUX_HOME/.suroot}" # Default: `$TERMUX_HOME/.suroot`
+[ -n "$SUDO__SHELL_HOME" ] && CUSTOM_SUDO_SHELL_HOME_SET=1
+SUDO_SHELL_HOME="${SUDO__SHELL_HOME:-$TERMUX_HOME/.suroot}" # Default: `$TERMUX_HOME/.suroot`
 # SUDO_SHELL_HOME="${SUDO_SHELL_HOME:-$TERMUX_HOME}" # Use '$TERMUX_HOME' as sudo shell home
 
 # Set SUDO_POST_SHELL_HOME which will be used as sudo post shell home directory
-[ -n "$SUDO_POST_SHELL_HOME" ] && custom_sudo_post_shell_home_set=1
-SUDO_POST_SHELL_HOME="${SUDO_POST_SHELL_HOME:-$TERMUX_HOME/.suroot}" # Default: `$TERMUX_HOME/.suroot`
-# SUDO_POST_SHELL_HOME="${SUDO_POST_SHELL_HOME:-$TERMUX_HOME}" # Use '$TERMUX_HOME' as sudo post shell home
+[ -n "$SUDO__POST_SHELL_HOME" ] && CUSTOM_SUDO_POST_SHELL_HOME_SET=1
+SUDO_POST_SHELL_HOME="${SUDO__POST_SHELL_HOME:-$TERMUX_HOME/.suroot}" # Default: `$TERMUX_HOME/.suroot`
+# SUDO_POST_SHELL_HOME="${SUDO__POST_SHELL_HOME:-$TERMUX_HOME}" # Use '$TERMUX_HOME' as sudo post shell home
 
 # Set the prompt string 1 for the sudo shell
-SUDO_SHELL_PS1="${SUDO_SHELL_PS1:-# }" # Default: `# `
+SUDO_SHELL_PS1="${SUDO__SHELL_PS1:-# }" # Default: `# `
 
 # Set the prompt string 1 for the sudo post shell
-SUDO_POST_SHELL_PS1="${SUDO_POST_SHELL_PS1:-# }" # Default: `# `
+SUDO_POST_SHELL_PS1="${SUDO__POST_SHELL_PS1:-# }" # Default: `# `
 
 # Set any additional paths you want to export other than termux bin, android bin and su bin paths,
 # separated with colons `:`
 # The string must not start or end with or contain two consecutive colons ':'
 # the `--export-paths` option will override this value
-SUDO_ADDITIONAL_PATHS_TO_EXPORT="${SUDO_ADDITIONAL_PATHS_TO_EXPORT:-}" # Default: ``
+SUDO_ADDITIONAL_PATHS_TO_EXPORT="${SUDO__ADDITIONAL_PATHS_TO_EXPORT:-}" # Default: ``
 
 # Set to "1" or pass "-L" as argument if you want to automatically export all the paths that already exist
 # in the PATH variable at the moment the sudo command is run
 # the default paths mentioned above and any path in SUDO_ADDITIONAL_PATHS_TO_EXPORT are always exported
-SUDO_EXPORT_ALL_EXISTING_PATHS_IN_PATH_VARIABLE="${SUDO_EXPORT_ALL_EXISTING_PATHS_IN_PATH_VARIABLE:-0}" # Default: `0`
+SUDO_EXPORT_ALL_EXISTING_PATHS_IN_PATH_VARIABLE="${SUDO__EXPORT_ALL_EXISTING_PATHS_IN_PATH_VARIABLE:-0}" # Default: `0`
 
 # Set any additional ld library paths you want to export other than termux lib and android lib paths,
 # separated with colons `:`
 # The string must not start or end with or contain two consecutive colons ':'
 # the `--export-ld-lib-paths` option will override this value
-SUDO_ADDITIONAL_LD_LIBRARY_PATHS_TO_EXPORT="${SUDO_ADDITIONAL_LD_LIBRARY_PATHS_TO_EXPORT:-}" # Default: ``
+SUDO_ADDITIONAL_LD_LIBRARY_PATHS_TO_EXPORT="${SUDO__ADDITIONAL_LD_LIBRARY_PATHS_TO_EXPORT:-}" # Default: ``
 
 # Set to "1" or pass "-P" as argument if you want to automatically export all the paths that already exist
 # in the LD_LIBRARY_PATH variable at the moment the sudo command is run
 # The default paths mentioned above and any path in SUDO_ADDITIONAL_LD_LIBRARY_PATHS_TO_EXPORT are always exported
-SUDO_EXPORT_ALL_EXISTING_PATHS_IN_LD_LIBRARY_PATH_VARIABLE="${SUDO_EXPORT_ALL_EXISTING_PATHS_IN_LD_LIBRARY_PATH_VARIABLE:-0}" # Default: `0`
+SUDO_EXPORT_ALL_EXISTING_PATHS_IN_LD_LIBRARY_PATH_VARIABLE="${SUDO__EXPORT_ALL_EXISTING_PATHS_IN_LD_LIBRARY_PATH_VARIABLE:-0}" # Default: `0`
 
 # Set to 1 if you want to automatically create rc files for interactive shells, otherwise 0
-SUDO_SHELLS_AUTOMATICALLY_CREATE_RC_FILES="${SUDO_SHELLS_AUTOMATICALLY_CREATE_RC_FILES:-1}" # Default: `1`
+SUDO_SHELLS_AUTOMATICALLY_CREATE_RC_FILES="${SUDO__SHELLS_AUTOMATICALLY_CREATE_RC_FILES:-1}" # Default: `1`
 
 # Set to 1 if you want to automatically create history files for interactive shells, otherwise 0
-SUDO_SHELLS_AUTOMATICALLY_CREATE_HISTORY_FILES="${SUDO_SHELLS_AUTOMATICALLY_CREATE_HISTORY_FILES:-1}" # Default: `1`
+SUDO_SHELLS_AUTOMATICALLY_CREATE_HISTORY_FILES="${SUDO__SHELLS_AUTOMATICALLY_CREATE_HISTORY_FILES:-1}" # Default: `1`
 
 # Set to 1 if you want to store command history for interactive shells, otherwise 0
-SUDO_SHELLS_HISTORY_ENABLED="${SUDO_SHELLS_HISTORY_ENABLED:-1}" # Default: `1`
+SUDO_SHELLS_HISTORY_ENABLED="${SUDO__SHELLS_HISTORY_ENABLED:-1}" # Default: `1`
 
 # Set absolute path for su binary to use instead of searching for it in default search paths.
 # This can be used if path is not in search paths or all paths in it should not be checked.
-SUDO_SU_PATH="${SUDO_SU_PATH:-}" # Default: ``
+SUDO_SU_PATH="${SUDO__SU_PATH:-}" # Default: ``
 
 
 # for f in SUDO_SHELL_HOME SUDO_POST_SHELL_HOME SUDO_SHELL_PS1 SUDO_POST_SHELL_PS1 SUDO_ADDITIONAL_PATHS_TO_EXPORT SUDO_EXPORT_ALL_EXISTING_PATHS_IN_PATH_VARIABLE SUDO_ADDITIONAL_LD_LIBRARY_PATHS_TO_EXPORT SUDO_EXPORT_ALL_EXISTING_PATHS_IN_LD_LIBRARY_PATH_VARIABLE SUDO_SHELLS_AUTOMATICALLY_CREATE_RC_FILES SUDO_SHELLS_AUTOMATICALLY_CREATE_HISTORY_FILES SUDO_SHELLS_HISTORY_ENABLED SUDO_SU_PATH; do echo "$f=\`${!f}\`"; done; echo $'\n'
@@ -149,9 +149,11 @@ SUDO_SU_PATH="${SUDO_SU_PATH:-}" # Default: ``
 # The following variables must not be modified unless you know what you are doing
 
 SUDO_MAX_LOG_LEVEL=3 # Default: `3` (VERBOSE=3)
+# shellcheck disable=SC2153
+SUDO_LOG_LEVEL="$SUDO__LOG_LEVEL"
 { [[ ! "${SUDO_LOG_LEVEL:-}" =~ ^[0-9]+$ ]] || [[ "$SUDO_LOG_LEVEL" -gt "$SUDO_MAX_LOG_LEVEL" ]]; } && \
 SUDO_LOG_LEVEL=1 # Default: `1` (OFF=0, NORMAL=1, DEBUG=2, VERBOSE=3)
-SUDO_LOG_ARGS=${SUDO_LOG_ARGS:-0} # Default: `0` (Export or manually set to `1` if you want to debug arguments received)
+SUDO_LOG_ARGS="${SUDO__LOG_ARGS:-0}" # Default: `0` (Export or manually set to `1` if you want to debug arguments received)
 
 SUDO_NOOP_COMMAND=0 # Default: `0`
 SUDO_DRY_RUN=0 # Default: `0`
@@ -1167,7 +1169,7 @@ sudo_set_required_variables() {
     # Replace "$PREFIX/" or "~/" prefix with termux absolute paths in SUDO_SHELL_HOME
     # Canonicalize_path is only enabled if a custom path was passed for SUDO_SHELL_HOME by the user
     # This will reduce execution time since an external call to readlink with a subshell will be made
-    sudo_expand_termux_path "SUDO_SHELL_HOME" "SUDO_SHELL_HOME" "$SUDO_SHELL_HOME" "$TERMUX_PREFIX" "$TERMUX_HOME" "$custom_sudo_shell_home_set"
+    sudo_expand_termux_path "SUDO_SHELL_HOME" "SUDO_SHELL_HOME" "$SUDO_SHELL_HOME" "$TERMUX_PREFIX" "$TERMUX_HOME" "$CUSTOM_SUDO_SHELL_HOME_SET"
     return_value=$?
     if [ $return_value -ne 0 ]; then
         sudo_log_errors "Failed to expand SUDO_SHELL_HOME \"$SUDO_SHELL_HOME\""
@@ -1203,7 +1205,7 @@ sudo_set_required_variables() {
         # Replace "$PREFIX/" or "~/" prefix with termux absolute paths in SUDO_POST_SHELL_HOME
         # Canonicalize_path is only enabled if a custom path was passed for SUDO_POST_SHELL_HOME by the user
         # This will reduce execution time since an external call to readlink with a subshell will be made
-        sudo_expand_termux_path "SUDO_POST_SHELL_HOME" "SUDO_POST_SHELL_HOME" "$SUDO_POST_SHELL_HOME" "$TERMUX_PREFIX" "$TERMUX_HOME" "$custom_sudo_post_shell_home_set"
+        sudo_expand_termux_path "SUDO_POST_SHELL_HOME" "SUDO_POST_SHELL_HOME" "$SUDO_POST_SHELL_HOME" "$TERMUX_PREFIX" "$TERMUX_HOME" "$CUSTOM_SUDO_POST_SHELL_HOME_SET"
         return_value=$?
         if [ $return_value -ne 0 ]; then
             sudo_log_errors "Failed to expand \"SUDO_POST_SHELL_HOME\""
@@ -2003,20 +2005,20 @@ sudo_set_sudo_script_command() {
 
         # If SUDO_CORE_SCRIPT_TEMP_FILENAME is empty, then use default
         if [ -z "$SUDO_CORE_SCRIPT_TEMP_FILENAME" ]; then
-            SUDO_CORE_SCRIPT_TEMP_FILENAME="sudo_core_script"
+            SUDO_CORE_SCRIPT_TEMP_FILENAME="sudo_script__core_script"
         else
             # Else if user passed the filename with --script-name' option, then
             # strip longest match of */ from start, to remove any directory path passed and keep only the basename
             SUDO_CORE_SCRIPT_TEMP_FILENAME="${SUDO_CORE_SCRIPT_TEMP_FILENAME##*/}"
             # If empty, then use default
-            SUDO_CORE_SCRIPT_TEMP_FILENAME="${SUDO_CORE_SCRIPT_TEMP_FILENAME:-sudo_core_script}"
+            SUDO_CORE_SCRIPT_TEMP_FILENAME="${SUDO_CORE_SCRIPT_TEMP_FILENAME:-sudo_script__core_script}"
         fi
 
         # Start a new SUDO_SHELL script shell and pass SUDO_CORE_SCRIPT to it
         # The SCRIPT_ARGUMENT_FOR_SCRIPT_SHELL will contain the SUDO_CORE_SCRIPT argument that will be passed to the SUDO_SHELL
         # The way the SUDO_CORE_SCRIPT argument will be passed will depend on script shell capabilities and the options set
         # sudo_set_script_argument_for_script_shell shell_basename heredoc_word heredoc_word_quote script_is_path_to_script_file force_use_temp_script_file decode_script_content script_file_label script_file_name script_file_path/script_content
-        sudo_set_script_argument_for_script_shell "$SUDO_SHELL_BASENAME" "SUDO_CORE_SCRIPT_EOF" "'" "$CORE_SCRIPT_IS_PATH_TO_SCRIPT_FILE" "$FORCE_USE_TEMP_SCRIPT_FILE_FOR_CORE_SCRIPT" "$DECODE_CORE_SCRIPT_CONTENT" "SUDO_CORE_SCRIPT" "$SUDO_CORE_SCRIPT_TEMP_FILENAME" "$SUDO_CORE_SCRIPT"
+        sudo_set_script_argument_for_script_shell "$SUDO_SHELL_BASENAME" "SUDO_SCRIPT__CORE_SCRIPT_EOF" "'" "$CORE_SCRIPT_IS_PATH_TO_SCRIPT_FILE" "$FORCE_USE_TEMP_SCRIPT_FILE_FOR_CORE_SCRIPT" "$DECODE_CORE_SCRIPT_CONTENT" "SUDO_CORE_SCRIPT" "$SUDO_CORE_SCRIPT_TEMP_FILENAME" "$SUDO_CORE_SCRIPT"
         return_value=$?
         if [ $return_value -ne 0 ]; then
             sudo_log_errors "Failed to create SUDO_CORE_SCRIPT argument commands to pass them to SUDO_SHELL \"$SUDO_SHELL\""
@@ -2117,8 +2119,8 @@ sudo_set_sudo_script_command() {
             # If RUN_CORE_SCRIPT_IN_BACKGROUND is enabled, then start SUDO_CORE_SCRIPT in background
             if [[ "$RUN_CORE_SCRIPT_IN_BACKGROUND" == "1" ]]; then
                 SUDO_CORE_SCRIPT_COMMAND_TO_RUN+=' &'
-                SUDO_CORE_SCRIPT_COMMAND_TO_RUN+=$'\n''export SUDO_SCRIPT_PID=$!;'
-                SUDO_CORE_SCRIPT_COMMAND_TO_RUN+=$'\n''export SUDO_SCRIPT_EXIT_CODE=0;'
+                SUDO_CORE_SCRIPT_COMMAND_TO_RUN+=$'\n''export SUDO_SCRIPT__CORE_SCRIPT_PID=$!;'
+                SUDO_CORE_SCRIPT_COMMAND_TO_RUN+=$'\n''export SUDO_SCRIPT__CORE_SCRIPT_EXIT_CODE=0;'
             fi
 
             SUDO_CORE_SCRIPT_COMMAND_TO_RUN+=$'\n\n'
@@ -2126,11 +2128,11 @@ sudo_set_sudo_script_command() {
 
         # If RUN_CORE_SCRIPT_IN_BACKGROUND is not enabled
         if [[ "$RUN_CORE_SCRIPT_IN_BACKGROUND" != "1" ]]; then
-            SUDO_CORE_SCRIPT_COMMAND_TO_RUN+=$'\n''export SUDO_SCRIPT_EXIT_CODE=$?;'$'\n\n'
+            SUDO_CORE_SCRIPT_COMMAND_TO_RUN+=$'\n''export SUDO_SCRIPT__CORE_SCRIPT_EXIT_CODE=$?;'$'\n\n'
 
-            # If EXIT_EARLY_IF_CORE_SCRIPT_FAILS is enabled, then exit if SUDO_SCRIPT_EXIT_CODE does not equal 0
+            # If EXIT_EARLY_IF_CORE_SCRIPT_FAILS is enabled, then exit if SUDO_SCRIPT__CORE_SCRIPT_EXIT_CODE does not equal 0
             if [[ "$EXIT_EARLY_IF_CORE_SCRIPT_FAILS" == "1" ]]; then
-                SUDO_CORE_SCRIPT_COMMAND_TO_RUN+='[ $SUDO_SCRIPT_EXIT_CODE -ne 0 ] && exit $SUDO_SCRIPT_EXIT_CODE'$'\n\n'
+                SUDO_CORE_SCRIPT_COMMAND_TO_RUN+='[ $SUDO_SCRIPT__CORE_SCRIPT_EXIT_CODE -ne 0 ] && exit $SUDO_SCRIPT__CORE_SCRIPT_EXIT_CODE'$'\n\n'
             fi
         fi
 
@@ -2138,8 +2140,8 @@ sudo_set_sudo_script_command() {
         SUDO_SCRIPT_COMMAND_TO_RUN+="$SUDO_CORE_SCRIPT_COMMAND_TO_RUN"
 
     else
-        # Append dummy SUDO_SCRIPT_EXIT_CODE to SUDO_SCRIPT_COMMAND_TO_RUN
-        SUDO_SCRIPT_COMMAND_TO_RUN+='export SUDO_SCRIPT_EXIT_CODE=0;'$'\n\n'
+        # Append dummy SUDO_SCRIPT__CORE_SCRIPT_EXIT_CODE to SUDO_SCRIPT_COMMAND_TO_RUN
+        SUDO_SCRIPT_COMMAND_TO_RUN+='export SUDO_SCRIPT__CORE_SCRIPT_EXIT_CODE=0;'$'\n\n'
     fi
 
     # If ADDITIONAL_SUDO_SHELL_POST_COMMANDS_TO_RUN is not empty, then append it to SUDO_SCRIPT_COMMAND_TO_RUN
@@ -2198,7 +2200,7 @@ sudo_set_sudo_script_command() {
         fi
     else
         # Exit with exit code of SUDO_CORE_SCRIPT
-        SUDO_SCRIPT_COMMAND_TO_RUN+='exit $SUDO_SCRIPT_EXIT_CODE'$'\n'
+        SUDO_SCRIPT_COMMAND_TO_RUN+='exit $SUDO_SCRIPT__CORE_SCRIPT_EXIT_CODE'$'\n'
     fi
 
 
@@ -2274,7 +2276,7 @@ sudo_set_sudo_script_command() {
     #    to /proc/self/fd issues due to su usage.
     #    The other alternative is to create another temp file in SUDO_TEMP_DIRECTORY and store the SUDO_SCRIPT_COMMAND_TO_RUN
     #    in it and pass the path to bash. This will of course increase execution time significantly due to creation of
-    #    the SUDO_TEMP_DIRECTORY directory on every run even if sudo_core_script temp file is not to be created
+    #    the SUDO_TEMP_DIRECTORY directory on every run even if sudo_script__core_script temp file is not to be created
     #    and also due to another call to the su shell for the creation of the another temp file.
     #    Another hacky alternative that will work is to solve the /proc/self/fd issue itself
     #    That can be done by guessing the real path of fd inside the su shell and pass that to bash instead
@@ -4403,9 +4405,9 @@ sudo_create_script_command_traps() {
 
     sudo_log_literal 3 "\nRunning sudo_create_script_command_traps"
 
-    # The sudo_script_trap will do the following:
-    # Store the original trap signal in $sudo_script_exit_code.
-    # Call the sudo_script_custom_trap function.
+    # The sudo_script__trap will do the following:
+    # Store the original trap signal in $sudo_script__exit_code.
+    # Call the sudo_script__custom_trap function.
     # If it exits with 0, then continue normally.
     # If it exits with 125 'ECANCELED', then do not continue and just return
     # If it exits with any other exit code, store it so that we exit
@@ -4415,7 +4417,7 @@ sudo_create_script_command_traps() {
     # If a signal argument was passed, then remove its trap.
     # Send the original trap signal to all the children of the pid
     # and exit with the original trap signal exit code or that of the
-    # sudo_script_custom_trap function so that parent processes can be
+    # sudo_script__custom_trap function so that parent processes can be
     # notified if necessary.
 
     SUDO_SCRIPT_COMMAND_TRAPS=""
@@ -4424,10 +4426,10 @@ sudo_create_script_command_traps() {
     if [[ "$SUDO_TEMP_DIRECTORY" =~ $VALID_ABSOLUTE_PATH_REGEX ]] && [[ "$DO_NOT_DELETE_SUDO_TEMP_DIRECTORY_ON_EXIT" != "1" ]]; then
         # Append the function to SUDO_SCRIPT_COMMAND_TRAPS to remove SUDO_TEMP_DIRECTORY
         # This may specially be necessary if '-E' is passed
-        SUDO_SCRIPT_COMMAND_TRAPS_REMOVE_TEMP_DIRECTORY_FUNCTION="sudo_remove_temp_directory"
+        SUDO_SCRIPT_COMMAND_TRAPS_REMOVE_TEMP_DIRECTORY_FUNCTION="sudo_script__remove_temp_directory"
 
         SUDO_SCRIPT_COMMAND_TRAPS+='
-export SUDO_SCRIPT_DIR='"'${SUDO_TEMP_DIRECTORY//\'/\'\\\'\'}'"'
+export SUDO_SCRIPT__TEMP_DIR='"'${SUDO_TEMP_DIRECTORY//\'/\'\\\'\'}'"'
 
 '"$SUDO_SCRIPT_COMMAND_TRAPS_REMOVE_TEMP_DIRECTORY_FUNCTION"'() {
     rm -rf '"'${SUDO_TEMP_DIRECTORY//\'/\'\\\'\'}'"'
@@ -4439,29 +4441,29 @@ export SUDO_SCRIPT_DIR='"'${SUDO_TEMP_DIRECTORY//\'/\'\\\'\'}'"'
 
     # shellcheck disable=SC2016
     SUDO_SCRIPT_COMMAND_TRAPS+='
-sudo_script_custom_trap() { :; }
+sudo_script__custom_trap() { :; }
 
-sudo_script_killtree() {
+sudo_script__killtree() {
     local signal="$1"; local pid="$2"; local cpid
-    for cpid in $(pgrep -P "$pid"); do sudo_script_killtree "$signal" "$cpid"; done
+    for cpid in $(pgrep -P "$pid"); do sudo_script__killtree "$signal" "$cpid"; done
     [[ "$pid" != "$$" ]] && kill "-${signal:-15}" "$pid" 2>/dev/null
 }
 
-sudo_script_trap() {
-    local sudo_script_exit_code=$?
-    local return_value; sudo_script_custom_trap "$@"; return_value=$?
+sudo_script__trap() {
+    local sudo_script__exit_code=$?
+    local return_value; sudo_script__custom_trap "$@"; return_value=$?
     [ $return_value -eq 125 ] && return 0
-    [ $return_value -ne 0 ] && sudo_script_exit_code=$return_value
+    [ $return_value -ne 0 ] && sudo_script__exit_code=$return_value
     trap - EXIT '"${SUDO_SCRIPT_COMMAND_TRAPS_REMOVE_TEMP_DIRECTORY_FUNCTION:+$'\n'    $SUDO_SCRIPT_COMMAND_TRAPS_REMOVE_TEMP_DIRECTORY_FUNCTION}"'
     [ -n "$1" ] && trap - $1
-    sudo_script_killtree "$1" $$; exit $sudo_script_exit_code
+    sudo_script__killtree "$1" $$; exit $sudo_script__exit_code
 }
 '"
-trap 'sudo_script_trap' EXIT
-trap 'sudo_script_trap TERM' TERM
-trap 'sudo_script_trap INT' INT
-trap 'sudo_script_trap HUP' HUP
-trap 'sudo_script_trap QUIT' QUIT
+trap 'sudo_script__trap' EXIT
+trap 'sudo_script__trap TERM' TERM
+trap 'sudo_script__trap INT' INT
+trap 'sudo_script__trap HUP' HUP
+trap 'sudo_script__trap QUIT' QUIT
 "
     return 0
 
@@ -6022,7 +6024,7 @@ sudo_process_arguments() {
                             sudo_replace_comma_alternative_chars_with_commas_in_string "val" "$val"
                         fi
                         sudo_trim_trailing_newlines "SUDO_POST_SHELL_HOME" "$val"
-                        custom_sudo_post_shell_home_set=1
+                        CUSTOM_SUDO_POST_SHELL_HOME_SET=1
                         ;;
                     post-shell-home | post-shell-home=)
                         sudo_log_arg_errors "No parameters set for option: '--${OPTARG%=*}'"
@@ -6142,7 +6144,7 @@ sudo_process_arguments() {
                             sudo_replace_comma_alternative_chars_with_commas_in_string "val" "$val"
                         fi
                         sudo_trim_trailing_newlines "SUDO_SHELL_HOME" "$val"
-                        custom_sudo_shell_home_set=1
+                        CUSTOM_SUDO_SHELL_HOME_SET=1
                         ;;
                     shell-home | shell-home=)
                         sudo_log_arg_errors "No parameters set for option: '--${OPTARG%=*}'"
@@ -6697,7 +6699,7 @@ Available command_options:
   [ --script-name=<name> ]
                      Filename to use for the core_script temp file
                      created in '.sudo.temp.XXXXXX' directory instead
-                     of 'sudo_core_script'.
+                     of 'sudo_script__core_script'.
   [ --script-redirect=<mode/string> ]
                      Core_script redirect mode for stdout and stderr.
   [ --shell=<shell> ]
@@ -6797,7 +6799,7 @@ The 'core_script' will be considered a 'bash' script by default.
 The 'core_script' will be passed to the desired shell using
 process substitution or after storing the 'core_script' in a temp file
 in a temp directory in 'sudo shell' home
-'$HOME/.sudo.temp.XXXXXX/sudo_core_script' and passing the path to
+'$HOME/.sudo.temp.XXXXXX/sudo_script__core_script' and passing the path to
 the desired shell, where 'XXXXXX' is a randomly generated string.
 The method is automatically chosen based on the script shell
 capabilities. The '-f' option can be used to force the usage of a
