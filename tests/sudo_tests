@@ -235,8 +235,8 @@ sudo_tests_main() {
     sudo_tests_set_pre_required_variables || return $?
 
 
-    # Process the command arguments passed to sudo_tests
-    sudo_tests_process_arguments "$@" || return $?
+    # Process the command arguments passed to the script
+    sudo_tests_process_script_arguments "$@" || return $?
 
     [ "$SUDO_TESTS_NOOP_COMMAND" = "1" ] && return 0
 
@@ -1788,65 +1788,65 @@ sudo_tests_remove_sudo_tests_temp_directories() {
 }
 
 ##
-# `sudo_tests_process_arguments` [`<argument...>`]
+# `sudo_tests_process_script_arguments` [`<argument...>`]
 ##
-sudo_tests_process_arguments() {
+sudo_tests_process_script_arguments() {
 
-    local OPTIND
+    local opt; local opt_arg; local OPTARG=""; local OPTIND=1;
 
     # Parse options to main command
     while getopts ":hqv-:" opt; do
-        case ${opt} in
+        case "${opt}" in
             -)
-                long_optargs="${OPTARG#*=}"
+                case "${OPTARG}" in *?=*) opt_arg="${OPTARG#*=}";; *) opt_arg="";; esac
                 case "${OPTARG}" in
                     help-extra)
                         sudo_tests_log_args "Parsing option: '--${OPTARG%=*}'"
-                        sudo_tests_show_help_extra
+                        sudo_tests_show_help_extra || return $?
                         SUDO_TESTS_NOOP_COMMAND=1; return 0
                         ;;
-                    help-extra*)
-                        sudo_tests_log_arg_errors "Invalid option or parameters not allowed for option: '--${OPTARG%=*}'"
-                        sudo_tests_exit_on_error || return $?
+                    help-extra=*)
+                        sudo_tests_log_arg_errors "Arguments not allowed for flag option '--${OPTARG%=*}': \`--${OPTARG:-}\`."
+                        sudo_tests_exit_on_args_error || return $?
                         ;;
                     help)
                         sudo_tests_log_args "Parsing option: '--${OPTARG%=*}'"
-                        sudo_tests_show_help
+                        sudo_tests_show_help || return $?
                         SUDO_TESTS_NOOP_COMMAND=1; return 0
                         ;;
-                    help*)
-                        sudo_tests_log_arg_errors "Invalid option or parameters not allowed for option: '--${OPTARG%=*}'"
-                        sudo_tests_exit_on_error || return $?
+                    help=*)
+                        sudo_tests_log_arg_errors "Arguments not allowed for flag option '--${OPTARG%=*}': \`--${OPTARG:-}\`."
+                        sudo_tests_exit_on_args_error || return $?
                         ;;
                     only-bash-tests)
                         sudo_tests_log_args "Parsing option: '--${OPTARG%=*}'"
                         SUDO_TESTS_ONLY_BASH_TESTS=1
                         ;;
-                    only-bash-tests*)
-                        sudo_tests_log_arg_errors "Invalid option or parameters not allowed for option: '--${OPTARG%=*}'"
-                        sudo_tests_exit_on_error || return $?
+                    only-bash-tests=*)
+                        sudo_tests_log_arg_errors "Arguments not allowed for flag option '--${OPTARG%=*}': \`--${OPTARG:-}\`."
+                        sudo_tests_exit_on_args_error || return $?
                         ;;
                     quiet)
                         sudo_tests_log_args "Parsing option: '--${OPTARG%=*}'"
                         SUDO_TESTS_LOG_LEVEL=0
                         ;;
-                    quiet*)
-                        sudo_tests_log_arg_errors "Invalid option or parameters not allowed for option: '--${OPTARG%=*}'"
-                        sudo_tests_exit_on_error || return $?
+                    quiet=*)
+                        sudo_tests_log_arg_errors "Arguments not allowed for flag option '--${OPTARG%=*}': \`--${OPTARG:-}\`."
+                        sudo_tests_exit_on_args_error || return $?
                         ;;
-                    '' ) # "--" terminates argument processing to support non-options that start with dashes
+                    '')
                         sudo_tests_log_args "Parsing option: '--'"
-                        break
+                        break # End of options '--'.
                         ;;
                     *)
-                        sudo_tests_log_arg_errors "Unknown option '--${OPTARG%=*}'"
-                        sudo_tests_exit_on_error || return $?
+                        sudo_tests_log_arg_errors "Unknown option: '--${OPTARG:-}'."
+                        sudo_tests_exit_on_args_error || return $?
                         ;;
                 esac
                 ;;
             h)
                 sudo_tests_log_args "Parsing option: '-${opt}'"
-                sudo_tests_show_help
+                sudo_tests_show_help || return $?
                 SUDO_TESTS_NOOP_COMMAND=1; return 0
                 ;;
             q)
@@ -1859,12 +1859,16 @@ sudo_tests_process_arguments() {
                     SUDO_TESTS_LOG_LEVEL=$((SUDO_TESTS_LOG_LEVEL+1));
                 else
                     sudo_tests_log_arg_errors "Invalid Option, max log level is $SUDO_TESTS_MAX_LOG_LEVEL"
-                    sudo_tests_exit_on_error || return $?
+                    sudo_tests_exit_on_args_error || return $?
                 fi
                 ;;
+            :)
+                sudo_tests_log_arg_errors "No argument passed for arg option '-$OPTARG'."
+                sudo_tests_exit_on_args_error || return $?
+                ;;
             \?)
-                sudo_tests_log_arg_errors "Unknown option: '-${OPTARG}'"
-                sudo_tests_exit_on_error || return $?
+                sudo_tests_log_arg_errors "Unknown option${OPTARG:+": '-${OPTARG:-}'"}."
+                sudo_tests_exit_on_args_error || return $?
                 ;;
         esac
     done
@@ -1890,10 +1894,10 @@ sudo_tests_show_help_extra() {
 
 }
 
-sudo_tests_exit_on_error() {
+sudo_tests_exit_on_args_error() {
 
-    sudo_tests_show_help
-    return 1
+    sudo_tests_show_help || return $?
+    return 64 # EX__USAGE
 
 }
 

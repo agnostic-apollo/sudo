@@ -329,8 +329,8 @@ sudo_main() {
     sudo_set_pre_required_variables || return $?
 
 
-    # Process the command arguments passed to sudo
-    sudo_process_arguments "$@" || return $?
+    # Process the command arguments passed to the script
+    sudo_process_script_arguments "$@" || return $?
 
     [ "$SUDO_NOOP_COMMAND" = "1" ] && return 0
 
@@ -343,7 +343,7 @@ sudo_main() {
         return_value=$?
     else
         sudo_log_errors "Unknown command type $COMMAND_TYPE"
-        sudo_exit_on_error || return $?
+        sudo_exit_on_args_error || return $?
     fi
 
     sudo_run_pre_exit_commands $return_value
@@ -6003,95 +6003,92 @@ sudo_trim_trailing_newlines() {
 }
 
 ##
-# `sudo_process_arguments` [`<argument...>`]
+# `sudo_process_script_arguments` [`<argument...>`]
 ##
-sudo_process_arguments() {
+sudo_process_script_arguments() {
 
-    local OPTIND
+    local opt; local opt_arg; local OPTARG=""; local OPTIND=1;
 
     # Parse options to main command
     while getopts ":hqvaAbBcdDeEfFHilLnNoOpPrRsStT-:" opt; do
-        case ${opt} in
+        case "${opt}" in
             -)
-                long_optargs="${OPTARG#*=}"
+                case "${OPTARG}" in *?=*) opt_arg="${OPTARG#*=}";; *) opt_arg="";; esac
                 case "${OPTARG}" in
                     help-extra)
                         sudo_log_args "Parsing option: '--${OPTARG%=*}'"
-                        sudo_show_help_extra
+                        sudo_show_help_extra || return $?
                         SUDO_NOOP_COMMAND=1; return 0
                         ;;
-                    help-extra*)
-                        sudo_log_arg_errors "Invalid option or parameters not allowed for option: '--${OPTARG%=*}'"
-                        sudo_exit_on_error || return $?
+                    help-extra=*)
+                        sudo_log_arg_errors "Arguments not allowed for flag option '--${OPTARG%=*}': \`--${OPTARG:-}\`."
+                        sudo_exit_on_args_error || return $?
                         ;;
                     help)
                         sudo_log_args "Parsing option: '--${OPTARG%=*}'"
-                        sudo_show_help
+                        sudo_show_help || return $?
                         SUDO_NOOP_COMMAND=1; return 0
                         ;;
-                    help*)
-                        sudo_log_arg_errors "Invalid option or parameters not allowed for option: '--${OPTARG%=*}'"
-                        sudo_exit_on_error || return $?
+                    help=*)
+                        sudo_log_arg_errors "Arguments not allowed for flag option '--${OPTARG%=*}': \`--${OPTARG:-}\`."
+                        sudo_exit_on_args_error || return $?
                         ;;
                     quiet)
                         sudo_log_args "Parsing option: '--${OPTARG%=*}'"
                         SUDO_LOG_LEVEL=0
                         ;;
-                    quiet*)
-                        sudo_log_arg_errors "Invalid option or parameters not allowed for option: '--${OPTARG%=*}'"
-                        sudo_exit_on_error || return $?
+                    quiet=*)
+                        sudo_log_arg_errors "Arguments not allowed for flag option '--${OPTARG%=*}': \`--${OPTARG:-}\`."
+                        sudo_exit_on_args_error || return $?
                         ;;
                     version)
                         sudo_log_args "Parsing option: '--${OPTARG%=*}'"
                         echo "$SUDO__VERSION"
                         SUDO_NOOP_COMMAND=1; return 0
                         ;;
-                    version*)
-                        sudo_log_arg_errors "Invalid option or parameters not allowed for option: '--${OPTARG%=*}'"
-                        sudo_exit_on_error || return $?
+                    version=*)
+                        sudo_log_arg_errors "Arguments not allowed for flag option '--${OPTARG%=*}': \`--${OPTARG:-}\`."
+                        sudo_exit_on_args_error || return $?
                         ;;
                     comma-alternative=?*)
-                        val="$long_optargs"
-                        sudo_log_args "Parsing option: '--${OPTARG%=*}', value: '${val}'"
-                        COMMA_ALTERNATIVE="$val"
+                        sudo_log_args "Parsing option: '--${OPTARG%=*}', value: '${opt_arg}'"
+                        COMMA_ALTERNATIVE="$opt_arg"
                         ;;
                     comma-alternative | comma-alternative=)
-                        sudo_log_arg_errors "No parameters set for option: '--${OPTARG%=*}'"
-                        sudo_exit_on_error || return $?
+                        sudo_log_arg_errors "No argument set for arg option '--${OPTARG%=*}'."
+                        sudo_exit_on_args_error || return $?
                         ;;
                     dry-run)
                         sudo_log_args "Parsing option: '--${OPTARG%=*}'"
                         SUDO_DRY_RUN=1
                         ;;
-                    dry-run*)
-                        sudo_log_arg_errors "Invalid option or parameters not allowed for option: '--${OPTARG%=*}'"
-                        sudo_exit_on_error || return $?
+                    dry-run=*)
+                        sudo_log_arg_errors "Arguments not allowed for flag option '--${OPTARG%=*}': \`--${OPTARG:-}\`."
+                        sudo_exit_on_args_error || return $?
                         ;;
                     export-paths=?*)
-                        val="$long_optargs"
-                        sudo_log_args "Parsing option: '--${OPTARG%=*}', value: '${val}'"
-                        sudo_trim_trailing_newlines "SUDO_ADDITIONAL_PATHS_TO_EXPORT" "$val"
+                        sudo_log_args "Parsing option: '--${OPTARG%=*}', value: '${opt_arg}'"
+                        sudo_trim_trailing_newlines "SUDO_ADDITIONAL_PATHS_TO_EXPORT" "$opt_arg"
                         ;;
                     export-paths | export-paths=)
-                        sudo_log_arg_errors "No parameters set for option: '--${OPTARG%=*}'"
-                        sudo_exit_on_error || return $?
+                        sudo_log_arg_errors "No argument set for arg option '--${OPTARG%=*}'."
+                        sudo_exit_on_args_error || return $?
                         ;;
                     export-ld-lib-paths=?*)
-                        val="$long_optargs"
-                        sudo_log_args "Parsing option: '--${OPTARG%=*}', value: '${val}'"
-                        sudo_trim_trailing_newlines "SUDO_ADDITIONAL_LD_LIBRARY_PATHS_TO_EXPORT" "$val"
+                        sudo_log_args "Parsing option: '--${OPTARG%=*}', value: '${opt_arg}'"
+                        sudo_trim_trailing_newlines "SUDO_ADDITIONAL_LD_LIBRARY_PATHS_TO_EXPORT" "$opt_arg"
                         ;;
                     export-ld-lib-paths | export-ld-lib-paths=)
-                        sudo_log_arg_errors "No parameters set for option: '--${OPTARG%=*}'"
-                        sudo_exit_on_error || return $?
+                        sudo_log_arg_errors "No argument set for arg option '--${OPTARG%=*}'."
+                        sudo_exit_on_args_error || return $?
                         ;;
                     force-remount-ro)
                         sudo_log_args "Parsing option: '--${OPTARG%=*}'"
                         FORCE_REMOUNT_PARTITIONS_BACK_TO_RO_AFTER_SUDO=1
                         ;;
-                    force-remount-ro*)
-                        sudo_log_arg_errors "Invalid option or parameters not allowed for option: '--${OPTARG%=*}'"
-                        sudo_exit_on_error || return $?
+                    force-remount-ro=*)
+                        sudo_log_arg_errors "Arguments not allowed for flag option '--${OPTARG%=*}': \`--${OPTARG:-}\`."
+                        sudo_exit_on_args_error || return $?
                         ;;
                     hold)
                         sudo_log_args "Parsing option: '--${OPTARG%=*}'"
@@ -6099,8 +6096,8 @@ sudo_process_arguments() {
                         HOLD_AFTER_SUDO=1
                         ;;
                     hold=?*)
-                        val="$long_optargs"
-                        sudo_log_args "Parsing option: '--${OPTARG%=*}', value: '${val}'"
+                        val="$opt_arg"
+                        sudo_log_args "Parsing option: '--${OPTARG%=*}', value: '${opt_arg}'"
                         # If PARSE_COMMANDS_AS_PER_RUN_COMMAND_INTENT_RULES is enabled
                         if  [[ "$PARSE_COMMANDS_AS_PER_RUN_COMMAND_INTENT_RULES" == "1" ]]; then
                             sudo_replace_comma_alternative_chars_with_commas_in_string "val" "$val"
@@ -6109,95 +6106,94 @@ sudo_process_arguments() {
                         HOLD_AFTER_SUDO=1
                         ;;
                     hold=)
-                        sudo_log_arg_errors "No parameters set for option: '--${OPTARG%=*}'"
-                        sudo_exit_on_error || return $?
+                        sudo_log_arg_errors "No argument set for arg option '--${OPTARG%=*}'."
+                        sudo_exit_on_args_error || return $?
                         ;;
                     hold-if-fail)
                         sudo_log_args "Parsing option: '--${OPTARG%=*}'"
                         HOLD_ONLY_ON_FAILURE=1
                         ;;
-                    hold-if-fail*)
-                        sudo_log_arg_errors "Invalid option or parameters not allowed for option: '--${OPTARG%=*}'"
-                        sudo_exit_on_error || return $?
+                    hold-if-fail=*)
+                        sudo_log_arg_errors "Arguments not allowed for flag option '--${OPTARG%=*}': \`--${OPTARG:-}\`."
+                        sudo_exit_on_args_error || return $?
                         ;;
                     list-interactive-shells)
                         sudo_log_args "Parsing option: '--${OPTARG%=*}'"
                         echo "$SUDO_SUPPORTED_INTERACTIVE_SHELLS"
                         SUDO_NOOP_COMMAND=1; return 0
                         ;;
-                    list-interactive-shells*)
-                        sudo_log_arg_errors "Invalid option or parameters not allowed for option: '--${OPTARG%=*}'"
-                        sudo_exit_on_error || return $?
+                    list-interactive-shells=*)
+                        sudo_log_arg_errors "Arguments not allowed for flag option '--${OPTARG%=*}': \`--${OPTARG:-}\`."
+                        sudo_exit_on_args_error || return $?
                         ;;
                     list-script-shells)
                         sudo_log_args "Parsing option: '--${OPTARG%=*}'"
                         echo "$SUDO_SUPPORTED_SCRIPT_SHELLS"
                         SUDO_NOOP_COMMAND=1; return 0
                         ;;
-                    list-script-shells*)
-                        sudo_log_arg_errors "Invalid option or parameters not allowed for option: '--${OPTARG%=*}'"
-                        sudo_exit_on_error || return $?
+                    list-script-shells=*)
+                        sudo_log_arg_errors "Arguments not allowed for flag option '--${OPTARG%=*}': \`--${OPTARG:-}\`."
+                        sudo_exit_on_args_error || return $?
                         ;;
                     no-create-hist)
                         sudo_log_args "Parsing option: '--${OPTARG%=*}'"
                         SUDO_SHELLS_AUTOMATICALLY_CREATE_HISTORY_FILES=0
                         ;;
-                    no-create-hist*)
-                        sudo_log_arg_errors "Invalid option or parameters not allowed for option: '--${OPTARG%=*}'"
-                        sudo_exit_on_error || return $?
+                    no-create-hist=*)
+                        sudo_log_arg_errors "Arguments not allowed for flag option '--${OPTARG%=*}': \`--${OPTARG:-}\`."
+                        sudo_exit_on_args_error || return $?
                         ;;
                     no-create-rc)
                         sudo_log_args "Parsing option: '--${OPTARG%=*}'"
                         SUDO_SHELLS_AUTOMATICALLY_CREATE_RC_FILES=0
                         ;;
-                    no-create-rc*)
-                        sudo_log_arg_errors "Invalid option or parameters not allowed for option: '--${OPTARG%=*}'"
-                        sudo_exit_on_error || return $?
+                    no-create-rc=*)
+                        sudo_log_arg_errors "Arguments not allowed for flag option '--${OPTARG%=*}': \`--${OPTARG:-}\`."
+                        sudo_exit_on_args_error || return $?
                         ;;
                     no-hist)
                         sudo_log_args "Parsing option: '--${OPTARG%=*}'"
                         SUDO_SHELLS_HISTORY_ENABLED=0
                         ;;
-                    no-hist*)
-                        sudo_log_arg_errors "Invalid option or parameters not allowed for option: '--${OPTARG%=*}'"
-                        sudo_exit_on_error || return $?
+                    no-hist=*)
+                        sudo_log_arg_errors "Arguments not allowed for flag option '--${OPTARG%=*}': \`--${OPTARG:-}\`."
+                        sudo_exit_on_args_error || return $?
                         ;;
                     no-log-args)
                         sudo_log_args "Parsing option: '--${OPTARG%=*}'"
                         DISABLE_ARGUMENTS_LOGGING=1
                         ;;
-                    no-log-args*)
-                        sudo_log_arg_errors "Invalid option or parameters not allowed for option: '--${OPTARG%=*}'"
-                        sudo_exit_on_error || return $?
+                    no-log-args=*)
+                        sudo_log_arg_errors "Arguments not allowed for flag option '--${OPTARG%=*}': \`--${OPTARG:-}\`."
+                        sudo_exit_on_args_error || return $?
                         ;;
                     no-remount-ro)
                         sudo_log_args "Parsing option: '--${OPTARG%=*}'"
                         DO_NOT_REMOUNT_PARTITIONS_BACK_TO_RO_AFTER_SUDO=1
                         ;;
-                    no-remount-ro*)
-                        sudo_log_arg_errors "Invalid option or parameters not allowed for option: '--${OPTARG%=*}'"
-                        sudo_exit_on_error || return $?
+                    no-remount-ro=*)
+                        sudo_log_arg_errors "Arguments not allowed for flag option '--${OPTARG%=*}': \`--${OPTARG:-}\`."
+                        sudo_exit_on_args_error || return $?
                         ;;
                     keep-temp)
                         sudo_log_args "Parsing option: '--${OPTARG%=*}'"
                         DO_NOT_DELETE_SUDO_TEMP_DIRECTORY_ON_EXIT=1
                         ;;
-                    keep-temp*)
-                        sudo_log_arg_errors "Invalid option or parameters not allowed for option: '--${OPTARG%=*}'"
-                        sudo_exit_on_error || return $?
+                    keep-temp=*)
+                        sudo_log_arg_errors "Arguments not allowed for flag option '--${OPTARG%=*}': \`--${OPTARG:-}\`."
+                        sudo_exit_on_args_error || return $?
                         ;;
                     post-shell=?*)
-                        val="$long_optargs"
-                        sudo_log_args "Parsing option: '--${OPTARG%=*}', value: '${val}'"
-                        sudo_trim_trailing_newlines "SUDO_POST_SHELL" "$val"
+                        sudo_log_args "Parsing option: '--${OPTARG%=*}', value: '${opt_arg}'"
+                        sudo_trim_trailing_newlines "SUDO_POST_SHELL" "$opt_arg"
                         ;;
                     post-shell | post-shell=)
-                        sudo_log_arg_errors "No parameters set for option: '--${OPTARG%=*}'"
-                        sudo_exit_on_error || return $?
+                        sudo_log_arg_errors "No argument set for arg option '--${OPTARG%=*}'."
+                        sudo_exit_on_args_error || return $?
                         ;;
                     post-shell-home=?*)
-                        val="$long_optargs"
-                        sudo_log_args "Parsing option: '--${OPTARG%=*}', value: '${val}'"
+                        val="$opt_arg"
+                        sudo_log_args "Parsing option: '--${OPTARG%=*}', value: '${opt_arg}'"
                         # If PARSE_COMMANDS_AS_PER_RUN_COMMAND_INTENT_RULES is enabled
                         if  [[ "$PARSE_COMMANDS_AS_PER_RUN_COMMAND_INTENT_RULES" == "1" ]]; then
                             sudo_replace_comma_alternative_chars_with_commas_in_string "val" "$val"
@@ -6206,12 +6202,12 @@ sudo_process_arguments() {
                         CUSTOM_SUDO_POST_SHELL_HOME_SET=1
                         ;;
                     post-shell-home | post-shell-home=)
-                        sudo_log_arg_errors "No parameters set for option: '--${OPTARG%=*}'"
-                        sudo_exit_on_error || return $?
+                        sudo_log_arg_errors "No argument set for arg option '--${OPTARG%=*}'."
+                        sudo_exit_on_args_error || return $?
                         ;;
                     post-shell-options=?*)
-                        val="$long_optargs"
-                        sudo_log_args "Parsing option: '--${OPTARG%=*}', value: '${val}'"
+                        val="$opt_arg"
+                        sudo_log_args "Parsing option: '--${OPTARG%=*}', value: '${opt_arg}'"
                         # If PARSE_COMMANDS_AS_PER_RUN_COMMAND_INTENT_RULES is enabled
                         if  [[ "$PARSE_COMMANDS_AS_PER_RUN_COMMAND_INTENT_RULES" == "1" ]]; then
                             sudo_replace_comma_alternative_chars_with_commas_in_string "val" "$val"
@@ -6220,12 +6216,12 @@ sudo_process_arguments() {
                             "'--post-shell-options' arg option" "$val" || return $?
                         ;;
                     post-shell-options | post-shell-options=)
-                        sudo_log_arg_errors "No parameters set for option: '--${OPTARG%=*}'"
-                        sudo_exit_on_error || return $?
+                        sudo_log_arg_errors "No argument set for arg option '--${OPTARG%=*}'."
+                        sudo_exit_on_args_error || return $?
                         ;;
                     post-shell-post-commands=?*)
-                        val="$long_optargs"
-                        sudo_log_args "Parsing option: '--${OPTARG%=*}', value: '${val}'"
+                        val="$opt_arg"
+                        sudo_log_args "Parsing option: '--${OPTARG%=*}', value: '${opt_arg}'"
                         # If PARSE_COMMANDS_AS_PER_RUN_COMMAND_INTENT_RULES is enabled
                         if  [[ "$PARSE_COMMANDS_AS_PER_RUN_COMMAND_INTENT_RULES" == "1" ]]; then
                             sudo_replace_comma_alternative_chars_with_commas_in_string "val" "$val"
@@ -6233,12 +6229,12 @@ sudo_process_arguments() {
                         ADDITIONAL_SUDO_POST_SHELL_POST_COMMANDS_TO_RUN="$val"
                         ;;
                     post-shell-post-commands | post-shell-post-commands=)
-                        sudo_log_arg_errors "No parameters set for option: '--${OPTARG%=*}'"
-                        sudo_exit_on_error || return $?
+                        sudo_log_arg_errors "No argument set for arg option '--${OPTARG%=*}'."
+                        sudo_exit_on_args_error || return $?
                         ;;
                     post-shell-pre-commands=?*)
-                        val="$long_optargs"
-                        sudo_log_args "Parsing option: '--${OPTARG%=*}', value: '${val}'"
+                        val="$opt_arg"
+                        sudo_log_args "Parsing option: '--${OPTARG%=*}', value: '${opt_arg}'"
                         # If PARSE_COMMANDS_AS_PER_RUN_COMMAND_INTENT_RULES is enabled
                         if  [[ "$PARSE_COMMANDS_AS_PER_RUN_COMMAND_INTENT_RULES" == "1" ]]; then
                             sudo_replace_comma_alternative_chars_with_commas_in_string "val" "$val"
@@ -6246,12 +6242,12 @@ sudo_process_arguments() {
                         ADDITIONAL_SUDO_POST_SHELL_PRE_COMMANDS_TO_RUN="$val"
                         ;;
                     post-shell-pre-commands | post-shell-pre-commands=)
-                        sudo_log_arg_errors "No parameters set for option: '--${OPTARG%=*}'"
-                        sudo_exit_on_error || return $?
+                        sudo_log_arg_errors "No argument set for arg option '--${OPTARG%=*}'."
+                        sudo_exit_on_args_error || return $?
                         ;;
                     post-shell-stdin-string=?*)
-                        val="$long_optargs"
-                        sudo_log_args "Parsing option: '--${OPTARG%=*}', value: '${val}'"
+                        val="$opt_arg"
+                        sudo_log_args "Parsing option: '--${OPTARG%=*}', value: '${opt_arg}'"
                         # If PARSE_COMMANDS_AS_PER_RUN_COMMAND_INTENT_RULES is enabled
                         if  [[ "$PARSE_COMMANDS_AS_PER_RUN_COMMAND_INTENT_RULES" == "1" ]]; then
                             sudo_replace_comma_alternative_chars_with_commas_in_string "val" "$val"
@@ -6259,29 +6255,29 @@ sudo_process_arguments() {
                         SUDO_POST_SHELL_STDIN_STRING="$val"
                         ;;
                     post-shell-stdin-string | post-shell-stdin-string=)
-                        sudo_log_arg_errors "No parameters set for option: '--${OPTARG%=*}'"
-                        sudo_exit_on_error || return $?
+                        sudo_log_arg_errors "No argument set for arg option '--${OPTARG%=*}'."
+                        sudo_exit_on_args_error || return $?
                         ;;
                     remove-prev-temp)
                         sudo_log_args "Parsing option: '--${OPTARG%=*}'"
                         REMOVE_PREVIOUS_SUDO_TEMP_FILES=1
                         ;;
-                    remove-prev-temp*)
-                        sudo_log_arg_errors "Invalid option or parameters not allowed for option: '--${OPTARG%=*}'"
-                        sudo_exit_on_error || return $?
+                    remove-prev-temp=*)
+                        sudo_log_arg_errors "Arguments not allowed for flag option '--${OPTARG%=*}': \`--${OPTARG:-}\`."
+                        sudo_exit_on_args_error || return $?
                         ;;
                     script-decode)
                         sudo_log_args "Parsing option: '--${OPTARG%=*}'"
                         FORCE_USE_TEMP_SCRIPT_FILE_FOR_CORE_SCRIPT=1
                         DECODE_CORE_SCRIPT_CONTENT=1
                         ;;
-                    script-decode*)
-                        sudo_log_arg_errors "Invalid option or parameters not allowed for option: '--${OPTARG%=*}'"
-                        sudo_exit_on_error || return $?
+                    script-decode=*)
+                        sudo_log_arg_errors "Arguments not allowed for flag option '--${OPTARG%=*}': \`--${OPTARG:-}\`."
+                        sudo_exit_on_args_error || return $?
                         ;;
                     script-name=?*)
-                        val="$long_optargs"
-                        sudo_log_args "Parsing option: '--${OPTARG%=*}', value: '${val}'"
+                        val="$opt_arg"
+                        sudo_log_args "Parsing option: '--${OPTARG%=*}', value: '${opt_arg}'"
                         # If PARSE_COMMANDS_AS_PER_RUN_COMMAND_INTENT_RULES is enabled
                         if  [[ "$PARSE_COMMANDS_AS_PER_RUN_COMMAND_INTENT_RULES" == "1" ]]; then
                             sudo_replace_comma_alternative_chars_with_commas_in_string "val" "$val"
@@ -6289,12 +6285,12 @@ sudo_process_arguments() {
                         sudo_trim_trailing_newlines "SUDO_CORE_SCRIPT_TEMP_FILENAME" "$val"
                         ;;
                     script-name | script-name=)
-                        sudo_log_arg_errors "No parameters set for option: '--${OPTARG%=*}'"
-                        sudo_exit_on_error || return $?
+                        sudo_log_arg_errors "No argument set for arg option '--${OPTARG%=*}'."
+                        sudo_exit_on_args_error || return $?
                         ;;
                     script-redirect=?*)
-                        val="$long_optargs"
-                        sudo_log_args "Parsing option: '--${OPTARG%=*}', value: '${val}'"
+                        val="$opt_arg"
+                        sudo_log_args "Parsing option: '--${OPTARG%=*}', value: '${opt_arg}'"
                         # If PARSE_COMMANDS_AS_PER_RUN_COMMAND_INTENT_RULES is enabled
                         if  [[ "$PARSE_COMMANDS_AS_PER_RUN_COMMAND_INTENT_RULES" == "1" ]]; then
                             sudo_replace_comma_alternative_chars_with_commas_in_string "val" "$val"
@@ -6302,21 +6298,20 @@ sudo_process_arguments() {
                         sudo_trim_trailing_newlines "SUDO_CORE_SCRIPT_REDIRECT_MODE" "$val"
                         ;;
                     script-redirect | script-redirect=)
-                        sudo_log_arg_errors "No parameters set for option: '--${OPTARG%=*}'"
-                        sudo_exit_on_error || return $?
+                        sudo_log_arg_errors "No argument set for arg option '--${OPTARG%=*}'."
+                        sudo_exit_on_args_error || return $?
                         ;;
                     shell=?*)
-                        val="$long_optargs"
-                        sudo_log_args "Parsing option: '--${OPTARG%=*}', value: '${val}'"
-                        sudo_trim_trailing_newlines "SUDO_SHELL" "$val"
+                        sudo_log_args "Parsing option: '--${OPTARG%=*}', value: '${opt_arg}'"
+                        sudo_trim_trailing_newlines "SUDO_SHELL" "$opt_arg"
                         ;;
                     shell | shell=)
-                        sudo_log_arg_errors "No parameters set for option: '--${OPTARG%=*}'"
-                        sudo_exit_on_error || return $?
+                        sudo_log_arg_errors "No argument set for arg option '--${OPTARG%=*}'."
+                        sudo_exit_on_args_error || return $?
                         ;;
                     shell-home=?*)
-                        val="$long_optargs"
-                        sudo_log_args "Parsing option: '--${OPTARG%=*}', value: '${val}'"
+                        val="$opt_arg"
+                        sudo_log_args "Parsing option: '--${OPTARG%=*}', value: '${opt_arg}'"
                         # If PARSE_COMMANDS_AS_PER_RUN_COMMAND_INTENT_RULES is enabled
                         if  [[ "$PARSE_COMMANDS_AS_PER_RUN_COMMAND_INTENT_RULES" == "1" ]]; then
                             sudo_replace_comma_alternative_chars_with_commas_in_string "val" "$val"
@@ -6325,12 +6320,12 @@ sudo_process_arguments() {
                         CUSTOM_SUDO_SHELL_HOME_SET=1
                         ;;
                     shell-home | shell-home=)
-                        sudo_log_arg_errors "No parameters set for option: '--${OPTARG%=*}'"
-                        sudo_exit_on_error || return $?
+                        sudo_log_arg_errors "No argument set for arg option '--${OPTARG%=*}'."
+                        sudo_exit_on_args_error || return $?
                         ;;
                     shell-options=?*)
-                        val="$long_optargs"
-                        sudo_log_args "Parsing option: '--${OPTARG%=*}', value: '${val}'"
+                        val="$opt_arg"
+                        sudo_log_args "Parsing option: '--${OPTARG%=*}', value: '${opt_arg}'"
                         # If PARSE_COMMANDS_AS_PER_RUN_COMMAND_INTENT_RULES is enabled
                         if  [[ "$PARSE_COMMANDS_AS_PER_RUN_COMMAND_INTENT_RULES" == "1" ]]; then
                             sudo_replace_comma_alternative_chars_with_commas_in_string "val" "$val"
@@ -6339,12 +6334,12 @@ sudo_process_arguments() {
                             "'--shell-options' arg option" "$val" || return $?
                         ;;
                     shell-options | shell-options=)
-                        sudo_log_arg_errors "No parameters set for option: '--${OPTARG%=*}'"
-                        sudo_exit_on_error || return $?
+                        sudo_log_arg_errors "No argument set for arg option '--${OPTARG%=*}'."
+                        sudo_exit_on_args_error || return $?
                         ;;
                     shell-post-commands=?*)
-                        val="$long_optargs"
-                        sudo_log_args "Parsing option: '--${OPTARG%=*}', value: '${val}'"
+                        val="$opt_arg"
+                        sudo_log_args "Parsing option: '--${OPTARG%=*}', value: '${opt_arg}'"
                         # If PARSE_COMMANDS_AS_PER_RUN_COMMAND_INTENT_RULES is enabled
                         if  [[ "$PARSE_COMMANDS_AS_PER_RUN_COMMAND_INTENT_RULES" == "1" ]]; then
                             sudo_replace_comma_alternative_chars_with_commas_in_string "val" "$val"
@@ -6352,12 +6347,12 @@ sudo_process_arguments() {
                         ADDITIONAL_SUDO_SHELL_POST_COMMANDS_TO_RUN="$val"
                         ;;
                     shell-post-commands | shell-post-commands=)
-                        sudo_log_arg_errors "No parameters set for option: '--${OPTARG%=*}'"
-                        sudo_exit_on_error || return $?
+                        sudo_log_arg_errors "No argument set for arg option '--${OPTARG%=*}'."
+                        sudo_exit_on_args_error || return $?
                         ;;
                     shell-pre-commands=?*)
-                        val="$long_optargs"
-                        sudo_log_args "Parsing option: '--${OPTARG%=*}', value: '${val}'"
+                        val="$opt_arg"
+                        sudo_log_args "Parsing option: '--${OPTARG%=*}', value: '${opt_arg}'"
                         # If PARSE_COMMANDS_AS_PER_RUN_COMMAND_INTENT_RULES is enabled
                         if  [[ "$PARSE_COMMANDS_AS_PER_RUN_COMMAND_INTENT_RULES" == "1" ]]; then
                             sudo_replace_comma_alternative_chars_with_commas_in_string "val" "$val"
@@ -6365,12 +6360,12 @@ sudo_process_arguments() {
                         ADDITIONAL_SUDO_SHELL_PRE_COMMANDS_TO_RUN="$val"
                         ;;
                     shell-pre-commands | shell-pre-commands=)
-                        sudo_log_arg_errors "No parameters set for option: '--${OPTARG%=*}'"
-                        sudo_exit_on_error || return $?
+                        sudo_log_arg_errors "No argument set for arg option '--${OPTARG%=*}'."
+                        sudo_exit_on_args_error || return $?
                         ;;
                     shell-stdin-string=?*)
-                        val="$long_optargs"
-                        sudo_log_args "Parsing option: '--${OPTARG%=*}', value: '${val}'"
+                        val="$opt_arg"
+                        sudo_log_args "Parsing option: '--${OPTARG%=*}', value: '${opt_arg}'"
                         # If PARSE_COMMANDS_AS_PER_RUN_COMMAND_INTENT_RULES is enabled
                         if  [[ "$PARSE_COMMANDS_AS_PER_RUN_COMMAND_INTENT_RULES" == "1" ]]; then
                             sudo_replace_comma_alternative_chars_with_commas_in_string "val" "$val"
@@ -6378,30 +6373,29 @@ sudo_process_arguments() {
                         SUDO_SHELL_STDIN_STRING="$val"
                         ;;
                     shell-stdin-string | shell-stdin-string=)
-                        sudo_log_arg_errors "No parameters set for option: '--${OPTARG%=*}'"
-                        sudo_exit_on_error || return $?
+                        sudo_log_arg_errors "No argument set for arg option '--${OPTARG%=*}'."
+                        sudo_exit_on_args_error || return $?
                         ;;
                     sleep=?*)
-                        val="$long_optargs"
-                        sudo_log_args "Parsing option: '--${OPTARG%=*}', value: '${val}'"
-                        sudo_trim_trailing_newlines "SLEEP_TIME_AFTER_SUDO" "$val"
+                        sudo_log_args "Parsing option: '--${OPTARG%=*}', value: '${opt_arg}'"
+                        sudo_trim_trailing_newlines "SLEEP_TIME_AFTER_SUDO" "$opt_arg"
                         SLEEP_AFTER_SUDO=1
                         ;;
                     sleep | sleep=)
-                        sudo_log_arg_errors "No parameters set for option: '--${OPTARG%=*}'"
-                        sudo_exit_on_error || return $?
+                        sudo_log_arg_errors "No argument set for arg option '--${OPTARG%=*}'."
+                        sudo_exit_on_args_error || return $?
                         ;;
                     sleep-if-fail)
                         sudo_log_args "Parsing option: '--${OPTARG%=*}'"
                         SLEEP_ONLY_ON_FAILURE=1
                         ;;
-                    sleep-if-fail*)
-                        sudo_log_arg_errors "Invalid option or parameters not allowed for option: '--${OPTARG%=*}'"
-                        sudo_exit_on_error || return $?
+                    sleep-if-fail=*)
+                        sudo_log_arg_errors "Arguments not allowed for flag option '--${OPTARG%=*}': \`--${OPTARG:-}\`."
+                        sudo_exit_on_args_error || return $?
                         ;;
                     su-env-options=?*)
-                        val="$long_optargs"
-                        sudo_log_args "Parsing option: '--${OPTARG%=*}', value: '${val}'"
+                        val="$opt_arg"
+                        sudo_log_args "Parsing option: '--${OPTARG%=*}', value: '${opt_arg}'"
                         # If PARSE_COMMANDS_AS_PER_RUN_COMMAND_INTENT_RULES is enabled
                         if  [[ "$PARSE_COMMANDS_AS_PER_RUN_COMMAND_INTENT_RULES" == "1" ]]; then
                             sudo_replace_comma_alternative_chars_with_commas_in_string "val" "$val"
@@ -6410,21 +6404,20 @@ sudo_process_arguments() {
                             "'--su-env-options' arg option" "$val" || return $?
                         ;;
                     su-env-options | su-env-options=)
-                        sudo_log_arg_errors "No parameters set for option: '--${OPTARG%=*}'"
-                        sudo_exit_on_error || return $?
+                        sudo_log_arg_errors "No argument set for arg option '--${OPTARG%=*}'."
+                        sudo_exit_on_args_error || return $?
                         ;;
                     su-path=?*)
-                        val="$long_optargs"
-                        sudo_log_args "Parsing option: '--${OPTARG%=*}', value: '${val}'"
-                        sudo_trim_trailing_newlines "SUDO_SU_PATH" "$val"
+                        sudo_log_args "Parsing option: '--${OPTARG%=*}', value: '${opt_arg}'"
+                        sudo_trim_trailing_newlines "SUDO_SU_PATH" "$opt_arg"
                         ;;
                     su-path | su-path=)
-                        sudo_log_arg_errors "No parameters set for option: '--${OPTARG%=*}'"
-                        sudo_exit_on_error || return $?
+                        sudo_log_arg_errors "No argument set for arg option '--${OPTARG%=*}'."
+                        sudo_exit_on_args_error || return $?
                         ;;
                     su-run-options=?*)
-                        val="$long_optargs"
-                        sudo_log_args "Parsing option: '--${OPTARG%=*}', value: '${val}'"
+                        val="$opt_arg"
+                        sudo_log_args "Parsing option: '--${OPTARG%=*}', value: '${opt_arg}'"
                         # If PARSE_COMMANDS_AS_PER_RUN_COMMAND_INTENT_RULES is enabled
                         if  [[ "$PARSE_COMMANDS_AS_PER_RUN_COMMAND_INTENT_RULES" == "1" ]]; then
                             sudo_replace_comma_alternative_chars_with_commas_in_string "val" "$val"
@@ -6433,12 +6426,12 @@ sudo_process_arguments() {
                             "'--su-run-options' arg option" "$val" || return $?
                         ;;
                     su-run-options | su-run-options=)
-                        sudo_log_arg_errors "No parameters set for option: '--${OPTARG%=*}'"
-                        sudo_exit_on_error || return $?
+                        sudo_log_arg_errors "No argument set for arg option '--${OPTARG%=*}'."
+                        sudo_exit_on_args_error || return $?
                         ;;
                     title=?*)
-                        val="$long_optargs"
-                        sudo_log_args "Parsing option: '--${OPTARG%=*}', value: '${val}'"
+                        val="$opt_arg"
+                        sudo_log_args "Parsing option: '--${OPTARG%=*}', value: '${opt_arg}'"
                         # If PARSE_COMMANDS_AS_PER_RUN_COMMAND_INTENT_RULES is enabled
                         if  [[ "$PARSE_COMMANDS_AS_PER_RUN_COMMAND_INTENT_RULES" == "1" ]]; then
                             sudo_replace_comma_alternative_chars_with_commas_in_string "val" "$val"
@@ -6451,8 +6444,8 @@ sudo_process_arguments() {
                         SET_SUDO_SHELL_TERMINAL_TITLE=1
                         ;;
                     work-dir=?*)
-                        val="$long_optargs"
-                        sudo_log_args "Parsing option: '--${OPTARG%=*}', value: '${val}'"
+                        val="$opt_arg"
+                        sudo_log_args "Parsing option: '--${OPTARG%=*}', value: '${opt_arg}'"
                         # If PARSE_COMMANDS_AS_PER_RUN_COMMAND_INTENT_RULES is enabled
                         if  [[ "$PARSE_COMMANDS_AS_PER_RUN_COMMAND_INTENT_RULES" == "1" ]]; then
                             sudo_replace_comma_alternative_chars_with_commas_in_string "val" "$val"
@@ -6460,22 +6453,22 @@ sudo_process_arguments() {
                         sudo_trim_trailing_newlines "SUDO_SHELL_WORKING_DIR" "$val"
                         ;;
                     work-dir | work-dir=)
-                        sudo_log_arg_errors "No parameters set for option: '--${OPTARG%=*}'"
-                        sudo_exit_on_error || return $?
+                        sudo_log_arg_errors "No argument set for arg option '--${OPTARG%=*}'."
+                        sudo_exit_on_args_error || return $?
                         ;;
-                    '' ) # "--" terminates argument processing to support non-options that start with dashes
+                    '')
                         sudo_log_args "Parsing option: '--'"
-                        break
+                        break # End of options `--`.
                         ;;
                     *)
-                        sudo_log_arg_errors "Unknown option '--${OPTARG%=*}'"
-                        sudo_exit_on_error || return $?
+                        sudo_log_arg_errors "Unknown option: '--${OPTARG:-}'."
+                        sudo_exit_on_args_error || return $?
                         ;;
                 esac
                 ;;
             h)
                 sudo_log_args "Parsing option: '-${opt}'"
-                sudo_show_help
+                sudo_show_help || return $?
                 SUDO_NOOP_COMMAND=1; return 0
                 ;;
             q)
@@ -6487,8 +6480,8 @@ sudo_process_arguments() {
                 if [ "$SUDO_LOG_LEVEL" -lt "$SUDO_MAX_LOG_LEVEL" ]; then
                     SUDO_LOG_LEVEL=$((SUDO_LOG_LEVEL+1));
                 else
-                    sudo_log_arg_errors "Invalid Option, max log level is $SUDO_MAX_LOG_LEVEL"
-                    sudo_exit_on_error || return $?
+                    sudo_log_arg_errors "Invalid option, max log level is $SUDO_MAX_LOG_LEVEL"
+                    sudo_exit_on_args_error || return $?
                 fi
                 ;;
             a)
@@ -6622,9 +6615,13 @@ sudo_process_arguments() {
                 fi
                 SET_SECONDARY_PRIORITY_PATHS=0
                 ;;
+            :)
+                sudo_log_arg_errors "No argument passed for arg option '-$OPTARG'."
+                sudo_exit_on_args_error || return $?
+                ;;
             \?)
-                sudo_log_arg_errors "Unknown option: '-${OPTARG}'"
-                sudo_exit_on_error || return $?
+                sudo_log_arg_errors "Unknown option${OPTARG:+": '-${OPTARG:-}'"}."
+                sudo_exit_on_args_error || return $?
                 ;;
         esac
     done
@@ -6640,17 +6637,17 @@ sudo_process_arguments() {
             # If more arguments are given
             if [ $# -ne 0 ]; then
                 sudo_log_arg_errors "Unknown arguments to \"$COMMAND_TYPE\": '$*'"
-                sudo_exit_on_error || return $?
+                sudo_exit_on_args_error || return $?
             fi
 
             if [[ "$COMMAND_TYPE" == "su" ]] && [[ "$A_FLAG_PASSED" == "1" ]]; then
                 sudo_log_arg_errors "Cannot pass '-a|-A' flags to 'su' command, use '-t|-T' flags instead"
-                sudo_exit_on_error || return $?
+                sudo_exit_on_args_error || return $?
             fi
 
             if [[ "$COMMAND_TYPE" == "asu" ]] && [[ "$T_FLAG_PASSED" == "1" ]]; then
                 sudo_log_arg_errors "Cannot pass '-t|-T' flags to 'asu' command, use '-a|-A' flags instead"
-                sudo_exit_on_error || return $?
+                sudo_exit_on_args_error || return $?
             fi
 
         # If COMMAND_TYPE equals "path" or "script"
@@ -6994,12 +6991,12 @@ SUDO_HELP_EOF
 
 }
 
-sudo_exit_on_error() {
+sudo_exit_on_args_error() {
 
     echo ""
-    sudo_show_help
-    sudo_run_pre_exit_commands 1
-    return 1
+    sudo_show_help || return $?
+    sudo_run_pre_exit_commands 1 || return $?
+    return 64 # EX__USAGE
 
 }
 
