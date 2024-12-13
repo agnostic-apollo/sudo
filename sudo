@@ -6,6 +6,8 @@
 #                drop to an interactive shell for any of the supported
 #                shells, or to execute shell script files or their
 #                text passed as an argument.
+# Homepage:      https://github.com/agnostic-apollo/sudo
+# SPDX-License-Identifier: MIT
 # Usage:         Run "sudo --help" for detailed list of usages.
 # Bash version:  4.1 or higher
 # Credits:       https://gitlab.com/st42/termux-sudo
