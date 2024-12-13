@@ -4497,8 +4497,8 @@ sudo_run_file_type_tests_on_path() {
     fi
 
     # If check_if_absolute_path is enabled and path is not a valid absolute path
-    local valid_absolute_path_regex='^(/[^/]+)+$'
-    if [[ "$check_if_absolute_path" == "1" ]] && [[ ! "$path" =~ $valid_absolute_path_regex ]]; then
+    local valid_rootfs_or_absolute_path_regex='^((/)|((/[^/]+)+))$'
+    if [[ "$check_if_absolute_path" == "1" ]] && [[ ! "$path" =~ $valid_rootfs_or_absolute_path_regex ]]; then
         sudo_log_errors "The \"$label\" file \"$path\" is not an absolute path"
         return 2
     fi
@@ -4622,8 +4622,8 @@ sudo_create_modify_validate_directory() {
     fi
 
     # If check_if_absolute_path is enabled and directory_path is not a valid absolute path
-    local valid_absolute_path_regex='^(/[^/]+)+$'
-    if [[ "$check_if_absolute_path" == "1" ]] && [[ ! "$directory_path" =~ $valid_absolute_path_regex ]]; then
+    local valid_rootfs_or_absolute_path_regex='^((/)|((/[^/]+)+))$'
+    if [[ "$check_if_absolute_path" == "1" ]] && [[ ! "$directory_path" =~ $valid_rootfs_or_absolute_path_regex ]]; then
         sudo_log_errors "The \"$directory_path_label\" directory \"$directory_path\" is not an absolute path"
         return 2
     fi
