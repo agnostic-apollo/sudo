@@ -233,6 +233,7 @@ SUDO_SUPPORTED_SHELLS="" # Default: ``
 SUDO_SUPPORTED_POST_SHELLS="" # Default: ``
 SLEEP_TIME_AFTER_SUDO="" # Default: ``
 HOLD_STRING_AFTER_SUDO="" # Default: ``
+SUDO_XARGS_PATH="" # Default: ``
 COMMA_ALTERNATIVE="‚" # Default: `‚` (U+201A, &sbquo;, &#8218;, single low-9 quotation mark)
 SUDO_ARG_MAX_SAFE_LIMIT=122880 # Default: `122880` (120KB, value should be in bytes)
 
@@ -4678,9 +4679,10 @@ sudo_create_modify_validate_directory() {
 
         # Set directory ownership
         if [[ "$directory_chown_command_options" != "-" ]]; then
-            IFS=$'\n'
-            local -a directory_chown_command_options_array=( $(printf -- "%s" "$directory_chown_command_options" | xargs -r -n1 -- printf -- "%s\n") )
-            IFS=$' \t\n'
+            local -a directory_chown_command_options_array=()
+            sudo_set_shell_command_args_array directory_chown_command_options_array \
+                "directory_chown_command_options" "$directory_chown_command_options" || return $?
+
             sudo_log 3 "Setting \"${directory_chown_command_options_array[*]}\" ownership to $directory_path_label directory at \"$directory_path\" directory"
             chown "${directory_chown_command_options_array[@]}" "$directory_path"
             return_value=$?
@@ -4692,9 +4694,10 @@ sudo_create_modify_validate_directory() {
 
         # Set directory permissions
         if [[ "$directory_chmod_command_options" != "-" ]]; then
-            IFS=$'\n'
-            local -a directory_chmod_command_options_array=( $(printf -- "%s" "$directory_chmod_command_options" | xargs -r -n1 -- printf -- "%s\n") )
-            IFS=$' \t\n'
+            local -a directory_chmod_command_options_array=()
+            sudo_set_shell_command_args_array directory_chmod_command_options_array \
+                "directory_chmod_command_options" "$directory_chmod_command_options" || return $?
+
             sudo_log 3 "Setting \"${directory_chmod_command_options_array[*]}\" permissions to $directory_path_label directory at \"$directory_path\" directory"
             chmod "${directory_chmod_command_options_array[@]}" "$directory_path"
             return_value=$?
@@ -4706,9 +4709,10 @@ sudo_create_modify_validate_directory() {
 
         # Set subdirectories ownership
         if [[ "$sub_directories_chown_command_options" != "-" ]]; then
-            IFS=$'\n'
-            local -a sub_directories_chown_command_options_array=( $(printf -- "%s" "$sub_directories_chown_command_options" | xargs -r -n1 -- printf -- "%s\n") )
-            IFS=$' \t\n'
+            local -a sub_directories_chown_command_options_array=()
+            sudo_set_shell_command_args_array sub_directories_chown_command_options_array \
+                "sub_directories_chown_command_options" "$sub_directories_chown_command_options" || return $?
+
             sudo_log 3 "Setting \"${sub_directories_chown_command_options_array[*]}\" ownership to $directory_path_label directory at \"$directory_path\" subdirectories"
             find "$directory_path" -type d -print0 | xargs -0 -r -- chown "${sub_directories_chown_command_options_array[@]}" --
             return_value=$?
@@ -4720,9 +4724,10 @@ sudo_create_modify_validate_directory() {
 
         # Set subdirectories permissions
         if [[ "$sub_directories_chmod_command_options" != "-" ]]; then
-            IFS=$'\n'
-            local -a sub_directories_chmod_command_options_array=( $(printf -- "%s" "$sub_directories_chmod_command_options" | xargs -r -n1 -- printf -- "%s\n") )
-            IFS=$' \t\n'
+            local -a sub_directories_chmod_command_options_array=()
+            sudo_set_shell_command_args_array sub_directories_chmod_command_options_array \
+                "sub_directories_chmod_command_options" "$sub_directories_chmod_command_options" || return $?
+
             sudo_log 3 "Setting \"${sub_directories_chmod_command_options_array[*]}\" permissions to $directory_path_label directory at \"$directory_path\" subdirectories"
             find "$directory_path" -type d -print0 | xargs -0 -r -- chmod "${sub_directories_chmod_command_options_array[@]}" --
             return_value=$?
@@ -4734,9 +4739,10 @@ sudo_create_modify_validate_directory() {
 
         # Set subfiles ownership
         if [[ "$sub_files_chown_command_options" != "-" ]]; then
-            IFS=$'\n'
-            local -a sub_files_chown_command_options_array=( $(printf -- "%s" "$sub_files_chown_command_options" | xargs -r -n1 -- printf -- "%s\n") )
-            IFS=$' \t\n'
+            local -a sub_files_chown_command_options_array=()
+            sudo_set_shell_command_args_array sub_files_chown_command_options_array \
+                "sub_files_chown_command_options" "$sub_files_chown_command_options" || return $?
+
             sudo_log 3 "Setting \"${sub_files_chown_command_options_array[*]}\" ownership to $directory_path_label directory at \"$directory_path\" subfiles"
             find "$directory_path" -type f -print0 | xargs -0 -r -- chown "${sub_files_chown_command_options_array[@]}" --
             return_value=$?
@@ -4748,9 +4754,10 @@ sudo_create_modify_validate_directory() {
 
         # Set subfiles permissions
         if [[ "$sub_files_chmod_command_options" != "-" ]]; then
-            IFS=$'\n'
-            local -a sub_files_chmod_command_options_array=( $(printf -- "%s" "$sub_files_chmod_command_options" | xargs -r -n1 -- printf -- "%s\n") )
-            IFS=$' \t\n'
+            local -a sub_files_chmod_command_options_array=()
+            sudo_set_shell_command_args_array sub_files_chmod_command_options_array \
+                "sub_files_chmod_command_options" "$sub_files_chmod_command_options" || return $?
+
             sudo_log 3 "Setting \"${sub_files_chmod_command_options_array[*]}\" permissions to $directory_path_label directory at \"$directory_path\" subfiles"
             find "$directory_path" -type f -print0 | xargs -0 -r -- chmod "${sub_files_chmod_command_options_array[@]}" --
             return_value=$?
@@ -4834,9 +4841,9 @@ sudo_create_modify_validate_file() {
 
             local -a file_creation_command_options_array
             if [[ "$file_creation_command_options" != "-" ]]; then
-                IFS=$'\n'
-                file_creation_command_options_array=( $(printf -- "%s" "$file_creation_command_options" | xargs -r -n1 -- printf -- "%s\n") )
-                IFS=$' \t\n'
+                local -a file_creation_command_options_array=()
+                sudo_set_shell_command_args_array file_creation_command_options_array \
+                    "file_creation_command_options" "$file_creation_command_options" || return $?
             fi
 
             # If file_creation_options is set, then pass it to printf
@@ -4875,9 +4882,10 @@ sudo_create_modify_validate_file() {
     else
         # Set file ownership
         if [[ "$file_chown_command_options" != "-" ]]; then
-            IFS=$'\n'
-            local -a file_chown_command_options_array=( $(printf -- "%s" "$file_chown_command_options" | xargs -r -n1 -- printf -- "%s\n") )
-            IFS=$' \t\n'
+            local -a file_chown_command_options_array=()
+            sudo_set_shell_command_args_array file_chown_command_options_array \
+                "file_chown_command_options" "$file_chown_command_options" || return $?
+
             sudo_log 3 "Setting \"${file_chown_command_options_array[*]}\" ownership to $file_path_label \"$file_path\" file"
             chown "${file_chown_command_options_array[@]}" "$file_path"
             return_value=$?
@@ -4889,9 +4897,10 @@ sudo_create_modify_validate_file() {
 
         # Set file permissions
         if [[ "$file_chmod_command_options" != "-" ]]; then
-            IFS=$'\n'
-            local -a file_chmod_command_options_array=( $(printf -- "%s" "$file_chmod_command_options" | xargs -r -n1 -- printf -- "%s\n") )
-            IFS=$' \t\n'
+            local -a file_chown_command_options_array=()
+            sudo_set_shell_command_args_array file_chmod_command_options_array \
+                "file_chmod_command_options" "$file_chmod_command_options" || return $?
+
             sudo_log 3 "Setting \"${file_chmod_command_options_array[*]}\" permissions to $file_path_label \"$file_path\" file"
             chmod "${file_chmod_command_options_array[@]}" "$file_path"
             return_value=$?
@@ -5801,6 +5810,156 @@ variable${scoped_var_value_invalid_error_suffix}." 1>&2
 
 }
 
+##
+# Set a bash indexed array (`declared -a`) to shell command arguments
+# defined as a string by splitting the string as normally done by the
+# shell.
+#
+# This function is based on `libalteran-sh`
+# `bash___shell__set_shell_command_args_array()`
+# function, check it for more info and comments.
+#
+#
+# `sudo_set_shell_command_args_array` \
+#     `<command_args_array_variable_name>` \
+#     `<command_args_label>` `<command_args_string>`
+##
+sudo_set_shell_command_args_array() {
+
+    local return_value
+
+    if [ $# -ne 3 ]; then
+        sudo_log_errors "Invalid argument count to 'sudo_set_shell_command_args_array'"
+        return 1
+    fi
+
+    local command_args_array_variable_name="$1"
+    local command_args_label="$2"
+    local command_args_string="$3"
+
+    local command_arg
+    local command_args_string_contains_shell_special_chars="false"
+    local command_args_string_contains_space="false"
+    local newline=$'\n'
+    local space_containing_string_regex='[[:space:]]+'
+    local shell_special_chars_containing_string_regex='[]["'\''*?!\]+'
+    local xargs_command_output
+
+    local -n  command_args_array="$command_args_array_variable_name" || return $?
+    command_args_array=()
+
+
+    if [[ -z "$command_args_string" ]]; then
+        # Unset `nameref` to `command_args_array_variable_name`.
+        unset -n  command_args_array || return $?
+        return 0
+    fi
+
+    if [[ "$command_args_string" == *$'\n'* ]]; then
+        sudo_log_errors "The $command_args_label value to be \
+converted to a command array cannot contain a newline '\n' character:"
+        sudo_log_errors "\`\`\`"
+        sudo_log_errors "$command_args_string"
+        sudo_log_errors "\`\`\`"
+        return 64 # EX__USAGE
+    fi
+
+
+    if [[ "$command_args_string" =~ $shell_special_chars_containing_string_regex ]]; then
+        command_args_string_contains_shell_special_chars="true"
+    fi
+    if [[ "$command_args_string" =~ $space_containing_string_regex ]]; then
+        command_args_string_contains_space="true"
+    fi
+
+    if [[ "$command_args_string_contains_shell_special_chars" == "true" ]] || \
+            [[ "$command_args_string_contains_space" == "true" ]]; then
+
+        # Use `xargs` if command args string contains whitespaces or
+        # shell special characters.
+        if [[ "$command_args_string_contains_shell_special_chars" == "true" ]]; then
+            if [[ -z "$SUDO_XARGS_PATH" ]]; then
+                return_value=0
+                SUDO_XARGS_PATH="$(command -v "xargs")" || return_value=$?
+                if [ $return_value -ne 0 ]; then
+                    sudo_log_errors "Failed to find 'xargs' for converting $command_args_label value to a command array."
+                    return $return_value
+                fi
+            fi
+
+            # Android `toybox` provided `xargs` does not parse arguments
+            # properly and single and double quotes around arguments
+            # remain, nor do backslash escapes work.
+            # Termux `findutils` package supplied `xargs` does not
+            # have such issues, so we ignore the check for it.
+            # `/system/bin/xargs` may get called if current shell has
+            # `/system/bin` in `$PATH` instead of or before Termux bin path.
+            if [[ "$SUDO_XARGS_PATH" != "$TERMUX_BIN/xargs" ]]; then
+                # The logic to check if `xargs` parsing is valid is based
+                # on `libalteran-sh` `bash___shell__set_is_xargs_command_args_parsing_valid()`
+                # function, check it for more info and comments.
+                return_value=0
+                xargs_command_output="$(printf "%s" "'' 'arg' '' 'arg with space' 'arg surround by single quote' \"arg surround by double quote\" 'arg with '\'' single quote' 'arg with \" double quote' 'arg with \" double quote surround by single quote' \"arg with ' single quote surround by double quote\" arg\ with\ escaped\ space 'arg with backslash \\ and forward slash / surround by single quote' \"arg with backslash \\ and forward slash / surround by double quote\" \\/ \\\\ ''" | \
+                    xargs -r -n1 -- printf "%s\n" && echo -n x)" || return_value=$?
+                if [ $return_value -ne 0 ]; then
+                    sudo_log_errors "Failed to check if xargs command args parsing is valid."
+                    sudo_log_errors "xargs_command_output=\`$xargs_command_output\`"
+                    return $return_value
+                fi
+
+                if [[ "${xargs_command_output%x}" != "${newline}arg${newline}${newline}arg with space${newline}arg surround by single quote${newline}arg surround by double quote${newline}arg with ' single quote${newline}arg with \" double quote${newline}arg with \" double quote surround by single quote${newline}arg with ' single quote surround by double quote${newline}arg with escaped space${newline}arg with backslash \ and forward slash / surround by single quote${newline}arg with backslash \\ and forward slash / surround by double quote${newline}/${newline}\\${newline}" ]]; then
+                    sudo_log_errors "The $command_args_label value cannot be \
+converted to a command array in current execution environment as it contains \
+shell special characters and 'xargs' command args parsing is not valid:"
+                    sudo_log_errors "\`\`\`"
+                    sudo_log_errors "$command_args_string"
+                    sudo_log_errors "\`\`\`"
+                    sudo_log_errors "xargs path: \`$(command -v "xargs" || true)\`"
+                    sudo_log_errors "xargs version: \`$({ xargs --version 2>/dev/null || true; } | head -n 1)\`"
+                    return 1
+                fi
+            fi
+
+            command_arg="READ_ERROR"
+            return_value=0
+            while IFS= read -r command_arg; return_value=$?; [[ $return_value -eq 0 ]]; do
+                command_args_array+=("$command_arg")
+            done < <(printf "%s\n" "$command_args_string" | \
+                xargs -r -n1 -- printf "%s\n" || echo -n "CMD_ERROR")
+            if [[ -n "${command_arg:-}" ]] || [ $return_value -ne 1 ]; then
+                sudo_log_errors "Failed to create command array for \
+command arguments string \`$command_args_string\`."
+                [[ -n "${command_arg:-}" ]] && sudo_log_errors "Error type: '$command_arg'"
+                if [[ -n ${!:-} ]]; then
+                    wait "$!" || true
+                fi
+                return 1
+            fi
+        else
+            # Avoid creating subshell and external call to xargs if
+            # command args string contains whitespaces but does not
+            # contain shell special characters and rely on whitespace
+            # splitting of arguments.
+            local old_ifs="$IFS"
+            IFS=$' \t\n'
+            # shellcheck disable=SC2206
+            command_args_array=( $command_args_string )
+            IFS="$old_ifs"
+        fi
+    else
+        # Avoid creating subshell and external call to xargs if
+        # command args string does not contain whitespaces or shell
+        # special characters.
+        command_args_array=( "$command_args_string" )
+    fi
+
+    # Unset `nameref` to `command_args_array_variable_name`.
+    unset -n  command_args_array || return $?
+
+    return 0
+
+}
+
 
 
 ##
@@ -6057,9 +6216,8 @@ sudo_process_arguments() {
                         if  [[ "$PARSE_COMMANDS_AS_PER_RUN_COMMAND_INTENT_RULES" == "1" ]]; then
                             sudo_replace_comma_alternative_chars_with_commas_in_string "val" "$val"
                         fi
-                        IFS=$'\n' val_arr=( $(printf -- "%s" "$val" | xargs -r -n1 -- printf -- "%s\n") )
-                        IFS=$' \t\n'
-                        SUDO_POST_SHELL_INTERACTIVE_ADDITIONAL_COMMAND_OPTIONS=( "${val_arr[@]}" )
+                        sudo_set_shell_command_args_array SUDO_POST_SHELL_INTERACTIVE_ADDITIONAL_COMMAND_OPTIONS \
+                            "'--post-shell-options' arg option" "$val" || return $?
                         ;;
                     post-shell-options | post-shell-options=)
                         sudo_log_arg_errors "No parameters set for option: '--${OPTARG%=*}'"
@@ -6177,9 +6335,8 @@ sudo_process_arguments() {
                         if  [[ "$PARSE_COMMANDS_AS_PER_RUN_COMMAND_INTENT_RULES" == "1" ]]; then
                             sudo_replace_comma_alternative_chars_with_commas_in_string "val" "$val"
                         fi
-                        IFS=$'\n' val_arr=( $(printf -- "%s" "$val" | xargs -r -n1 -- printf -- "%s\n") )
-                        IFS=$' \t\n'
-                        SUDO_SHELL_ADDITIONAL_COMMAND_OPTIONS=( "${val_arr[@]}" )
+                        sudo_set_shell_command_args_array SUDO_SHELL_ADDITIONAL_COMMAND_OPTIONS \
+                            "'--shell-options' arg option" "$val" || return $?
                         ;;
                     shell-options | shell-options=)
                         sudo_log_arg_errors "No parameters set for option: '--${OPTARG%=*}'"
@@ -6249,9 +6406,8 @@ sudo_process_arguments() {
                         if  [[ "$PARSE_COMMANDS_AS_PER_RUN_COMMAND_INTENT_RULES" == "1" ]]; then
                             sudo_replace_comma_alternative_chars_with_commas_in_string "val" "$val"
                         fi
-                        IFS=$'\n' val_arr=( $(printf -- "%s" "$val" | xargs -r -n1 -- printf -- "%s\n") )
-                        IFS=$' \t\n'
-                        SUDO_SU_ENV_ADDITIONAL_COMMAND_OPTIONS=( "${val_arr[@]}" )
+                        sudo_set_shell_command_args_array SUDO_SU_ENV_ADDITIONAL_COMMAND_OPTIONS \
+                            "'--su-env-options' arg option" "$val" || return $?
                         ;;
                     su-env-options | su-env-options=)
                         sudo_log_arg_errors "No parameters set for option: '--${OPTARG%=*}'"
@@ -6273,9 +6429,8 @@ sudo_process_arguments() {
                         if  [[ "$PARSE_COMMANDS_AS_PER_RUN_COMMAND_INTENT_RULES" == "1" ]]; then
                             sudo_replace_comma_alternative_chars_with_commas_in_string "val" "$val"
                         fi
-                        IFS=$'\n' val_arr=( $(printf -- "%s" "$val" | xargs -r -n1 -- printf -- "%s\n") )
-                        IFS=$' \t\n'
-                        SUDO_SU_RUN_ADDITIONAL_COMMAND_OPTIONS=( "${val_arr[@]}" )
+                        sudo_set_shell_command_args_array SUDO_SU_RUN_ADDITIONAL_COMMAND_OPTIONS \
+                            "'--su-run-options' arg option" "$val" || return $?
                         ;;
                     su-run-options | su-run-options=)
                         sudo_log_arg_errors "No parameters set for option: '--${OPTARG%=*}'"
