@@ -64,10 +64,11 @@ If you want to run commands as the `Termux app (u<userid>_a<appid>)` user, check
 ## Help
 
 ```
-sudo is a wrapper script to execute commands as the 'root (superuser)'
-user in the Termux App, like to drop to an interactive shell for any
-of the supported shells, or to execute shell script files or their
-text passed as an argument.
+sudo stands for 'superuser do'.
+It is a wrapper script to execute commands as the 'root (superuser)'
+user in the Termux app, like to drop to an interactive
+shell for any of the supported shells, or to execute shell script
+files or their text passed as an argument.
 
 
 Usage:
@@ -80,22 +81,22 @@ Usage:
 Available command_options:
   [ -h | --help ]    Display this help screen.
   [ --help-extra ]   Display more help about how sudo command works.
-  [ -q | --quiet ]    Set log level to 'OFF'.
+  [ -q | --quiet ]   Set log level to 'OFF'.
   [ -v | -vv ]       Set log level to 'DEBUG', 'VERBOSE'.
   [ --version ]      Display version.
   [ -a ]             Set priority to android paths for 'path' and
                      'script' command types. The '$PATH' variable will
                      contain all android bin paths followed all termux
-                     bin paths. The `$LD_PRELOAD` variable will not be
+                     bin paths. The '$LD_PRELOAD' variable will not be
                      set.
   [ -A ]             Set priority to android paths for 'asu', 'path'
                      and 'script' command types. The '$PATH' variable
-                     will contain only `/system/bin` path. The
-                     `$LD_PRELOAD` variable will not be set.
+                     will contain only '/system/bin' path. The
+                     '$LD_PRELOAD' variable will not be set.
   [ -AA ]            Set priority to android paths for 'asu', 'path'
                      and 'script' command types. The '$PATH' variable
                      will contain all android bin paths. The
-                     `$LD_PRELOAD` variable will not be set.
+                     '$LD_PRELOAD' variable will not be set.
   [ -b ]             Go back to last activity after running core_script.
   [ -B ]             Run core_script in background.
   [ -c ]             Clear shell after running core_script.
@@ -126,18 +127,18 @@ Available command_options:
   [ -t ]             Set priority to termux paths for 'path' and
                      'script' command types. The '$PATH' variable will
                      contain all termux bin paths followed all android
-                     bin paths. The `$LD_PRELOAD` variable will
-                     contain `$TERMUX__PREFIX/lib/libtermux-exec.so`.
+                     bin paths. The '$LD_PRELOAD' variable will
+                     contain '$TERMUX__PREFIX/lib/libtermux-exec.so'.
   [ -T ]             Set priority to termux paths for 'su', 'path'
                      and 'script' command types. The '$PATH' variable
                      will contain only '$TERMUX__PREFIX/bin' path.
-                     The `$LD_PRELOAD` variable will contain
-                     `$TERMUX__PREFIX/lib/libtermux-exec.so`.
+                     The '$LD_PRELOAD' variable will contain
+                     '$TERMUX__PREFIX/lib/libtermux-exec.so'.
   [ -TT ]            Set priority to termux paths for 'su', 'path'
                      and 'script' command types. The '$PATH' variable
                      will contain all termux bin paths. The
-                     `$LD_PRELOAD` variable will contain
-                     `$TERMUX__PREFIX/lib/libtermux-exec.so`.
+                     '$LD_PRELOAD' variable will contain
+                     '$TERMUX__PREFIX/lib/libtermux-exec.so'.
   [ --comma-alternative=<alternative> ]
                      Comma alternative character to be used for
                      the '-r' option instead of the default.
@@ -274,7 +275,7 @@ executable 'basename' in a directory listed in the final '$PATH'
 variable that is to be exported by the 'sudo' command depending on
 priority set.
 The priority is set based on '-a|-A|-AA' or '-t|-T|-TT' flags, and
-if flags are not passed, then the priority for bin paths in `$PATH`
+if flags are not passed, then the priority for bin paths in '$PATH'
 variable is given to termux paths followed by android paths if
 executable canonical path is under '$TERMUX__ROOTFS' directory,
 otherwise to android paths followed by termux paths.
