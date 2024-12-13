@@ -20,8 +20,8 @@ SUDO__VERSION=0.2.0
 
 ##
 # Function to set termux env variables.
-# .
-# sudo_set_termux_env_variables
+#
+# `sudo_set_termux_env_variables`
 ##
 sudo_set_termux_env_variables() {
 
@@ -82,8 +82,8 @@ done
 
 ##
 # Function to set sudo default variables.
-# .
-# sudo_set_sudo_default_variables
+#
+# `sudo_set_sudo_default_variables`
 ##
 sudo_set_sudo_default_variables() {
 
@@ -288,7 +288,7 @@ function sudo_log_arg_errors() { echo "$@" 1>&2; }
 
 
 ##
-# sudo_main `[argument...]`
+# `sudo_main` [`<argument...>`]
 ##
 sudo_main() {
 
@@ -716,7 +716,7 @@ sudo_run() {
 }
 
 ##
-# sudo_run_pre_exit_commands `exit_code`
+# `sudo_run_pre_exit_commands` `<exit_code>`
 ##
 sudo_run_pre_exit_commands() {
 
@@ -1331,10 +1331,9 @@ sudo_set_required_variables() {
 ##
 # Set termux and android path priority variables that should be used
 # depending on required priority.
-# .
-# The `ARCH` variable must be set.
-# .
-# sudo_set_path_priority_variables `set_secondary_paths`
+#
+#
+# `sudo_set_path_priority_variables` `<set_secondary_paths>`
 sudo_set_path_priority_variables() {
 
     local set_secondary_paths="$1"
@@ -1387,8 +1386,8 @@ sudo_set_path_priority_variables() {
 ##
 # Function that should be called before running su commands.
 # This will unset variable so that some su binaries like the ones provided by magisk run successfully.
-# .
-# sudo_unset_pre_su_variables
+#
+# `sudo_unset_pre_su_variables`
 ##
 sudo_unset_pre_su_variables() {
 
@@ -1404,8 +1403,8 @@ sudo_unset_pre_su_variables() {
 ##
 # Function that should be called after running su commands.
 # This will reset variable previously unset by sudo_unset_pre_su_variables so that sudo script commands run successfully.
-# .
-# sudo_set_post_su_variables
+#
+# `sudo_set_post_su_variables`
 ##
 sudo_set_post_su_variables() {
 
@@ -1418,10 +1417,10 @@ sudo_set_post_su_variables() {
 
 ##
 # Set variables to export with priority to termux or android bin and library paths.
-# .
+#
 # `priority` must be one of `termux` or `android`.
-# .
-# sudo_set_priority_dependent_variables `priority`
+#
+# `sudo_set_priority_dependent_variables` `<priority>`
 ##
 sudo_set_priority_dependent_variables() {
 
@@ -1492,10 +1491,10 @@ sudo_set_priority_dependent_variables() {
 # The variables must be unexported after the sudo environment has been setup up
 # And only the COMMAND_TYPE SU_RUN_COMMAND su needs to be run
 # The COMMAND_TYPE su shell should not have the variables of the sudo script in its environment
-# .
+#
 # `command` must be one of `export` or `unexport`.
-# .
-# sudo_export_or_unexport_shared_variables_for_su `command`
+#
+# `sudo_export_or_unexport_shared_variables_for_su` `<command>`
 ##
 sudo_export_or_unexport_shared_variables_for_su() {
 
@@ -2388,7 +2387,7 @@ sudo_check_if_setting_up_sudo_temp_directory_is_required() {
 }
 
 ##
-# sudo_set_script_argument_for_script_shell `shell_basename` `heredoc_word` `heredoc_word_quote` `script_is_path_to_script_file` `force_use_temp_script_file` `decode_script_content` `script_file_label` `script_file_name` `script_file_path`/script_content
+# `sudo_set_script_argument_for_script_shell` `<shell_basename>` `<heredoc_word>` `<heredoc_word_quote>` `<script_is_path_to_script_file>` `<force_use_temp_script_file>` `<decode_script_content>` `<script_file_label>` `<script_file_name>` `<script_file_path>`/script_content
 ##
 sudo_set_script_argument_for_script_shell() {
 
@@ -2513,7 +2512,7 @@ sudo_set_script_argument_for_script_shell() {
 }
 
 ##
-# sudo_create_sudo_temp_file `label` `path` `log_content` `decode_content` `content`
+# `sudo_create_sudo_temp_file` `<label>` `<path>` `<log_content>` `<decode_content>` `<content>`
 ##
 sudo_create_sudo_temp_file() {
 
@@ -2734,7 +2733,7 @@ sudo_validate_shell \"SUDO_POST_SHELL\" '${SUDO_POST_SHELL//\'/\'\\\'\'}' '${SUD
 }
 
 ##
-# sudo_validate_shell `shell_label` `user_shell` `supported_shells` `termux_prefix` `termux_bin` `termux_home`
+# `sudo_validate_shell` `<shell_label>` `<user_shell>` `<supported_shells>` `<termux_prefix>` `<termux_bin>` `<termux_home>`
 ##
 sudo_validate_shell() {
 
@@ -2842,7 +2841,7 @@ sudo_set_sudo_post_shell_rcfile() {
 }
 
 ##
-# sudo_set_shell_rcfile `shell_basename` `shell_home`
+# `sudo_set_shell_rcfile` `<shell_basename>` `<shell_home>`
 ##
 sudo_set_shell_rcfile() {
 
@@ -2997,7 +2996,7 @@ sudo_set_shell_rcfile() {
 }
 
 ##
-# sudo_set_rcfile_functions
+# `sudo_set_rcfile_functions`
 ##
 sudo_set_rcfile_functions() {
 
@@ -3158,7 +3157,7 @@ sudo_set_sudo_post_shell_histfile() {
 }
 
 ##
-# sudo_set_shell_histfile `shell_label` `shell_basename` `shell_home` `shell_history_enabled`
+# `sudo_set_shell_histfile` `<shell_label>` `<shell_basename>` `<shell_home>` `<shell_history_enabled>`
 ##
 sudo_set_shell_histfile() {
 
@@ -3428,7 +3427,7 @@ sudo_set_sudo_post_shell_command() {
 }
 
 ##
-# sudo_set_shell_command `shell_label` `shell` `shell_basename` `shell_parent_dir` `interactive_shell_required`
+# `sudo_set_shell_command` `<shell_label>` `<shell>` `<shell_basename>` `<shell_parent_dir>` `<interactive_shell_required>`
 ##
 sudo_set_shell_command() {
 
@@ -3820,7 +3819,7 @@ sudo_setup_sudo_shell_home_and_working_environment() {
 }
 
 ##
-# sudo_setup_shell_home `shell_label` `shell_home_parent_dir` `shell_home` `shell_automatically_create_rc_file` `shell_rcfile_parent_dir` `shell_rcfile` `shell_rcfile_value`  `shell_histfile_parent_dir` `shell_histfile`
+# `sudo_setup_shell_home` `<shell_label>` `<shell_home_parent_dir>` `<shell_home>` `<shell_automatically_create_rc_file>` `<shell_rcfile_parent_dir>` `<shell_rcfile>` `<shell_rcfile_value>`  `<shell_histfile_parent_dir>` `<shell_histfile>`
 ##
 sudo_setup_shell_home() {
 
@@ -4068,12 +4067,12 @@ sudo_setup_shell_home() {
 }
 
 ##
-# sudo_create_shell_home `shell_label` \
-# `shell_home` `create_shell_home_if_it_does_not_exist` `only_set_perms_and_ownership_on_creation_of_shell_home` `shell_home_ownership` `shell_home_permission` `shell_home_file_type_tests` \
-# `shell_rcfile_parent_dir` `create_shell_rcfile_parent_dir_if_it_does_not_exist` `only_set_perms_and_ownership_on_creation_of_shell_rcfile_parent_dir` `shell_rcfile_parent_dir_ownership` `shell_rcfile_parent_dir_permission` `shell_rcfile_parent_dir_file_type_tests` \
-# `shell_rcfile` `create_shell_rcfile_if_it_does_not_exist` `shell_rcfile_value` `only_set_perms_and_ownership_on_creation_of_shell_rcfile` `shell_rcfile_ownership` `shell_rcfile_permission` `shell_rcfile_file_type_tests` \
-# `shell_histfile_parent_dir` `create_shell_histfile_parent_dir_if_it_does_not_exist` `only_set_perms_and_ownership_on_creation_of_shell_histfile_parent_dir` `shell_histfile_parent_dir_ownership` `shell_histfile_parent_dir_permission` `shell_histfile_parent_dir_file_type_tests` \
-# `shell_histfile` `create_shell_histfile_if_it_does_not_exist` `only_set_perms_and_ownership_on_creation_of_shell_histfile` `shell_histfile_ownership` `shell_histfile_permission` `shell_histfile_file_type_tests`
+# `sudo_create_shell_home` `<shell_label>` \
+#     `<shell_home>` `<create_shell_home_if_it_does_not_exist>` `<only_set_perms_and_ownership_on_creation_of_shell_home>` `<shell_home_ownership>` `<shell_home_permission>` `<shell_home_file_type_tests>` \
+#     `<shell_rcfile_parent_dir>` `<create_shell_rcfile_parent_dir_if_it_does_not_exist>` `<only_set_perms_and_ownership_on_creation_of_shell_rcfile_parent_dir>` `<shell_rcfile_parent_dir_ownership>` `<shell_rcfile_parent_dir_permission>` `<shell_rcfile_parent_dir_file_type_tests>` \
+#     `<shell_rcfile>` `<create_shell_rcfile_if_it_does_not_exist>` `<shell_rcfile_value>` `<only_set_perms_and_ownership_on_creation_of_shell_rcfile>` `<shell_rcfile_ownership>` `<shell_rcfile_permission>` `<shell_rcfile_file_type_tests>` \
+#     `<shell_histfile_parent_dir>` `<create_shell_histfile_parent_dir_if_it_does_not_exist>` `<only_set_perms_and_ownership_on_creation_of_shell_histfile_parent_dir>` `<shell_histfile_parent_dir_ownership>` `<shell_histfile_parent_dir_permission>` `<shell_histfile_parent_dir_file_type_tests>` \
+#     `<shell_histfile>` `<create_shell_histfile_if_it_does_not_exist>` `<only_set_perms_and_ownership_on_creation_of_shell_histfile>` `<shell_histfile_ownership>` `<shell_histfile_permission>` `<shell_histfile_file_type_tests>`
 ##
 sudo_create_shell_home() {
 
@@ -4472,7 +4471,7 @@ trap 'sudo_script__trap QUIT' QUIT
 }
 
 ##
-# sudo_run_file_type_tests_on_path `label` `path` `log_file_tests_failure_errors` `show_stat_output_on_file_tests_failure` `check_if_absolute_path` `file_type_tests`
+# `sudo_run_file_type_tests_on_path` `<label>` `<path>` `<log_file_tests_failure_errors>` `<show_stat_output_on_file_tests_failure>` `<check_if_absolute_path>` `<file_type_tests>`
 ##
 sudo_run_file_type_tests_on_path() {
 
@@ -4581,7 +4580,7 @@ sudo_run_file_type_tests_on_path() {
 }
 
 ##
-# sudo_create_modify_validate_directory `directory_path_label` `directory_path` `check_if_absolute_path` `create_directory_if_it_does_not_exist` `only_set_perms_and_ownership_on_creation` `directory_chown_command_options` `directory_chmod_command_options` `sub_directories_chown_command_options` `sub_directories_chmod_command_options` `sub_files_chown_command_options` `sub_files_chmod_command_options` `file_type_tests`
+# `sudo_create_modify_validate_directory` `<directory_path_label>` `<directory_path>` `<check_if_absolute_path>` `<create_directory_if_it_does_not_exist>` `<only_set_perms_and_ownership_on_creation>` `<directory_chown_command_options>` `<directory_chmod_command_options>` `<sub_directories_chown_command_options>` `<sub_directories_chmod_command_options>` `<sub_files_chown_command_options>` `<sub_files_chmod_command_options>` `<file_type_tests>`
 ##
 sudo_create_modify_validate_directory() {
 
@@ -4762,7 +4761,7 @@ sudo_create_modify_validate_directory() {
 }
 
 ##
-# sudo_create_modify_validate_file `file_path_label` `file_path` `check_if_absolute_path` `create_file_if_it_does_not_exist` `file_creation_command_options` `file_content` `only_set_perms_and_ownership_on_creation` `file_chown_command_options` `file_chmod_command_options` `file_type_tests`
+# `sudo_create_modify_validate_file` `<file_path_label>` `<file_path>` `<check_if_absolute_path>` `<create_file_if_it_does_not_exist>` `<file_creation_command_options>` `<file_content>` `<only_set_perms_and_ownership_on_creation>` `<file_chown_command_options>` `<file_chmod_command_options>` `<file_type_tests>`
 ##
 sudo_create_modify_validate_file() {
 
@@ -4897,7 +4896,7 @@ sudo_create_modify_validate_file() {
 }
 
 ##
-# sudo_expand_termux_path `variable_name` `label` `path` `termux_prefix` `termux_home` `canonicalize_path`
+# `sudo_expand_termux_path` `<variable_name>` `<label>` `<path>` `<termux_prefix>` `<termux_home>` `<canonicalize_path>`
 ##
 sudo_expand_termux_path() {
 
@@ -4972,8 +4971,8 @@ sudo_expand_termux_path() {
 # - If an absolute path is returned by `sudo_expand_termux_path`, then it checked to see if it is for an executable file,
 #   otherwise executable is searched in all the paths in `paths_to_check_for_executable` list (ideally `$PATH` variable).
 # - If an executable is found, then that is returned, otherwise function fails with 112.
-# .
-# sudo_find_absolute_path_for_executable_and_validate `variable_name` `label` `path` `paths_to_check_for_executable` `termux_prefix` `termux_home` `output_path_to_stdout`
+#
+# `sudo_find_absolute_path_for_executable_and_validate` `<variable_name>` `<label>` `<path>` `<paths_to_check_for_executable>` `<termux_prefix>` `<termux_home>` `<output_path_to_stdout>`
 ##
 sudo_find_absolute_path_for_executable_and_validate() {
 
@@ -5077,8 +5076,8 @@ sudo_find_absolute_path_for_executable_and_validate() {
 
 ##
 # Validate if path is under TERMUX_ROOTFS and is not backlisted.
-# .
-# sudo_validate_path_is_a_whitelisted_path_under_termux_rootfs `label` `path`
+#
+# `sudo_validate_path_is_a_whitelisted_path_under_termux_rootfs` `<label>` `<path>`
 ##
 sudo_validate_path_is_a_whitelisted_path_under_termux_rootfs() {
 
@@ -5138,7 +5137,7 @@ sudo_validate_path_is_a_whitelisted_path_under_termux_rootfs() {
 }
 
 ##
-# sudo_parse_and_validate_path_variable `variable_name` `label` `path` `remove_duplicates`
+# `sudo_parse_and_validate_path_variable` `<variable_name>` `<label>` `<path>` `<remove_duplicates>`
 ##
 sudo_parse_and_validate_path_variable() {
 
@@ -5188,10 +5187,10 @@ sudo_parse_and_validate_path_variable() {
 
 ##
 # Remount partitions for sudo shell home.
-# .
+#
 # `remount_mode` must be `ro` or `rw`.
-# .
-# sudo_remount_partitions_for_sudo_shell_homes `remount_mode`
+#
+# `sudo_remount_partitions_for_sudo_shell_homes` `<remount_mode>`
 ##
 sudo_remount_partitions_for_sudo_shell_homes() {
 
@@ -5281,7 +5280,7 @@ sudo_remount_partitions_for_sudo_shell_homes() {
 }
 
 ##
-# sudo_get_unsed_file_descriptor `variable_name`
+# `sudo_get_unsed_file_descriptor` `<variable_name>`
 ##
 sudo_get_unsed_file_descriptor() {
 
@@ -5323,12 +5322,12 @@ sudo_get_unsed_file_descriptor() {
 
 ##
 # Remount partitions for sudo shell home.
-# .
+#
 # `remount_partition` must be `rootfs` or `system`.
 # `remount_mode` must be `ro` or `rw`.
 # `force_remount` must be `0` or `1`.
-# .
-# sudo_remount_partition `remount_partition` `remount_mode` `force_remount`
+#
+# `sudo_remount_partition` `<remount_partition>` `<remount_mode>` `<force_remount>`
 ##
 sudo_remount_partition() {
 
@@ -5786,7 +5785,7 @@ variable${scoped_var_value_invalid_error_suffix}." 1>&2
 
 
 ##
-# sudo_replace_comma_alternative_chars_with_commas_in_string `string`
+# `sudo_replace_comma_alternative_chars_with_commas_in_string` `<string>`
 ##
 sudo_replace_comma_alternative_chars_with_commas_in_string() {
 
@@ -5803,7 +5802,7 @@ sudo_replace_comma_alternative_chars_with_commas_in_string() {
 }
 
 ##
-# sudo_trim_trailing_newlines `variable_name` `variable_value`
+# `sudo_trim_trailing_newlines` `<variable_name>` `<variable_value>`
 ##
 sudo_trim_trailing_newlines() {
 
@@ -5826,7 +5825,7 @@ sudo_trim_trailing_newlines() {
 }
 
 ##
-# sudo_process_arguments `[argument...]`
+# `sudo_process_arguments` [`<argument...>`]
 ##
 sudo_process_arguments() {
 

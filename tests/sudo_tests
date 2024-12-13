@@ -178,7 +178,7 @@ function reopen_stdin () {  if [[ "$SUDO_TESTS_TTY_PATH" == "/dev/"* ]]; then ex
 
 
 ##
-# sudo_tests_main `[argument...]`
+# `sudo_tests_main` [`<argument...>`]
 ##
 sudo_tests_main() {
 
@@ -1472,8 +1472,8 @@ SUDO_EOF
 
 ##
 # Capture stdout and stderr of command in separate variables.
-# .
-# sudo_tests_run_subshell_command `stdout_variable_name` `stderr_variable_name` `command` `[arguments]`
+#
+# `sudo_tests_run_subshell_command` `<stdout_variable_name>` `<stderr_variable_name>` `<command>` [`<arguments...>`]
 ##
 sudo_tests_run_subshell_command() {
 
@@ -1582,7 +1582,7 @@ set_sudo_tests_current_test_number () {
 }
 
 ##
-# Run_sudo_test `current_test_number`
+# `run_sudo_test` `<current_test_number>`
 ##
 run_sudo_test () {
 
@@ -1592,7 +1592,7 @@ run_sudo_test () {
 }
 
 ##
-# skip_sudo_test `current_test_number`
+# `skip_sudo_test` `<current_test_number>`
 ##
 skip_sudo_test () {
 
@@ -1602,8 +1602,8 @@ skip_sudo_test () {
 }
 
 ##
-# validate_sudo_test `expected_result_value` `actual_result_value` `actual_output` `expected_output`
-# validate_sudo_test `expected_result_value` `actual_result_value` `actual_output` `expected_output_prefix_glob` `expected_output` `expected_output_suffix_glob`
+# `validate_sudo_test` `<expected_result_value>` `<actual_result_value>` `<actual_output>` `<expected_output>`
+# `validate_sudo_test` `<expected_result_value>` `<actual_result_value>` `<actual_output>` `<expected_output_prefix_glob>` `<expected_output>` `<expected_output_suffix_glob>`
 ##
 validate_sudo_test () {
 
@@ -1782,7 +1782,7 @@ sudo_tests_remove_sudo_tests_temp_directories() {
 }
 
 ##
-# sudo_tests_process_arguments `[argument...]`
+# `sudo_tests_process_arguments` [`<argument...>`]
 ##
 sudo_tests_process_arguments() {
 
