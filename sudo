@@ -276,14 +276,14 @@ LANG="en_US.UTF-8"
 
 }
 
-function sudo_log() { local log_level="${1}"; shift; if [[ $SUDO_LOG_LEVEL -ge $log_level ]]; then echo "$@"; fi }
-function sudo_log_literal() { local log_level="${1}"; shift; if [[ $SUDO_LOG_LEVEL -ge $log_level ]]; then echo -e "$@"; fi }
+function sudo_log() { local log_level="${1}"; shift; if [[ "$SUDO_LOG_LEVEL" -ge $log_level ]]; then echo "$@"; fi }
+function sudo_log_literal() { local log_level="${1}"; shift; if [[ "$SUDO_LOG_LEVEL" -ge $log_level ]]; then echo -e "$@"; fi }
 function sudo_log_errors() { echo "$@" 1>&2; }
 function sudo_log_args() { if [[ $SUDO_LOG_ARGS == "1" ]]; then echo "$@"; fi }
 function sudo_log_arg_errors() { echo "$@" 1>&2; }
 
 # Enable the following line if you want to log function runtimes with the '-vv' option
-#sudo_start_time=$(date +%s%3N); function sudo_log_literal() { local log_level="${1}"; shift; if [[ $SUDO_LOG_LEVEL -ge $log_level ]]; then if [[ "$*" == *"Running"* ]]; then sudo_end_time=$(date +%s%3N); run_time=$((sudo_end_time-sudo_start_time)); echo -e "Runtime $run_time\n"; sudo_start_time=$(date +%s%3N); fi; echo -e "$@"; fi }
+#sudo_start_time=$(date +%s%3N); function sudo_log_literal() { local log_level="${1}"; shift; if [[ "$SUDO_LOG_LEVEL" -ge $log_level ]]; then if [[ "$*" == *"Running"* ]]; then sudo_end_time=$(date +%s%3N); run_time=$((sudo_end_time-sudo_start_time)); echo -e "Runtime $run_time\n"; sudo_start_time=$(date +%s%3N); fi; echo -e "$@"; fi }
 
 
 
@@ -835,7 +835,7 @@ sudo_set_su_variables() {
 
                 SU_BIN_PATH_BASENAME="${SU##*/}" # Strip longest match of */ from start
                 SU_BIN_PATH="${SU:0:${#SU} - ${#SU_BIN_PATH_BASENAME}}" # Substring from 0 to position of basename
-                case $SU_BIN_PATH in *[!/]*/) SU_BIN_PATH=${SU_BIN_PATH%"${SU_BIN_PATH##*[!/]}"};; *[/]) SU_BIN_PATH="/";; esac # Remove trailing slashes if not root
+                case "$SU_BIN_PATH" in *[!/]*/) SU_BIN_PATH="${SU_BIN_PATH%"${SU_BIN_PATH##*[!/]}"}";; *[/]) SU_BIN_PATH="/";; esac # Remove trailing slashes if not root
 
                 break
             fi
@@ -1189,7 +1189,7 @@ sudo_set_required_variables() {
     # Find the parent directory of the SUDO_SHELL_HOME
     SUDO_SHELL_HOME_BASENAME="${SUDO_SHELL_HOME##*/}" # Strip longest match of */ from start
     SUDO_SHELL_HOME_PARENT_DIR="${SUDO_SHELL_HOME:0:${#SUDO_SHELL_HOME} - ${#SUDO_SHELL_HOME_BASENAME}}" # Substring from 0 to position of basename
-    case $SUDO_SHELL_HOME_PARENT_DIR in *[!/]*/) SUDO_SHELL_HOME_PARENT_DIR=${SUDO_SHELL_HOME_PARENT_DIR%"${SUDO_SHELL_HOME_PARENT_DIR##*[!/]}"};; *[/]) SUDO_SHELL_HOME_PARENT_DIR="/";; esac # Remove trailing slashes if not root
+    case "$SUDO_SHELL_HOME_PARENT_DIR" in *[!/]*/) SUDO_SHELL_HOME_PARENT_DIR="${SUDO_SHELL_HOME_PARENT_DIR%"${SUDO_SHELL_HOME_PARENT_DIR##*[!/]}"}";; *[/]) SUDO_SHELL_HOME_PARENT_DIR="/";; esac # Remove trailing slashes if not root
 
     sudo_log 3 "SUDO_SHELL_HOME_PARENT_DIR=\"$SUDO_SHELL_HOME_PARENT_DIR\""
 
@@ -1225,7 +1225,7 @@ sudo_set_required_variables() {
         # Find the parent directory of the SUDO_POST_SHELL_HOME
         SUDO_POST_SHELL_HOME_BASENAME="${SUDO_POST_SHELL_HOME##*/}" # Strip longest match of */ from start
         SUDO_POST_SHELL_HOME_PARENT_DIR="${SUDO_POST_SHELL_HOME:0:${#SUDO_POST_SHELL_HOME} - ${#SUDO_POST_SHELL_HOME_BASENAME}}" # Substring from 0 to position of basename
-        case $SUDO_POST_SHELL_HOME_PARENT_DIR in *[!/]*/) SUDO_POST_SHELL_HOME_PARENT_DIR=${SUDO_POST_SHELL_HOME_PARENT_DIR%"${SUDO_POST_SHELL_HOME_PARENT_DIR##*[!/]}"};; *[/]) SUDO_POST_SHELL_HOME_PARENT_DIR="/";; esac # Remove trailing slashes if not root
+        case "$SUDO_POST_SHELL_HOME_PARENT_DIR" in *[!/]*/) SUDO_POST_SHELL_HOME_PARENT_DIR="${SUDO_POST_SHELL_HOME_PARENT_DIR%"${SUDO_POST_SHELL_HOME_PARENT_DIR##*[!/]}"}";; *[/]) SUDO_POST_SHELL_HOME_PARENT_DIR="/";; esac # Remove trailing slashes if not root
 
         sudo_log 3 "SUDO_POST_SHELL_HOME_PARENT_DIR=\"$SUDO_POST_SHELL_HOME_PARENT_DIR\""
     fi
@@ -2595,7 +2595,7 @@ sudo_create_sudo_temp_file() {
     fi
 
     # Read file at path again and log its content but only if binary data is not stored in it
-    if [[ $SUDO_LOG_LEVEL -ge 2 ]] && [[ "$log_content" == "1" ]]  && [[ "$decode_content" != "1" ]]; then
+    if [[ "$SUDO_LOG_LEVEL" -ge 2 ]] && [[ "$log_content" == "1" ]]  && [[ "$decode_content" != "1" ]]; then
         local file_contents=""
         sudo_unset_pre_su_variables
         file_contents=$($SU_ENV_COMMAND "cat '${path//\'/\'\\\'\'}'" 2>&1 < /dev/null)
@@ -2657,7 +2657,7 @@ sudo_validate_shell \"SUDO_SHELL\" '${SUDO_SHELL//\'/\'\\\'\'}' '${SUDO_SUPPORTE
     # Find the basename and parent directory of the SUDO_SHELL
     SUDO_SHELL_BASENAME="${SUDO_SHELL##*/}" # Strip longest match of */ from start
     SUDO_SHELL_PARENT_DIR="${SUDO_SHELL:0:${#SUDO_SHELL} - ${#SUDO_SHELL_BASENAME}}" # Substring from 0 to position of basename
-    case $SUDO_SHELL_PARENT_DIR in *[!/]*/) SUDO_SHELL_PARENT_DIR=${SUDO_SHELL_PARENT_DIR%"${SUDO_SHELL_PARENT_DIR##*[!/]}"};; *[/]) SUDO_SHELL_PARENT_DIR="/";; esac # Remove trailing slashes if not root
+    case "$SUDO_SHELL_PARENT_DIR" in *[!/]*/) SUDO_SHELL_PARENT_DIR="${SUDO_SHELL_PARENT_DIR%"${SUDO_SHELL_PARENT_DIR##*[!/]}"}";; *[/]) SUDO_SHELL_PARENT_DIR="/";; esac # Remove trailing slashes if not root
 
     sudo_log 3 "SUDO_SHELL_BASENAME=\"$SUDO_SHELL_BASENAME\""
     sudo_log 3 "SUDO_SHELL_PARENT_DIR=\"$SUDO_SHELL_PARENT_DIR\""
@@ -2716,7 +2716,7 @@ sudo_validate_shell \"SUDO_POST_SHELL\" '${SUDO_POST_SHELL//\'/\'\\\'\'}' '${SUD
     # Find the basename and parent directory of the SUDO_POST_SHELL
     SUDO_POST_SHELL_BASENAME="${SUDO_POST_SHELL##*/}" # Strip longest match of */ from start
     SUDO_POST_SHELL_PARENT_DIR="${SUDO_POST_SHELL:0:${#SUDO_POST_SHELL} - ${#SUDO_POST_SHELL_BASENAME}}" # Substring from 0 to position of basename
-    case $SUDO_POST_SHELL_PARENT_DIR in *[!/]*/) SUDO_POST_SHELL_PARENT_DIR=${SUDO_POST_SHELL_PARENT_DIR%"${SUDO_POST_SHELL_PARENT_DIR##*[!/]}"};; *[/]) SUDO_POST_SHELL_PARENT_DIR="/";; esac # Remove trailing slashes if not root
+    case "$SUDO_POST_SHELL_PARENT_DIR" in *[!/]*/) SUDO_POST_SHELL_PARENT_DIR="${SUDO_POST_SHELL_PARENT_DIR%"${SUDO_POST_SHELL_PARENT_DIR##*[!/]}"}";; *[/]) SUDO_POST_SHELL_PARENT_DIR="/";; esac # Remove trailing slashes if not root
 
     sudo_log 3 "SUDO_POST_SHELL_BASENAME=\"$SUDO_POST_SHELL_BASENAME\""
     sudo_log 3 "SUDO_POST_SHELL_PARENT_DIR=\"$SUDO_POST_SHELL_PARENT_DIR\""
@@ -2969,7 +2969,7 @@ sudo_set_shell_rcfile() {
         # Find the parent directory of the SHELL_RCFILE
         SHELL_RCFILE_BASENAME="${SHELL_RCFILE##*/}" # Strip longest match of */ from start
         SHELL_RCFILE_PARENT_DIR="${SHELL_RCFILE:0:${#SHELL_RCFILE} - ${#SHELL_RCFILE_BASENAME}}" # Substring from 0 to position of basename
-        case $SHELL_RCFILE_PARENT_DIR in *[!/]*/) SHELL_RCFILE_PARENT_DIR=${SHELL_RCFILE_PARENT_DIR%"${SHELL_RCFILE_PARENT_DIR##*[!/]}"};; *[/]) SHELL_RCFILE_PARENT_DIR="/";; esac # Remove trailing slashes if not root
+        case "$SHELL_RCFILE_PARENT_DIR" in *[!/]*/) SHELL_RCFILE_PARENT_DIR="${SHELL_RCFILE_PARENT_DIR%"${SHELL_RCFILE_PARENT_DIR##*[!/]}"}";; *[/]) SHELL_RCFILE_PARENT_DIR="/";; esac # Remove trailing slashes if not root
 
         # Set SHELL_RCFILE_VALUE to be set in SHELL_RCFILE
         SHELL_RCFILE_VALUE=""
@@ -3308,7 +3308,7 @@ sudo_set_shell_histfile() {
             # Find the parent directory of the SHELL_HISTFILE
             SHELL_HISTFILE_BASENAME="${SHELL_HISTFILE##*/}" # Strip longest match of */ from start
             SHELL_HISTFILE_PARENT_DIR="${SHELL_HISTFILE:0:${#SHELL_HISTFILE} - ${#SHELL_HISTFILE_BASENAME}}" # Substring from 0 to position of basename
-            case $SHELL_HISTFILE_PARENT_DIR in *[!/]*/) SHELL_HISTFILE_PARENT_DIR=${SHELL_HISTFILE_PARENT_DIR%"${SHELL_HISTFILE_PARENT_DIR##*[!/]}"};; *[/]) SHELL_HISTFILE_PARENT_DIR="/";; esac # Remove trailing slashes if not root
+            case "$SHELL_HISTFILE_PARENT_DIR" in *[!/]*/) SHELL_HISTFILE_PARENT_DIR="${SHELL_HISTFILE_PARENT_DIR%"${SHELL_HISTFILE_PARENT_DIR##*[!/]}"}";; *[/]) SHELL_HISTFILE_PARENT_DIR="/";; esac # Remove trailing slashes if not root
         fi
 
     else
@@ -3971,7 +3971,7 @@ sudo_setup_shell_home() {
                 # Find the parent directory of the shell_rcfile_parent_dir
                 shell_rcfile_parent_dir_basename="${shell_rcfile_parent_dir##*/}" # Strip longest match of */ from start
                 shell_rcfile_parent_dir_parent_dir="${shell_rcfile_parent_dir:0:${#shell_rcfile_parent_dir} - ${#shell_rcfile_parent_dir_basename}}" # Substring from 0 to position of basename
-                case $shell_rcfile_parent_dir_parent_dir in *[!/]*/) shell_rcfile_parent_dir_parent_dir=${shell_rcfile_parent_dir_parent_dir%"${shell_rcfile_parent_dir_parent_dir##*[!/]}"};; *[/]) shell_rcfile_parent_dir_parent_dir="/";; esac # Remove trailing slashes if not root
+                case "$shell_rcfile_parent_dir_parent_dir" in *[!/]*/) shell_rcfile_parent_dir_parent_dir="${shell_rcfile_parent_dir_parent_dir%"${shell_rcfile_parent_dir_parent_dir##*[!/]}"}";; *[/]) shell_rcfile_parent_dir_parent_dir="/";; esac # Remove trailing slashes if not root
 
                 shell_rcfile_parent_dir_ownership="--reference='${shell_rcfile_parent_dir_parent_dir//\'/\'\\\'\'}'"
                 shell_rcfile_ownership="--reference='${shell_rcfile_parent_dir//\'/\'\\\'\'}'"
@@ -4040,7 +4040,7 @@ sudo_setup_shell_home() {
                 # Find the parent directory of the shell_histfile_parent_dir
                 shell_histfile_parent_dir_basename="${shell_histfile_parent_dir##*/}" # Strip longest match of */ from start
                 shell_histfile_parent_dir_parent_dir="${shell_histfile_parent_dir:0:${#shell_histfile_parent_dir} - ${#shell_histfile_parent_dir_basename}}" # Substring from 0 to position of basename
-                case $shell_histfile_parent_dir_parent_dir in *[!/]*/) shell_histfile_parent_dir_parent_dir=${shell_histfile_parent_dir_parent_dir%"${shell_histfile_parent_dir_parent_dir##*[!/]}"};; *[/]) shell_histfile_parent_dir_parent_dir="/";; esac # Remove trailing slashes if not root
+                case "$shell_histfile_parent_dir_parent_dir" in *[!/]*/) shell_histfile_parent_dir_parent_dir="${shell_histfile_parent_dir_parent_dir%"${shell_histfile_parent_dir_parent_dir##*[!/]}"}";; *[/]) shell_histfile_parent_dir_parent_dir="/";; esac # Remove trailing slashes if not root
 
                 shell_histfile_parent_dir_ownership="--reference='${shell_histfile_parent_dir_parent_dir//\'/\'\\\'\'}'"
                 shell_histfile_ownership="--reference='${shell_histfile_parent_dir//\'/\'\\\'\'}'"
@@ -4222,7 +4222,7 @@ sudo_set_sudo_shell_working_dir() {
     # Find the parent directory of the SUDO_SHELL_WORKING_DIR
     SUDO_SHELL_WORKING_DIR_BASENAME="${SUDO_SHELL_WORKING_DIR##*/}" # Strip longest match of */ from start
     SUDO_SHELL_WORKING_DIR_PARENT_DIR="${SUDO_SHELL_WORKING_DIR:0:${#SUDO_SHELL_WORKING_DIR} - ${#SUDO_SHELL_WORKING_DIR_BASENAME}}" # Substring from 0 to position of basename
-    case $SUDO_SHELL_WORKING_DIR_PARENT_DIR in *[!/]*/) SUDO_SHELL_WORKING_DIR_PARENT_DIR=${SUDO_SHELL_WORKING_DIR_PARENT_DIR%"${SUDO_SHELL_WORKING_DIR_PARENT_DIR##*[!/]}"};; *[/]) SUDO_SHELL_WORKING_DIR_PARENT_DIR="/";; esac # Remove trailing slashes if not root
+    case "$SUDO_SHELL_WORKING_DIR_PARENT_DIR" in *[!/]*/) SUDO_SHELL_WORKING_DIR_PARENT_DIR="${SUDO_SHELL_WORKING_DIR_PARENT_DIR%"${SUDO_SHELL_WORKING_DIR_PARENT_DIR##*[!/]}"}";; *[/]) SUDO_SHELL_WORKING_DIR_PARENT_DIR="/";; esac # Remove trailing slashes if not root
 
     sudo_log 3 "SUDO_SHELL_WORKING_DIR_PARENT_DIR=\"$SUDO_SHELL_WORKING_DIR_PARENT_DIR\""
 
@@ -4249,7 +4249,7 @@ sudo_setup_sudo_shell_working_dir() {
     # Find the parent directory of the SUDO_SHELL_WORKING_DIR
     SUDO_SHELL_WORKING_DIR_BASENAME="${SUDO_SHELL_WORKING_DIR##*/}" # Strip longest match of */ from start
     SUDO_SHELL_WORKING_DIR_PARENT_DIR="${SUDO_SHELL_WORKING_DIR:0:${#SUDO_SHELL_WORKING_DIR} - ${#SUDO_SHELL_WORKING_DIR_BASENAME}}" # Substring from 0 to position of basename
-    case $SUDO_SHELL_WORKING_DIR_PARENT_DIR in *[!/]*/) SUDO_SHELL_WORKING_DIR_PARENT_DIR=${SUDO_SHELL_WORKING_DIR_PARENT_DIR%"${SUDO_SHELL_WORKING_DIR_PARENT_DIR##*[!/]}"};; *[/]) SUDO_SHELL_WORKING_DIR_PARENT_DIR="/";; esac # Remove trailing slashes if not root
+    case "$SUDO_SHELL_WORKING_DIR_PARENT_DIR" in *[!/]*/) SUDO_SHELL_WORKING_DIR_PARENT_DIR="${SUDO_SHELL_WORKING_DIR_PARENT_DIR%"${SUDO_SHELL_WORKING_DIR_PARENT_DIR##*[!/]}"}";; *[/]) SUDO_SHELL_WORKING_DIR_PARENT_DIR="/";; esac # Remove trailing slashes if not root
 
     shell_working_dir_ownership="--reference='${SUDO_SHELL_WORKING_DIR_PARENT_DIR//\'/\'\\\'\'}'"
 
@@ -4921,8 +4921,8 @@ sudo_expand_termux_path() {
     [[ "$path_to_expand" == "\$PREFIX/" ]] && path_to_expand="$termux_prefix" # Replace '$PREFIX/' with "$termux_prefix"
     [[ "$path_to_expand" == "~/" ]] && path_to_expand="$termux_home" # Replace '~/' with "$termux_home"
 
-    path_to_expand=${path_to_expand/#\$PREFIX\//$termux_prefix\/} # Replace '$PREFIX/*' with "$termux_prefix/*"
-    path_to_expand=${path_to_expand/#~\//$termux_home\/} # Replace '~/*' with "$termux_home/*"
+    path_to_expand="${path_to_expand/#\$PREFIX\//$termux_prefix\/}" # Replace '$PREFIX/*' with "$termux_prefix/*"
+    path_to_expand="${path_to_expand/#~\//$termux_home\/}" # Replace '~/*' with "$termux_home/*"
 
     # If canonicalize_path equals "1" or (canonicalize_path equals "2" and path_to_expand is not a symlink
     if [[ "$canonicalize_path" == "1" ]] || { [[ "$canonicalize_path" == "2" ]] && [ ! -L "$path_to_expand" ]; }; then

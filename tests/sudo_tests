@@ -173,7 +173,7 @@ function sudo_tests_log_arg_errors() { echo "$@" 1>&2; }
 
 # stdin in closed for some tests as a patch to SuperSU automatic redirection of stderr to stdout when running in interactive mode
 function close_stdin () {  if [ -t 0 ]; then exec <&-; fi }
-function reopen_stdin () {  if [[ "$SUDO_TESTS_TTY_PATH" == "/dev/"* ]]; then exec <$SUDO_TESTS_TTY_PATH; fi }
+function reopen_stdin () {  if [[ "$SUDO_TESTS_TTY_PATH" == "/dev/"* ]]; then exec <"$SUDO_TESTS_TTY_PATH"; fi }
 
 
 
@@ -1683,7 +1683,7 @@ sudo_tests_cleanup() {
     local sudo_tests_exit_code=$?
     trap - EXIT
     sudo_tests_remove_sudo_tests_temp_directories
-    [ -n "$1" ] && trap - $1; exit $sudo_tests_exit_code;
+    [ -n "$1" ] && trap - "$1"; exit $sudo_tests_exit_code;
 
 }
 
@@ -1710,7 +1710,7 @@ sudo_tests_remove_sudo_tests_temp_directories() {
             # Find the parent directory of the SUDO_TESTS_DIRECTORY
             SUDO_TESTS_DIRECTORY_BASENAME="${SUDO_TESTS_DIRECTORY##*/}" #strip longest match of */ from start
             SUDO_TESTS_DIRECTORY_PARENT_DIR="${SUDO_TESTS_DIRECTORY:0:${#SUDO_TESTS_DIRECTORY} - ${#SUDO_TESTS_DIRECTORY_BASENAME}}" # Substring from 0 to position of basename
-            case $SUDO_TESTS_DIRECTORY_PARENT_DIR in *[!/]*/) SUDO_TESTS_DIRECTORY_PARENT_DIR=${SUDO_TESTS_DIRECTORY_PARENT_DIR%"${SUDO_TESTS_DIRECTORY_PARENT_DIR##*[!/]}"};; *[/]) SUDO_TESTS_DIRECTORY_PARENT_DIR="/";; esac # Remove trailing slashes if not root
+            case "$SUDO_TESTS_DIRECTORY_PARENT_DIR" in *[!/]*/) SUDO_TESTS_DIRECTORY_PARENT_DIR=${SUDO_TESTS_DIRECTORY_PARENT_DIR%"${SUDO_TESTS_DIRECTORY_PARENT_DIR##*[!/]}"};; *[/]) SUDO_TESTS_DIRECTORY_PARENT_DIR="/";; esac # Remove trailing slashes if not root
 
             # If SUDO_TESTS_DIRECTORY_PARENT_DIR is in rootfs "/" partition
             if [[ "$SUDO_TESTS_DIRECTORY_PARENT_DIR" =~ $VALID_PATH_IN_ROOTFS_PARTITION_REGEX ]]; then
