@@ -4639,6 +4639,7 @@ sudo_create_modify_validate_directory() {
         # If create_directory_if_it_does_not_exist is enabled, then create directory
         if [[ "$create_directory_if_it_does_not_exist" == "1" ]]; then
             sudo_log 3 "Creating $directory_path_label directory at \"$directory_path\""
+
             mkdir -p "$directory_path"
             return_value=$?
             if [ $return_value -ne 0 ]; then
@@ -4646,16 +4647,22 @@ sudo_create_modify_validate_directory() {
                 return $return_value
             fi
 
+            if [ ! -d "$directory_path" ]; then
+                sudo_log_errors "Failed to find $directory_path_label directory at \"$directory_path\" after creation"
+                return 1
+            fi
+
             directory_created=1
+        else
+            sudo_log_errors "Failed to find $directory_path_label directory at \"$directory_path\""
+            return 1
         fi
     else
-        sudo_log 3 "The $directory_path_label directory already exists at \"$directory_path\""
-    fi
-
-    # Check if directory did not already exist or was not created successfully
-    if [ ! -d "$directory_path" ]; then
-        sudo_log_errors "Failed to find $directory_path_label directory at \"$directory_path\""
-        return 1
+        if [[ "$create_directory_if_it_does_not_exist" == "1" ]]; then
+            sudo_log 3 "The $directory_path_label directory already exists at \"$directory_path\""
+        else
+            sudo_log 3 "The $directory_path_label directory exists at \"$directory_path\""
+        fi
     fi
 
     # If only_set_perms_and_ownership_on_creation is enabled and directory was not created
@@ -4813,12 +4820,12 @@ sudo_create_modify_validate_file() {
         return 1
     fi
 
-    # If it does not exist
+    # If file does not exist
     if [ ! -f "$file_path" ]; then
         # If create_file_if_it_does_not_exist is enabled, then create file
         if [[ "$create_file_if_it_does_not_exist" == "1" ]]; then
-
             sudo_log 3 "Creating $file_path_label \"$file_path\" file"
+
             local -a file_creation_command_options_array
             if [[ "$file_creation_command_options" != "-" ]]; then
                 IFS=$'\n'
@@ -4838,16 +4845,22 @@ sudo_create_modify_validate_file() {
                 return $return_value
             fi
 
+            if [ ! -f "$file_path" ]; then
+                sudo_log_errors "Failed to find $file_path_label file at \"$file_path\" after creation"
+                return 1
+            fi
+
             file_created=1
+        else
+            sudo_log_errors "Failed to find $file_path_label file at \"$file_path\""
+            return 1
         fi
     else
-        sudo_log 3 "The $file_path_label file already exists at \"$file_path\""
-    fi
-
-    # Check if file did not already exist or was not created successfully
-    if [ ! -f "$file_path" ]; then
-        sudo_log_errors "Failed to find $file_path_label file at \"$file_path\""
-        return 1
+        if [[ "$create_file_if_it_does_not_exist" == "1" ]]; then
+            sudo_log 3 "The $file_path_label file already exists at \"$file_path\""
+        else
+            sudo_log 3 "The $file_path_label file exists at \"$file_path\""
+        fi
     fi
 
     # If only_set_perms_and_ownership_on_creation is enabled and file was not created
