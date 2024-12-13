@@ -10,6 +10,12 @@
 
 
 
+if [ -z "${BASH_VERSION:-}" ]; then
+    echo "The 'sudo_tests' script must be run from a 'bash' shell."; return 64 2>/dev/null|| exit 64 # EX__USAGE
+fi
+
+
+
 SUDO_TESTS_HELP="$(cat<<'SUDO_TESTS_HELP_EOF'
 sudo_tests is a script that run tests for the sudo script.
 
@@ -1788,7 +1794,7 @@ sudo_tests_process_arguments() {
 
     local OPTIND
 
-    # Parse options to sudo_tests command
+    # Parse options to main command
     while getopts ":hqv-:" opt; do
         case ${opt} in
             -)
@@ -1891,5 +1897,7 @@ sudo_tests_exit_on_error() {
 
 }
 
-# Call sudo_tests_main function
+
+
+# Call main function
 sudo_tests_main "$@"

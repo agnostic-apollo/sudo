@@ -18,6 +18,12 @@ SUDO__VERSION=0.2.0
 
 
 
+if [ -z "${BASH_VERSION:-}" ]; then
+    echo "The 'sudo' script must be run from a 'bash' shell."; return 64 2>/dev/null|| exit 64 # EX__USAGE
+fi
+
+
+
 ##
 # Function to set termux env variables.
 #
@@ -5844,7 +5850,7 @@ sudo_process_arguments() {
 
     local OPTIND
 
-    # Parse options to sudo command
+    # Parse options to main command
     while getopts ":hqvaAbBcdDeEfFHilLnNoOpPrRsStT-:" opt; do
         case ${opt} in
             -)
@@ -6842,5 +6848,14 @@ sudo_exit_on_error() {
 
 }
 
-# Call sudo_main function
-[[ x"${BASH_SOURCE[0]}" == x"$0" ]] && { sudo_main "$@"; exit $?; }
+
+
+# If script is sourced, return with success, otherwise call main function.
+# - https://stackoverflow.com/a/28776166/14686958
+# - https://stackoverflow.com/a/29835459/14686958
+if (return 0 2>/dev/null); then
+    return 0 # EX__SUCCESS
+else
+    sudo_main "$@"
+    exit $?
+fi
