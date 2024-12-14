@@ -74,7 +74,7 @@ termux_core__bash__termux_scoped_env_variable get-name "TERMUX_PREFIX__N" \
     ss="$TERMUX_ENV__SS_TERMUX" "PREFIX" || return $?
 
 
-if [[ ! -x "$TERMUX_ROOTFS" ]]; then
+if [[ ! -x "$TERMUX_ROOTFS" ]] && [[ "$SUDO_SKIP_ON_NOOP_COMMAND" != "1" ]]; then
     sudo_log_errors "The TERMUX_ROOTFS '$TERMUX_ROOTFS' path not found or is not executable. Are you running in $TERMUX_APP__NAME app on Android?"
     return 1
 fi
@@ -301,32 +301,45 @@ sudo_main() {
 
     local return_value
 
+    if [[ $# -eq 0 ]] || \
+        [[ "$1" == "-h" ]] || [[ "$1" == "--help" ]] || [[ "$1" == "--help-extra" ]] || \
+        [[ "$1" == "--version" ]]; then
+        SUDO_SKIP_ON_NOOP_COMMAND=1
+    else
+        SUDO_SKIP_ON_NOOP_COMMAND=0
+    fi
+
     # Set termux env variables
     sudo_set_termux_env_variables || return $?
 
-    # If sudo_config_file exists, source it
-    sudo_config_file="$TERMUX_HOME/.config/sudo/sudo.config"
-    sudo_config_file_sourced=0
-    if [ -f "$sudo_config_file" ] && [ -r "$sudo_config_file" ]; then
-        # Set variables provided for sudo.config
+    # If `sudo.config` exists, source it.
+    SUDO_CONFIG_FILE_PATH="$TERMUX_HOME/.config/sudo/sudo.config"
+    SUDO_CONFIG_FILE_SOURCED=0
+    if [[ "$SUDO_SKIP_ON_NOOP_COMMAND" != "1" ]] && \
+        [ -f "$SUDO_CONFIG_FILE_PATH" ] && [ -r "$SUDO_CONFIG_FILE_PATH" ]; then
+        # Set variables provided for `sudo.config`.
         SUDO__TERMUX_ROOTFS="$TERMUX_ROOTFS"
         SUDO__TERMUX_HOME="$TERMUX_HOME"
         SUDO__TERMUX_PREFIX="$TERMUX_PREFIX"
 
-        source "$sudo_config_file" || return $?
-        sudo_config_file_sourced=1
+        # shellcheck source=sudo.config
+        source "$SUDO_CONFIG_FILE_PATH" || return $?
+        SUDO_CONFIG_FILE_SOURCED=1
     fi
 
-    # Set sudo default variables
-    # There are set by a function so that they do not automatically override already set variables
-    # if the script is sourced
-    # User modifiable variables will only be set if the sudo_config_file didn't set them or
-    # if they were not already exported
+    # Set sudo default variables.
+    # They are set by a function so that default variables are not
+    # overridden by the `sudo.config` file if its sourced.
+    # However, the user modifiable variables will only be set if the
+    # `sudo.config` didn't already set them or if they were not
+    # already exported.
     sudo_set_sudo_default_variables || return $?
 
 
     # Set pre required variables to be used by this script
-    sudo_set_pre_required_variables || return $?
+    if [[ "$SUDO_SKIP_ON_NOOP_COMMAND" != "1" ]]; then
+        sudo_set_pre_required_variables || return $?
+    fi
 
 
     # Process the command arguments passed to the script
@@ -358,8 +371,8 @@ sudo_run() {
 
     sudo_log_literal 3 "\nRunning sudo"
 
-    # If sudo_config_file_sourced is enabled
-    if [[ "$sudo_config_file_sourced" == "1" ]]; then
+    # If `sudo.config` was sourced.
+    if [[ "$SUDO_CONFIG_FILE_SOURCED" == "1" ]]; then
         sudo_log 3 "config was sourced from ~/.config/sudo/sudo.config"
     fi
 
