@@ -380,7 +380,7 @@ sudo_run() {
     return_value=$?
     if [ $return_value -ne 0 ] || [[ ! "$SUDO_SCRIPT_PATH" =~ $VALID_ABSOLUTE_PATH_REGEX ]]; then
         sudo_log_errors "Failure while finding SUDO_SCRIPT_PATH"
-        sudo_log_errors "SUDO_SCRIPT_PATH=\"$SUDO_SCRIPT_PATH\""
+        sudo_log_errors "SUDO_SCRIPT_PATH='$SUDO_SCRIPT_PATH'"
         if [ $return_value -eq 0 ]; then
             return_value=1
         fi
@@ -418,7 +418,7 @@ sudo_run() {
 
         interactive_sudo_shell_required=0
     else
-        sudo_log_errors "COMMAND_TYPE \"$COMMAND_TYPE\" not handled while running sudo command in \"sudo_run\""
+        sudo_log_errors "COMMAND_TYPE '$COMMAND_TYPE' not handled while running sudo command in 'sudo_run'"
         return 1
     fi
 
@@ -566,7 +566,7 @@ sudo_run() {
 
         # If SUDO_SHELL_INTERACTIVE_COMMAND is not set
         if [ ${#SUDO_SHELL_INTERACTIVE_COMMAND[@]} -eq 0 ]; then
-            sudo_log_errors "SUDO_SHELL_INTERACTIVE_COMMAND is not set while running sudo $COMMAND_TYPE command in \"sudo_run\""
+            sudo_log_errors "SUDO_SHELL_INTERACTIVE_COMMAND is not set while running sudo $COMMAND_TYPE command in 'sudo_run'"
             return 1
         fi
 
@@ -663,13 +663,13 @@ sudo_run() {
 
         # If SUDO_SHELL_COMMAND is not set
         if [ ${#SUDO_SHELL_COMMAND[@]} -eq 0 ]; then
-            sudo_log_errors "SUDO_SHELL_COMMAND is not set while running sudo $COMMAND_TYPE command in \"sudo_run\""
+            sudo_log_errors "SUDO_SHELL_COMMAND is not set while running sudo $COMMAND_TYPE command in 'sudo_run'"
             return 1
         fi
 
         # If RUN_INTERACTIVE_POST_SUDO_SHELL_AFTER_RUNNING_CORE_SCRIPT is enabled and SUDO_POST_SHELL_INTERACTIVE_COMMAND is not set
         if [[ "$RUN_INTERACTIVE_POST_SUDO_SHELL_AFTER_RUNNING_CORE_SCRIPT" == "1" ]] && [ ${#SUDO_POST_SHELL_INTERACTIVE_COMMAND[@]} -eq 0 ]; then
-            sudo_log_errors "SUDO_POST_SHELL_INTERACTIVE_COMMAND is not set while running sudo $COMMAND_TYPE command in \"sudo_run\""
+            sudo_log_errors "SUDO_POST_SHELL_INTERACTIVE_COMMAND is not set while running sudo $COMMAND_TYPE command in 'sudo_run'"
             return 1
         fi
 
@@ -717,13 +717,13 @@ sudo_run() {
 
 
     else
-        sudo_log_errors "COMMAND_TYPE \"$COMMAND_TYPE\" not handled while running sudo command in \"sudo_run\""
+        sudo_log_errors "COMMAND_TYPE '$COMMAND_TYPE' not handled while running sudo command in 'sudo_run'"
         return 1
     fi
 
     # If SUDO_DRY_RUN is not enabled
     if [[ "$SUDO_DRY_RUN" != "1" ]]; then
-        sudo_log 3 $'\n'"SUDO_EXIT_CODE=\"$SUDO_EXIT_CODE\""
+        sudo_log 3 $'\n'"SUDO_EXIT_CODE='$SUDO_EXIT_CODE'"
     fi
 
     # If sudo is being run in an interactive shell, then reset terminal
@@ -759,13 +759,13 @@ sudo_run_pre_exit_commands() {
                         # read should never timeout because of TMOUT=0
                         local exit_while=0
                         while [[ $exit_while != "1" ]]; do
-                            TMOUT=0 read -p "Enter \"$HOLD_STRING_AFTER_SUDO\" to exit:"$'\n' input
+                            TMOUT=0 read -p "Enter '$HOLD_STRING_AFTER_SUDO' to exit:"$'\n' input
                             if [ $? -ne 0 ] || [[ "$input" == "$HOLD_STRING_AFTER_SUDO" ]]; then
                                 exit_while=1
                             fi
                         done
                     else
-                        sudo_log_errors "HOLD_STRING_AFTER_SUDO \"$HOLD_STRING_AFTER_SUDO\" is invalid. It can only contain alphanumeric and punctuation characters"
+                        sudo_log_errors "HOLD_STRING_AFTER_SUDO '$HOLD_STRING_AFTER_SUDO' is invalid. It can only contain alphanumeric and punctuation characters"
                         return 1
                     fi
 
@@ -789,7 +789,7 @@ sudo_run_pre_exit_commands() {
                 # Sleep for SLEEP_TIME_AFTER_SUDO seconds
                 sleep "$SLEEP_TIME_AFTER_SUDO"
             else
-                sudo_log_errors "SLEEP_TIME_AFTER_SUDO \"$SLEEP_TIME_AFTER_SUDO\" is not a valid floating point number"
+                sudo_log_errors "SLEEP_TIME_AFTER_SUDO '$SLEEP_TIME_AFTER_SUDO' is not a valid floating point number"
                 return 1
             fi
         fi
@@ -824,7 +824,7 @@ sudo_set_su_variables() {
 
     for su in "${su_search_paths[@]}"; do
         if [ -x "$su" ]; then
-            sudo_log 3 "A su binary found at \"$su\""
+            sudo_log 3 "A su binary found at '$su'"
             su_found=1
 
             sudo_unset_pre_su_variables
@@ -878,8 +878,8 @@ sudo_set_su_variables() {
         return 1
     fi
 
-    sudo_log 3 "SU=\"$SU\""
-    sudo_log 3 "SU_BIN_PATH=\"$SU_BIN_PATH\""
+    sudo_log 3 "SU='$SU'"
+    sudo_log 3 "SU_BIN_PATH='$SU_BIN_PATH'"
 
     return 0
 
@@ -981,8 +981,8 @@ sudo_set_pre_required_variables() {
         ANDROID__BUILD_VERSION_SDK="$(unset LD_LIBRARY_PATH; unset LD_PRELOAD; getprop "ro.build.version.sdk")"
         return_value=$?
         if [ $return_value -ne 0 ] || [[ ! "$ANDROID__BUILD_VERSION_SDK" =~ $VALID_NUMBER_REGEX ]]; then
-            sudo_log_errors "Failure while finding \"ro.build.version.sdk\" property"
-            sudo_log_errors "ANDROID__BUILD_VERSION_SDK = \"$ANDROID__BUILD_VERSION_SDK\""
+            sudo_log_errors "Failure while finding 'ro.build.version.sdk' property"
+            sudo_log_errors "ANDROID__BUILD_VERSION_SDK='$ANDROID__BUILD_VERSION_SDK'"
             if [ $return_value -eq 0 ]; then
                 return_value=1
             fi
@@ -990,7 +990,7 @@ sudo_set_pre_required_variables() {
         fi
     fi
 
-    sudo_log 3 "ANDROID__BUILD_VERSION_SDK=\"$ANDROID__BUILD_VERSION_SDK\""
+    sudo_log 3 "ANDROID__BUILD_VERSION_SDK='$ANDROID__BUILD_VERSION_SDK'"
 
 
 
@@ -1006,7 +1006,7 @@ sudo_set_pre_required_variables() {
 
     SUDO_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
 
-    sudo_log 3 "LD_LIBRARY_PATH=\"$LD_LIBRARY_PATH\""
+    sudo_log 3 "LD_LIBRARY_PATH='$LD_LIBRARY_PATH'"
 
     return 0
 
@@ -1036,7 +1036,7 @@ sudo_set_required_variables() {
     # Set PATH
     PATH="$TERMUX_BIN:$TERMUX_BIN_APPLETS:$SYS_XBIN:$SYS_BIN"
 
-    sudo_log 3 "PATH=\"$PATH\""
+    sudo_log 3 "PATH='$PATH'"
 
 
     # Set current working directory
@@ -1052,7 +1052,7 @@ sudo_set_required_variables() {
         return_value=$?
         if [ $return_value -ne 0 ] || [[ ! "$CURRENT_WORKING_DIR" =~ $VALID_ROOTFS_OR_ABSOLUTE_PATH_REGEX ]]; then
             sudo_log_errors "Failure while finding current working directory"
-            sudo_log_errors "CURRENT_WORKING_DIR = \"$CURRENT_WORKING_DIR\""
+            sudo_log_errors "CURRENT_WORKING_DIR='$CURRENT_WORKING_DIR'"
             if [ $return_value -eq 0 ]; then
                 return_value=1
             fi
@@ -1060,7 +1060,7 @@ sudo_set_required_variables() {
         fi
     fi
 
-    sudo_log 3 "CURRENT_WORKING_DIR=\"$CURRENT_WORKING_DIR\""
+    sudo_log 3 "CURRENT_WORKING_DIR='$CURRENT_WORKING_DIR'"
 
 
 
@@ -1109,7 +1109,7 @@ sudo_set_required_variables() {
     sudo_parse_and_validate_path_variable "TERMUX_PRIORITY_PATH" "TERMUX_PRIORITY_PATH" "$TERMUX_PRIORITY_PATH" "$remove_duplicates_in_path_variable"
     return_value=$?
     if [ $return_value -ne 0 ]; then
-        sudo_log_errors "Failed to parse and validate \"TERMUX_PRIORITY_PATH\""
+        sudo_log_errors "Failed to parse and validate 'TERMUX_PRIORITY_PATH'"
         return $return_value
     fi
 
@@ -1117,7 +1117,7 @@ sudo_set_required_variables() {
     sudo_parse_and_validate_path_variable "ANDROID_PRIORITY_PATH" "ANDROID_PRIORITY_PATH" "$ANDROID_PRIORITY_PATH" "$remove_duplicates_in_path_variable"
     return_value=$?
     if [ $return_value -ne 0 ]; then
-        sudo_log_errors "Failed to parse and validate \"ANDROID_PRIORITY_PATH\""
+        sudo_log_errors "Failed to parse and validate 'ANDROID_PRIORITY_PATH'"
         return $return_value
     fi
 
@@ -1163,7 +1163,7 @@ sudo_set_required_variables() {
     sudo_parse_and_validate_path_variable "TERMUX_PRIORITY_LD_LIBRARY_PATH" "TERMUX_PRIORITY_LD_LIBRARY_PATH" "$TERMUX_PRIORITY_LD_LIBRARY_PATH" "$remove_duplicates_in_ld_library_path_variable"
     return_value=$?
     if [ $return_value -ne 0 ]; then
-        sudo_log_errors "Failed to parse and validate \"TERMUX_PRIORITY_LD_LIBRARY_PATH\""
+        sudo_log_errors "Failed to parse and validate 'TERMUX_PRIORITY_LD_LIBRARY_PATH'"
         return $return_value
     fi
 
@@ -1171,7 +1171,7 @@ sudo_set_required_variables() {
     sudo_parse_and_validate_path_variable "ANDROID_PRIORITY_LD_LIBRARY_PATH" "ANDROID_PRIORITY_LD_LIBRARY_PATH" "$ANDROID_PRIORITY_LD_LIBRARY_PATH" "$remove_duplicates_in_ld_library_path_variable"
     return_value=$?
     if [ $return_value -ne 0 ]; then
-        sudo_log_errors "Failed to parse and validate \"ANDROID_PRIORITY_LD_LIBRARY_PATH\""
+        sudo_log_errors "Failed to parse and validate 'ANDROID_PRIORITY_LD_LIBRARY_PATH'"
         return $return_value
     fi
 
@@ -1194,24 +1194,24 @@ sudo_set_required_variables() {
     sudo_expand_termux_path "SUDO_SHELL_HOME" "SUDO_SHELL_HOME" "$SUDO_SHELL_HOME" "$TERMUX_PREFIX" "$TERMUX_HOME" "$CUSTOM_SUDO_SHELL_HOME_SET"
     return_value=$?
     if [ $return_value -ne 0 ]; then
-        sudo_log_errors "Failed to expand SUDO_SHELL_HOME \"$SUDO_SHELL_HOME\""
+        sudo_log_errors "Failed to expand SUDO_SHELL_HOME '$SUDO_SHELL_HOME'"
         return $return_value
     fi
 
     # If SUDO_SHELL_HOME is not a valid absolute path
     if [[ ! "$SUDO_SHELL_HOME" =~ $VALID_ABSOLUTE_PATH_REGEX ]]; then
-        sudo_log_errors "The SUDO_SHELL_HOME \"$SUDO_SHELL_HOME\" is not a valid absolute path"
+        sudo_log_errors "The SUDO_SHELL_HOME '$SUDO_SHELL_HOME' is not a valid absolute path"
         return 1
     fi
 
-    sudo_log 3 "SUDO_SHELL_HOME=\"$SUDO_SHELL_HOME\""
+    sudo_log 3 "SUDO_SHELL_HOME='$SUDO_SHELL_HOME'"
 
     # Find the parent directory of the SUDO_SHELL_HOME
     SUDO_SHELL_HOME_BASENAME="${SUDO_SHELL_HOME##*/}" # Strip longest match of */ from start
     SUDO_SHELL_HOME_PARENT_DIR="${SUDO_SHELL_HOME:0:${#SUDO_SHELL_HOME} - ${#SUDO_SHELL_HOME_BASENAME}}" # Substring from 0 to position of basename
     case "$SUDO_SHELL_HOME_PARENT_DIR" in *[!/]*/) SUDO_SHELL_HOME_PARENT_DIR="${SUDO_SHELL_HOME_PARENT_DIR%"${SUDO_SHELL_HOME_PARENT_DIR##*[!/]}"}";; *[/]) SUDO_SHELL_HOME_PARENT_DIR="/";; esac # Remove trailing slashes if not root
 
-    sudo_log 3 "SUDO_SHELL_HOME_PARENT_DIR=\"$SUDO_SHELL_HOME_PARENT_DIR\""
+    sudo_log 3 "SUDO_SHELL_HOME_PARENT_DIR='$SUDO_SHELL_HOME_PARENT_DIR'"
 
 
     # Use SUDO_SHELL_HOME as SUDO_TEMP_DIRECTORY_PARENT_DIRECTORY
@@ -1230,24 +1230,24 @@ sudo_set_required_variables() {
         sudo_expand_termux_path "SUDO_POST_SHELL_HOME" "SUDO_POST_SHELL_HOME" "$SUDO_POST_SHELL_HOME" "$TERMUX_PREFIX" "$TERMUX_HOME" "$CUSTOM_SUDO_POST_SHELL_HOME_SET"
         return_value=$?
         if [ $return_value -ne 0 ]; then
-            sudo_log_errors "Failed to expand \"SUDO_POST_SHELL_HOME\""
+            sudo_log_errors "Failed to expand 'SUDO_POST_SHELL_HOME'"
             return $return_value
         fi
 
         # If SUDO_POST_SHELL_HOME is not a valid absolute path
         if [[ ! "$SUDO_POST_SHELL_HOME" =~ $VALID_ABSOLUTE_PATH_REGEX ]]; then
-            sudo_log_errors "The SUDO_POST_SHELL_HOME \"$SUDO_POST_SHELL_HOME\" is not a valid absolute path"
+            sudo_log_errors "The SUDO_POST_SHELL_HOME '$SUDO_POST_SHELL_HOME' is not a valid absolute path"
             return 1
         fi
 
-        sudo_log 3 "SUDO_POST_SHELL_HOME=\"$SUDO_POST_SHELL_HOME\""
+        sudo_log 3 "SUDO_POST_SHELL_HOME='$SUDO_POST_SHELL_HOME'"
 
         # Find the parent directory of the SUDO_POST_SHELL_HOME
         SUDO_POST_SHELL_HOME_BASENAME="${SUDO_POST_SHELL_HOME##*/}" # Strip longest match of */ from start
         SUDO_POST_SHELL_HOME_PARENT_DIR="${SUDO_POST_SHELL_HOME:0:${#SUDO_POST_SHELL_HOME} - ${#SUDO_POST_SHELL_HOME_BASENAME}}" # Substring from 0 to position of basename
         case "$SUDO_POST_SHELL_HOME_PARENT_DIR" in *[!/]*/) SUDO_POST_SHELL_HOME_PARENT_DIR="${SUDO_POST_SHELL_HOME_PARENT_DIR%"${SUDO_POST_SHELL_HOME_PARENT_DIR##*[!/]}"}";; *[/]) SUDO_POST_SHELL_HOME_PARENT_DIR="/";; esac # Remove trailing slashes if not root
 
-        sudo_log 3 "SUDO_POST_SHELL_HOME_PARENT_DIR=\"$SUDO_POST_SHELL_HOME_PARENT_DIR\""
+        sudo_log 3 "SUDO_POST_SHELL_HOME_PARENT_DIR='$SUDO_POST_SHELL_HOME_PARENT_DIR'"
     fi
 
 
@@ -1283,18 +1283,18 @@ sudo_set_required_variables() {
 
     # If SUDO_SHELL_HOME is in system "/system" partition
     if [[ "$SUDO_SHELL_HOME" =~ $VALID_PATH_IN_SYSTEM_PARTITION_REGEX ]]; then
-        SYSTEM_PARTITION_RW_DEPENDENT_PATHS+=" SUDO_SHELL_HOME \"$SUDO_SHELL_HOME\""
+        SYSTEM_PARTITION_RW_DEPENDENT_PATHS+=" SUDO_SHELL_HOME '$SUDO_SHELL_HOME'"
     # If SUDO_SHELL_HOME_PARENT_DIR is in rootfs "/" partition
     elif [[ "$SUDO_SHELL_HOME_PARENT_DIR" =~ $VALID_PATH_IN_ROOTFS_PARTITION_REGEX ]]; then
-        ROOTFS_PARTITION_RW_DEPENDENT_PATHS+=" SUDO_SHELL_HOME \"$SUDO_SHELL_HOME\""
+        ROOTFS_PARTITION_RW_DEPENDENT_PATHS+=" SUDO_SHELL_HOME '$SUDO_SHELL_HOME'"
     fi
 
     # If SUDO_POST_SHELL_HOME is in system "/system" partition
     if [[ "$SUDO_POST_SHELL_HOME" =~ $VALID_PATH_IN_SYSTEM_PARTITION_REGEX ]]; then
-        SYSTEM_PARTITION_RW_DEPENDENT_PATHS+=" SUDO_POST_SHELL_HOME \"$SUDO_POST_SHELL_HOME\""
+        SYSTEM_PARTITION_RW_DEPENDENT_PATHS+=" SUDO_POST_SHELL_HOME '$SUDO_POST_SHELL_HOME'"
     # If SUDO_POST_SHELL_HOME_PARENT_DIR is in rootfs "/" partition
     elif [[ "$SUDO_POST_SHELL_HOME_PARENT_DIR" =~ $VALID_PATH_IN_ROOTFS_PARTITION_REGEX ]]; then
-        ROOTFS_PARTITION_RW_DEPENDENT_PATHS+=" SUDO_POST_SHELL_HOME \"$SUDO_POST_SHELL_HOME\""
+        ROOTFS_PARTITION_RW_DEPENDENT_PATHS+=" SUDO_POST_SHELL_HOME '$SUDO_POST_SHELL_HOME'"
     fi
 
     ROOTFS_PARTITION_MM_DEPENDENT_PATHS="$ROOTFS_PARTITION_RW_DEPENDENT_PATHS"
@@ -1316,30 +1316,30 @@ sudo_set_required_variables() {
     # If SUDO_SHELL_WORKING_DIR is in system "/system" partition
     if [[ "$SUDO_SHELL_WORKING_DIR" =~ $VALID_PATH_IN_SYSTEM_PARTITION_REGEX ]]; then
         if [ "$ANDROID__BUILD_VERSION_SDK" -lt 29 ] && [ "$sudo_shell_working_dir_exists" != "1" ]; then
-            SYSTEM_PARTITION_RW_DEPENDENT_PATHS+=" SUDO_SHELL_WORKING_DIR \"$SUDO_SHELL_WORKING_DIR\""
+            SYSTEM_PARTITION_RW_DEPENDENT_PATHS+=" SUDO_SHELL_WORKING_DIR '$SUDO_SHELL_WORKING_DIR'"
         fi
 
-        SYSTEM_PARTITION_MM_DEPENDENT_PATHS+=" SUDO_SHELL_WORKING_DIR \"$SUDO_SHELL_WORKING_DIR\""
+        SYSTEM_PARTITION_MM_DEPENDENT_PATHS+=" SUDO_SHELL_WORKING_DIR '$SUDO_SHELL_WORKING_DIR'"
     # If SUDO_SHELL_WORKING_DIR_PARENT_DIR is under rootfs "/" partition
     elif [ "$SUDO_SHELL_WORKING_DIR" != "/" ] && [[ "$SUDO_SHELL_WORKING_DIR_PARENT_DIR" =~ $VALID_PATH_IN_ROOTFS_PARTITION_REGEX ]]; then
         if [ "$ANDROID__BUILD_VERSION_SDK" -lt 29 ] && [ "$sudo_shell_working_dir_exists" != "1" ]; then
-            ROOTFS_PARTITION_RW_DEPENDENT_PATHS+=" SUDO_SHELL_WORKING_DIR \"$SUDO_SHELL_WORKING_DIR\""
+            ROOTFS_PARTITION_RW_DEPENDENT_PATHS+=" SUDO_SHELL_WORKING_DIR '$SUDO_SHELL_WORKING_DIR'"
         fi
 
-        ROOTFS_PARTITION_MM_DEPENDENT_PATHS+=" SUDO_SHELL_WORKING_DIR \"$SUDO_SHELL_WORKING_DIR\""
+        ROOTFS_PARTITION_MM_DEPENDENT_PATHS+=" SUDO_SHELL_WORKING_DIR '$SUDO_SHELL_WORKING_DIR'"
     fi
 
     # If ROOTFS_PARTITION_RW_DEPENDENT_PATHS or SYSTEM_PARTITION_RW_DEPENDENT_PATHS is set
     if [ -n "$ROOTFS_PARTITION_RW_DEPENDENT_PATHS" ] || [ -n "$SYSTEM_PARTITION_RW_DEPENDENT_PATHS" ]; then
         # If android `>= 10`
         if [ "$ANDROID__BUILD_VERSION_SDK" -ge 29 ]; then
-            [ -n "$ROOTFS_PARTITION_RW_DEPENDENT_PATHS" ] && sudo_log_errors "The rootfs \"/\" partition cannot be mounted as rw to be used for$ROOTFS_PARTITION_RW_DEPENDENT_PATHS since in android >= 10 the rootfs partition is likely a read-only system-as-root SAR partition"
-            [ -n "$SYSTEM_PARTITION_RW_DEPENDENT_PATHS" ] && sudo_log_errors "The system \"/system\" partition cannot be mounted as rw to be used for$SYSTEM_PARTITION_RW_DEPENDENT_PATHS since in android >= 10 the system partition is an ext4 dedup filesystem"
+            [ -n "$ROOTFS_PARTITION_RW_DEPENDENT_PATHS" ] && sudo_log_errors "The rootfs '/' partition cannot be mounted as rw to be used for$ROOTFS_PARTITION_RW_DEPENDENT_PATHS since in android >= 10 the rootfs partition is likely a read-only system-as-root SAR partition"
+            [ -n "$SYSTEM_PARTITION_RW_DEPENDENT_PATHS" ] && sudo_log_errors "The system '/system' partition cannot be mounted as rw to be used for$SYSTEM_PARTITION_RW_DEPENDENT_PATHS since in android >= 10 the system partition is an ext4 dedup filesystem"
             return 1
         fi
 
         if [ -n "$SYSTEM_PARTITION_RW_DEPENDENT_PATHS" ] && [[ "$(mount)" == *"/.magisk/mirror/system"* ]]; then
-             sudo_log_errors "The system \"/system\" partition cannot be mounted as rw to be used for$SYSTEM_PARTITION_RW_DEPENDENT_PATHS since magisk system mirror is a read-only partition"
+             sudo_log_errors "The system '/system' partition cannot be mounted as rw to be used for$SYSTEM_PARTITION_RW_DEPENDENT_PATHS since magisk system mirror is a read-only partition"
             return 1
         fi
     fi
@@ -1448,14 +1448,14 @@ sudo_set_priority_dependent_variables() {
 
     # If argument count is not 1
     if [ $# -ne 1 ]; then
-        sudo_log_errors "Invalid argument count to \"sudo_set_priority_dependent_variables\""
+        sudo_log_errors "Invalid argument count to 'sudo_set_priority_dependent_variables'"
         return 1
     fi
 
     local priority="$1"
 
     if [[ "$priority" != "termux" ]] && [[ "$priority" != "android" ]]; then
-        sudo_log_errors "priority \"$priority\" passed to \"sudo_set_priority_dependent_variables\" does not equal \"termux\" or \"android\""
+        sudo_log_errors "priority '$priority' passed to 'sudo_set_priority_dependent_variables' does not equal 'termux' or 'android'"
         return 1
     fi
 
@@ -1464,7 +1464,7 @@ sudo_set_priority_dependent_variables() {
         return 0
     fi
 
-    sudo_log_literal 3 "\nRunning sudo_set_priority_dependent_variables with priority \"$priority\""
+    sudo_log_literal 3 "\nRunning sudo_set_priority_dependent_variables with priority '$priority'"
 
     # Set PATH_TO_EXPORT
     # If priority equals "termux" then PATH_TO_EXPORT should be set to TERMUX_PRIORITY_PATH
@@ -1475,7 +1475,7 @@ sudo_set_priority_dependent_variables() {
         PATH_TO_EXPORT="$ANDROID_PRIORITY_PATH"
     fi
 
-    sudo_log 3 "PATH_TO_EXPORT=\"$PATH_TO_EXPORT\""
+    sudo_log 3 "PATH_TO_EXPORT='$PATH_TO_EXPORT'"
 
 
     # If priority equals "termux" then LD_LIBRARY_PATH_TO_EXPORT should be set to TERMUX_PRIORITY_LD_LIBRARY_PATH
@@ -1486,7 +1486,7 @@ sudo_set_priority_dependent_variables() {
         LD_LIBRARY_PATH_TO_EXPORT="$ANDROID_PRIORITY_LD_LIBRARY_PATH"
     fi
 
-    sudo_log 3 "LD_LIBRARY_PATH_TO_EXPORT=\"$LD_LIBRARY_PATH_TO_EXPORT\""
+    sudo_log 3 "LD_LIBRARY_PATH_TO_EXPORT='$LD_LIBRARY_PATH_TO_EXPORT'"
 
 
     # If priority equals "termux" then LD_PRELOAD_COMMAND should be set to TERMUX_PRIORITY_LD_PRELOAD_COMMAND
@@ -1497,7 +1497,7 @@ sudo_set_priority_dependent_variables() {
         LD_PRELOAD_COMMAND="$ANDROID_PRIORITY_LD_PRELOAD_COMMAND"
     fi
 
-    sudo_log 3 "LD_PRELOAD_COMMAND=\"$LD_PRELOAD_COMMAND\""
+    sudo_log 3 "LD_PRELOAD_COMMAND='$LD_PRELOAD_COMMAND'"
 
 
     previous_priority_dependent_variables_priortiy="$priority"
@@ -1522,14 +1522,14 @@ sudo_export_or_unexport_shared_variables_for_su() {
 
     # If argument count is not 1
     if [ $# -ne 1 ]; then
-        sudo_log_errors "Invalid argument count to \"sudo_export_or_unexport_shared_variables_for_su\""
+        sudo_log_errors "Invalid argument count to 'sudo_export_or_unexport_shared_variables_for_su'"
         return 1
     fi
 
     local command="$1"
 
     if [[ "$command" != "export" ]] && [[ "$command" != "unexport" ]]; then
-        sudo_log_errors "command \"$command\" passed to \"sudo_export_or_unexport_shared_variables_for_su\" does not equal \"export\" or \"unexport\""
+        sudo_log_errors "command '$command' passed to 'sudo_export_or_unexport_shared_variables_for_su' does not equal 'export' or 'unexport'"
         return 1
     fi
 
@@ -1588,28 +1588,28 @@ sudo_set_pre_sudo_shell_commands_to_run() {
     # If COMMAND_TYPE equals "su"
     if [[ "$COMMAND_TYPE" == "su" ]]; then
         priority="termux"
-        sudo_log 3 "Setting PRE_SUDO_SHELL_COMMANDS_TO_RUN with priority to \"termux\" bin and library paths for COMMAND_TYPE \"su\""
+        sudo_log 3 "Setting PRE_SUDO_SHELL_COMMANDS_TO_RUN with priority to 'termux' bin and library paths for COMMAND_TYPE 'su'"
 
     # If COMMAND_TYPE equals "asu"
     elif [[ "$COMMAND_TYPE" == "asu" ]]; then
         priority="android"
-        sudo_log 3 "Setting PRE_SUDO_SHELL_COMMANDS_TO_RUN with priority to \"android\" bin and library paths for COMMAND_TYPE \"asu\""
+        sudo_log 3 "Setting PRE_SUDO_SHELL_COMMANDS_TO_RUN with priority to 'android' bin and library paths for COMMAND_TYPE 'asu'"
 
     # If COMMAND_TYPE equals "path"
     elif [[ "$COMMAND_TYPE" == "path" ]]; then
         # If PATH_PRIORITY is android or termux
         if [[ "$PATH_PRIORITY" == "android" ]] || [[ "$PATH_PRIORITY" == "termux" ]]; then
             priority="$PATH_PRIORITY"
-            sudo_log 3 "Setting PRE_SUDO_SHELL_COMMANDS_TO_RUN with priority to \"$priority\" bin and library paths for COMMAND_TYPE \"path\" since PATH_PRIORITY is \"$PATH_PRIORITY\""
+            sudo_log 3 "Setting PRE_SUDO_SHELL_COMMANDS_TO_RUN with priority to '$priority' bin and library paths for COMMAND_TYPE 'path' since PATH_PRIORITY is '$PATH_PRIORITY'"
         # If PATH_PRIORITY is default
         else
             # If SUDO_CANONICAL_PATH_COMMAND is under termux rootfs
             if [[ "$SUDO_CANONICAL_PATH_COMMAND" == "$TERMUX_ROOTFS"/* ]]; then
                 priority="termux"
-                sudo_log 3 "Setting PRE_SUDO_SHELL_COMMANDS_TO_RUN with priority to \"termux\" bin and library paths for COMMAND_TYPE \"path\" since SUDO_PATH_COMMAND is under termux rootfs"
+                sudo_log 3 "Setting PRE_SUDO_SHELL_COMMANDS_TO_RUN with priority to 'termux' bin and library paths for COMMAND_TYPE 'path' since SUDO_PATH_COMMAND is under termux rootfs"
             else
                 priority="android"
-                sudo_log 3 "Setting PRE_SUDO_SHELL_COMMANDS_TO_RUN with priority to \"android\" bin and library paths for COMMAND_TYPE \"path\" since SUDO_PATH_COMMAND is not under termux rootfs"
+                sudo_log 3 "Setting PRE_SUDO_SHELL_COMMANDS_TO_RUN with priority to 'android' bin and library paths for COMMAND_TYPE 'path' since SUDO_PATH_COMMAND is not under termux rootfs"
             fi
         fi
 
@@ -1622,7 +1622,7 @@ sudo_set_pre_sudo_shell_commands_to_run() {
         else
             priority="termux"
         fi
-        sudo_log 3 "Setting PRE_SUDO_SHELL_COMMANDS_TO_RUN with priority to \"$priority\" bin and library paths for COMMAND_TYPE \"script\" since PATH_PRIORITY is \"$PATH_PRIORITY\""
+        sudo_log 3 "Setting PRE_SUDO_SHELL_COMMANDS_TO_RUN with priority to '$priority' bin and library paths for COMMAND_TYPE 'script' since PATH_PRIORITY is '$PATH_PRIORITY'"
     fi
 
     # Set priority_dependent_variables with new priority if needed
@@ -1697,7 +1697,7 @@ sudo_set_pre_sudo_shell_commands_to_run() {
         fi
     fi
 
-    #sudo_log 3 $'\n'"PRE_SUDO_SHELL_COMMANDS_TO_RUN=\"$PRE_SUDO_SHELL_COMMANDS_TO_RUN\""
+    #sudo_log 3 $'\n'"PRE_SUDO_SHELL_COMMANDS_TO_RUN='$PRE_SUDO_SHELL_COMMANDS_TO_RUN'"
 
     return 0
 
@@ -1757,7 +1757,7 @@ sudo_set_pre_sudo_post_shell_commands_to_run() {
         PRE_SUDO_POST_SHELL_COMMANDS_TO_RUN+="$SUDO_POST_SHELL_HISTFILE_COMMANDS"$'\n'
     fi
 
-    #sudo_log 3 $'\n'"PRE_SUDO_POST_SHELL_COMMANDS_TO_RUN=\"$PRE_SUDO_POST_SHELL_COMMANDS_TO_RUN\""
+    #sudo_log 3 $'\n'"PRE_SUDO_POST_SHELL_COMMANDS_TO_RUN='$PRE_SUDO_POST_SHELL_COMMANDS_TO_RUN'"
 
     return 0
 
@@ -1771,11 +1771,11 @@ sudo_set_sudo_command_path() {
 
     SUDO_PATH_COMMAND="${SUDO_COMMAND[0]}"
 
-    sudo_log 2 "SUDO_PATH_COMMAND=\"$SUDO_PATH_COMMAND\""
+    sudo_log 2 "SUDO_PATH_COMMAND='$SUDO_PATH_COMMAND'"
 
     # If SUDO_PATH_COMMAND is empty
     if [ -z "$SUDO_PATH_COMMAND" ]; then
-        sudo_log_errors "The sudo command path \"$SUDO_PATH_COMMAND\" is empty"
+        sudo_log_errors "The sudo command path '$SUDO_PATH_COMMAND' is empty"
         return 1
     fi
 
@@ -1805,21 +1805,21 @@ sudo_find_absolute_path_for_executable_and_validate \"SUDO_ABSOLUTE_PATH_COMMAND
         return_value=$?
     fi
     if [ $return_value -ne 0 ] && [ $return_value -ne 112 ]; then
-        sudo_log_errors "Failure while running \"sudo_find_absolute_path_for_executable_and_validate\""
+        sudo_log_errors "Failure while running 'sudo_find_absolute_path_for_executable_and_validate'"
         return $return_value
     elif [ $return_value -eq 112 ]; then
-        sudo_log_errors "Command \"$SUDO_PATH_COMMAND\" not found"
+        sudo_log_errors "Command '$SUDO_PATH_COMMAND' not found"
         sudo_log_errors "Check your spelling and try again"
         return 1
     fi
 
     SUDO_PATH_COMMAND="$SUDO_ABSOLUTE_PATH_COMMAND"
 
-    sudo_log 2 "SUDO_ABSOLUTE_PATH_COMMAND=\"$SUDO_ABSOLUTE_PATH_COMMAND\""
+    sudo_log 2 "SUDO_ABSOLUTE_PATH_COMMAND='$SUDO_ABSOLUTE_PATH_COMMAND'"
 
     # If SUDO_PATH_COMMAND is not a valid absolute path
     if [[ ! "$SUDO_PATH_COMMAND" =~ $VALID_ABSOLUTE_PATH_REGEX ]]; then
-        sudo_log_errors "The SUDO_PATH_COMMAND \"$SUDO_PATH_COMMAND\" is not a valid absolute path"
+        sudo_log_errors "The SUDO_PATH_COMMAND '$SUDO_PATH_COMMAND' is not a valid absolute path"
         return 1
     fi
 
@@ -1831,7 +1831,7 @@ sudo_find_absolute_path_for_executable_and_validate \"SUDO_ABSOLUTE_PATH_COMMAND
         return_value=$?
         if [ $return_value -ne 0 ] || [[ ! "$SUDO_CANONICAL_PATH_COMMAND" =~ $VALID_ABSOLUTE_PATH_REGEX ]]; then
             sudo_log_errors "Failure while finding canonical path to sudo path commmand"
-            sudo_log_errors "SUDO_CANONICAL_PATH_COMMAND = \"$SUDO_CANONICAL_PATH_COMMAND\""
+            sudo_log_errors "SUDO_CANONICAL_PATH_COMMAND='$SUDO_CANONICAL_PATH_COMMAND'"
             if [ $return_value -eq 0 ]; then
                 return_value=1
             fi
@@ -1839,7 +1839,7 @@ sudo_find_absolute_path_for_executable_and_validate \"SUDO_ABSOLUTE_PATH_COMMAND
         fi
 
         if [[ "$SUDO_CANONICAL_PATH_COMMAND" != "$SUDO_ABSOLUTE_PATH_COMMAND" ]]; then
-            sudo_log 2 "SUDO_CANONICAL_PATH_COMMAND=\"$SUDO_CANONICAL_PATH_COMMAND\""
+            sudo_log 2 "SUDO_CANONICAL_PATH_COMMAND='$SUDO_CANONICAL_PATH_COMMAND'"
         fi
     fi
 
@@ -1855,11 +1855,11 @@ sudo_set_sudo_path_command() {
 
     # If SUDO_COMMAND is not set
     if [ ${#SUDO_COMMAND[@]} -eq 0 ]; then
-        sudo_log_errors "SUDO_COMMAND is not set while running \"sudo_set_sudo_path_command\""
+        sudo_log_errors "SUDO_COMMAND is not set while running 'sudo_set_sudo_path_command'"
         return 1
     fi
 
-    sudo_log 3 "SUDO_COMMAND_ARRAY_COUNT=\"${#SUDO_COMMAND[@]}\""
+    sudo_log 3 "SUDO_COMMAND_ARRAY_COUNT='${#SUDO_COMMAND[@]}'"
 
     sudo_log 3 $'\n'"SUDO_PATH_COMMAND=\`$SUDO_PATH_COMMAND\`"
 
@@ -1909,7 +1909,7 @@ sudo_set_sudo_path_command() {
         SUDO_PATH_COMMAND_ARGS="${SUDO_PATH_COMMAND_ARGS% }" # Remove trailing space
 
         SUDO_PATH_COMMAND_ARGS_LENGTH="${#SUDO_PATH_COMMAND_ARGS}"
-        sudo_log 3 "SUDO_PATH_COMMAND_ARGS_LENGTH=\"$SUDO_PATH_COMMAND_ARGS_LENGTH\""
+        sudo_log 3 "SUDO_PATH_COMMAND_ARGS_LENGTH='$SUDO_PATH_COMMAND_ARGS_LENGTH'"
 
 
         # The `path` would not contribute much to crossing ARG_MAX since its only a path to a file, unless the path is too long
@@ -1917,7 +1917,7 @@ sudo_set_sudo_path_command() {
         # and not as a direct argument since in that case ARG_MAX would have crossed at the point instead
         # If SUDO_PATH_COMMAND_ARGS_LENGTH is greater than SUDO_ARG_MAX_SAFE_LIMIT
         if [[ "$SUDO_PATH_COMMAND_ARGS_LENGTH" -gt "$SUDO_ARG_MAX_SAFE_LIMIT" ]]; then
-            sudo_log 2 "Warning! The SUDO_PATH_COMMAND_ARGS_LENGTH \"$SUDO_PATH_COMMAND_ARGS_LENGTH\" is greater than $((SUDO_ARG_MAX_SAFE_LIMIT / 1024))KB. This may cause an \"Argument list too long\" exception."
+            sudo_log 2 "Warning! The SUDO_PATH_COMMAND_ARGS_LENGTH '$SUDO_PATH_COMMAND_ARGS_LENGTH' is greater than $((SUDO_ARG_MAX_SAFE_LIMIT / 1024))KB. This may cause an 'Argument list too long' exception."
         fi
 
         # Pass SUDO_PATH_COMMAND_ARGS to SUDO_PATH_COMMAND
@@ -1934,7 +1934,7 @@ sudo_set_sudo_path_command() {
     return_value=$?
     if [ $return_value -ne 0 ] || [[ ! "$SUDO_SCRIPT_FD" =~ $VALID_NUMBER_REGEX ]]; then
         sudo_log_errors "Failure while getting an unused file descriptor to write SUDO_PATH_COMMAND_TO_RUN"
-        sudo_log_errors "SUDO_SCRIPT_FD = \"$SUDO_SCRIPT_FD\""
+        sudo_log_errors "SUDO_SCRIPT_FD='$SUDO_SCRIPT_FD'"
         if [ $return_value -eq 0 ]; then
             return_value=1
         fi
@@ -1946,11 +1946,11 @@ sudo_set_sudo_path_command() {
     SUDO_PATH_FD_PATH="/proc/$$/fd/$SUDO_SCRIPT_FD"
 
     # Use printf to write to SUDO_SCRIPT_FD
-    sudo_log_literal 3 "Writing SUDO_PATH_COMMAND_TO_RUN to SUDO_PATH_FD_PATH \"$SUDO_PATH_FD_PATH\""
+    sudo_log_literal 3 "Writing SUDO_PATH_COMMAND_TO_RUN to SUDO_PATH_FD_PATH '$SUDO_PATH_FD_PATH'"
     eval "exec $SUDO_SCRIPT_FD<" <(printf "%s" "$SUDO_PATH_COMMAND_TO_RUN")
     return_value=$?
     if [ $return_value -ne 0 ]; then
-        sudo_log_errors "Failure while writing SUDO_PATH_COMMAND_TO_RUN to SUDO_SCRIPT_FD \"$SUDO_SCRIPT_FD\""
+        sudo_log_errors "Failure while writing SUDO_PATH_COMMAND_TO_RUN to SUDO_SCRIPT_FD '$SUDO_SCRIPT_FD'"
         return $return_value
     fi
 
@@ -1974,7 +1974,7 @@ sudo_set_sudo_script_command() {
         SUDO_SCRIPT_COMMAND_TO_RUN+="$ADDITIONAL_SUDO_SHELL_PRE_COMMANDS_TO_RUN"$'\n\n'
     fi
 
-    sudo_log 3 "SUDO_COMMAND_ARRAY_COUNT=\"${#SUDO_COMMAND[@]}\""
+    sudo_log 3 "SUDO_COMMAND_ARRAY_COUNT='${#SUDO_COMMAND[@]}'"
 
     # If SUDO_CORE_SCRIPT or arguments are passed and SUDO_CORE_SCRIPT is not empty
     # The SUDO_CORE_SCRIPT can optionally not be passed or passed as an empty string so that other "features"
@@ -2042,7 +2042,7 @@ sudo_set_sudo_script_command() {
         sudo_set_script_argument_for_script_shell "$SUDO_SHELL_BASENAME" "SUDO_SCRIPT__CORE_SCRIPT_EOF" "'" "$CORE_SCRIPT_IS_PATH_TO_SCRIPT_FILE" "$FORCE_USE_TEMP_SCRIPT_FILE_FOR_CORE_SCRIPT" "$DECODE_CORE_SCRIPT_CONTENT" "SUDO_CORE_SCRIPT" "$SUDO_CORE_SCRIPT_TEMP_FILENAME" "$SUDO_CORE_SCRIPT"
         return_value=$?
         if [ $return_value -ne 0 ]; then
-            sudo_log_errors "Failed to create SUDO_CORE_SCRIPT argument commands to pass them to SUDO_SHELL \"$SUDO_SHELL\""
+            sudo_log_errors "Failed to create SUDO_CORE_SCRIPT argument commands to pass them to SUDO_SHELL '$SUDO_SHELL'"
             return $return_value
         fi
 
@@ -2058,7 +2058,7 @@ sudo_set_sudo_script_command() {
             SUDO_CORE_SCRIPT_COMMAND_ARGS="${SUDO_CORE_SCRIPT_COMMAND_ARGS% }" # Remove trailing space
 
             SUDO_CORE_SCRIPT_COMMAND_ARGS_LENGTH="${#SUDO_CORE_SCRIPT_COMMAND_ARGS}"
-            sudo_log 3 "SUDO_CORE_SCRIPT_COMMAND_ARGS_LENGTH=\"$SUDO_CORE_SCRIPT_COMMAND_ARGS_LENGTH\""
+            sudo_log 3 "SUDO_CORE_SCRIPT_COMMAND_ARGS_LENGTH='$SUDO_CORE_SCRIPT_COMMAND_ARGS_LENGTH'"
 
             # The `core_script` would not contribute much to crossing ARG_MAX since its either passed with process substitution or
             # as a path to a file storing it, unless the path is too long
@@ -2066,7 +2066,7 @@ sudo_set_sudo_script_command() {
             # and not as a direct argument since in that case ARG_MAX would have crossed at the point instead
             # If SUDO_CORE_SCRIPT_COMMAND_ARGS_LENGTH is greater than SUDO_ARG_MAX_SAFE_LIMIT
             if [[ "$SUDO_CORE_SCRIPT_COMMAND_ARGS_LENGTH" -gt "$SUDO_ARG_MAX_SAFE_LIMIT" ]]; then
-                sudo_log 2 "Warning! The SUDO_CORE_SCRIPT_COMMAND_ARGS_LENGTH \"$SUDO_CORE_SCRIPT_COMMAND_ARGS_LENGTH\" is greater than $((SUDO_ARG_MAX_SAFE_LIMIT / 1024))KB. This may cause an \"Argument list too long\" exception."
+                sudo_log 2 "Warning! The SUDO_CORE_SCRIPT_COMMAND_ARGS_LENGTH '$SUDO_CORE_SCRIPT_COMMAND_ARGS_LENGTH' is greater than $((SUDO_ARG_MAX_SAFE_LIMIT / 1024))KB. This may cause an 'Argument list too long' exception."
             fi
 
             # Pass the arguments to the SUDO_SHELL after the SCRIPT_ARGUMENT_FOR_SCRIPT_SHELL
@@ -2230,7 +2230,7 @@ sudo_set_sudo_script_command() {
     sudo_create_script_command_traps
     return_value=$?
     if [ $return_value -ne 0 ]; then
-        sudo_log_errors "Failed to create traps commands for SUDO_TEMP_DIRECTORY \"$SUDO_TEMP_DIRECTORY\""
+        sudo_log_errors "Failed to create traps commands for SUDO_TEMP_DIRECTORY '$SUDO_TEMP_DIRECTORY'"
         return $return_value
     fi
 
@@ -2359,7 +2359,7 @@ sudo_set_sudo_script_command() {
     return_value=$?
     if [ $return_value -ne 0 ] || [[ ! "$SUDO_SCRIPT_FD" =~ $VALID_NUMBER_REGEX ]]; then
         sudo_log_errors "Failure while getting an unused file descriptor to write SUDO_SCRIPT_COMMAND_TO_RUN"
-        sudo_log_errors "SUDO_SCRIPT_FD = \"$SUDO_SCRIPT_FD\""
+        sudo_log_errors "SUDO_SCRIPT_FD='$SUDO_SCRIPT_FD'"
         if [ $return_value -eq 0 ]; then
             return_value=1
         fi
@@ -2371,11 +2371,11 @@ sudo_set_sudo_script_command() {
     SUDO_SCRIPT_FD_PATH="/proc/$$/fd/$SUDO_SCRIPT_FD"
 
     # Use printf to write to SUDO_SCRIPT_FD
-    sudo_log_literal 3 "\nWriting SUDO_SCRIPT_COMMAND_TO_RUN to SUDO_SCRIPT_FD_PATH \"$SUDO_SCRIPT_FD_PATH\""
+    sudo_log_literal 3 "\nWriting SUDO_SCRIPT_COMMAND_TO_RUN to SUDO_SCRIPT_FD_PATH '$SUDO_SCRIPT_FD_PATH'"
     eval "exec $SUDO_SCRIPT_FD<" <(printf "%s" "$SUDO_SCRIPT_COMMAND_TO_RUN")
     return_value=$?
     if [ $return_value -ne 0 ]; then
-        sudo_log_errors "Failure while writing SUDO_SCRIPT_COMMAND_TO_RUN to SUDO_SCRIPT_FD \"$SUDO_SCRIPT_FD\""
+        sudo_log_errors "Failure while writing SUDO_SCRIPT_COMMAND_TO_RUN to SUDO_SCRIPT_FD '$SUDO_SCRIPT_FD'"
         return $return_value
     fi
 
@@ -2415,7 +2415,7 @@ sudo_set_script_argument_for_script_shell() {
 
     # If argument count is not 9
     if [ $# -ne 9 ]; then
-        sudo_log_errors "Invalid argument count to \"sudo_set_script_argument_for_script_shell\""
+        sudo_log_errors "Invalid argument count to 'sudo_set_script_argument_for_script_shell'"
         return 1
     fi
 
@@ -2430,7 +2430,7 @@ sudo_set_script_argument_for_script_shell() {
 
     # If shell_basename is not in any of the SUDO_SUPPORTED_SCRIPT_SHELLS, then exit with error
     if [[ "$shell_basename" == *' '* ]] || [[ " $SUDO_SUPPORTED_SCRIPT_SHELLS " != *" $shell_basename "* ]]; then
-        sudo_log_errors "The shell_basename \"$shell_basename\" while running \"sudo_set_script_argument_for_script_shell\" is not supported. It must be one of \"$SUDO_SUPPORTED_SCRIPT_SHELLS\""
+        sudo_log_errors "The shell_basename '$shell_basename' while running 'sudo_set_script_argument_for_script_shell' is not supported. It must be one of '$SUDO_SUPPORTED_SCRIPT_SHELLS'"
         return 1
     fi
 
@@ -2446,17 +2446,17 @@ sudo_set_script_argument_for_script_shell() {
         sudo_expand_termux_path "script_file_path" "$script_file_label" "$script_file_path" "$TERMUX_PREFIX" "$TERMUX_HOME" 3
         return_value=$?
         if [ $return_value -ne 0 ]; then
-            sudo_log_errors "Failed to expand $script_file_label \"$script_file_path\""
+            sudo_log_errors "Failed to expand $script_file_label '$script_file_path'"
             return $return_value
         fi
 
         # If script_file_path is not a valid absolute path
         if [[ ! "$script_file_path" =~ $VALID_ABSOLUTE_PATH_REGEX ]]; then
-            sudo_log_errors "The $script_file_label \"$script_file_path\" is not a valid absolute path"
+            sudo_log_errors "The $script_file_label '$script_file_path' is not a valid absolute path"
             return 1
         fi
 
-        sudo_log 3 "script_file_path=\"$script_file_path\""
+        sudo_log 3 "script_file_path='$script_file_path'"
         printf -v "script_file_path_string" "%q" "$script_file_path"
         SCRIPT_ARGUMENT_FOR_SCRIPT_SHELL="$script_file_path_string"
 
@@ -2478,19 +2478,19 @@ sudo_set_script_argument_for_script_shell() {
 
             # If SUDO_TEMP_DIRECTORY is not a valid absolute path
             if [[ ! "$SUDO_TEMP_DIRECTORY" =~ $VALID_ABSOLUTE_PATH_REGEX ]]; then
-                sudo_log_errors "The SUDO_TEMP_DIRECTORY \"$SUDO_TEMP_DIRECTORY\" is not a valid absolute path, required by \"sudo_set_script_argument_for_script_shell\""
+                sudo_log_errors "The SUDO_TEMP_DIRECTORY '$SUDO_TEMP_DIRECTORY' is not a valid absolute path, required by 'sudo_set_script_argument_for_script_shell'"
                 return 1
             fi
 
             script_file="$SUDO_TEMP_DIRECTORY/$script_file_name"
 
-            sudo_log 3 "$script_file_label temp file=\"$script_file\""
+            sudo_log 3 "$script_file_label temp file='$script_file'"
 
             # sudo_create_sudo_temp_file label path log_content decode_content content
             sudo_create_sudo_temp_file "$script_file_label" "$script_file" "$log_content" "$decode_script_content" "$script_content"
             return_value=$?
             if [ $return_value -ne 0 ]; then
-                sudo_log_errors "Failure while running \"sudo_create_sudo_temp_file\""
+                sudo_log_errors "Failure while running 'sudo_create_sudo_temp_file'"
                 return $return_value
             fi
 
@@ -2522,7 +2522,7 @@ sudo_set_script_argument_for_script_shell() {
 
 
         else
-            sudo_log_errors "shell_basename \"$shell_basename\" not handled while running \"sudo_set_script_argument_for_script_shell\""
+            sudo_log_errors "shell_basename '$shell_basename' not handled while running 'sudo_set_script_argument_for_script_shell'"
             return 1
         fi
     fi
@@ -2541,7 +2541,7 @@ sudo_create_sudo_temp_file() {
 
     # If argument count is not 5
     if [ $# -ne 5 ]; then
-        sudo_log_errors "Invalid argument count to \"sudo_create_sudo_temp_file\""
+        sudo_log_errors "Invalid argument count to 'sudo_create_sudo_temp_file'"
         return 1
     fi
 
@@ -2553,7 +2553,7 @@ sudo_create_sudo_temp_file() {
 
     # If path is not a valid absolute path
     if [[ ! "$path" =~ $VALID_ABSOLUTE_PATH_REGEX ]]; then
-        sudo_log_errors "The \"$label\" file at path \"$path\" is not an absolute path"
+        sudo_log_errors "The '$label' file at path '$path' is not an absolute path"
         return 2
     fi
 
@@ -2564,7 +2564,7 @@ sudo_create_sudo_temp_file() {
     return_value=$?
     if [ $return_value -ne 0 ] || [[ ! "$temp_file_fd" =~ $VALID_NUMBER_REGEX ]]; then
         sudo_log_errors "Failure while getting an unused file descriptor to write decoded $label"
-        sudo_log_errors "temp_file_fd = \"$temp_file_fd\""
+        sudo_log_errors "temp_file_fd='$temp_file_fd'"
         if [ $return_value -eq 0 ]; then
             return_value=1
         fi
@@ -2584,7 +2584,7 @@ sudo_create_sudo_temp_file() {
     # hence a fd is opened and used instead
     # a herestring or heredoc could have been used for passing text only data
     # but those will create a temp file in TMPDIR which is slower and less secure
-    sudo_log 3 "Writing $label to temp_file_fd \"$temp_file_fd\""
+    sudo_log 3 "Writing $label to temp_file_fd '$temp_file_fd'"
     if [[ "$decode_content" == "1" ]]; then
         eval "exec $temp_file_fd<" <(printf '%s' "$content" | base64 -d)
     else
@@ -2592,11 +2592,11 @@ sudo_create_sudo_temp_file() {
     fi
     return_value=$?
     if [ $return_value -ne 0 ]; then
-        sudo_log_errors "Failure while writing $label to temp_file_fd \"$temp_file_fd\""
+        sudo_log_errors "Failure while writing $label to temp_file_fd '$temp_file_fd'"
     else
         # Use cat to read contents from fd at temp_file_fd_path
         # and redirect stdout to file at path to write to it
-        sudo_log 3 "Creating $label file at \"$path\""
+        sudo_log 3 "Creating $label file at '$path'"
         sudo_unset_pre_su_variables
         su_output=$($SU_ENV_COMMAND "cat \"$temp_file_fd_path\" > '${path//\'/\'\\\'\'}'" 2>&1 < /dev/null)
         return_value=$?
@@ -2610,7 +2610,7 @@ sudo_create_sudo_temp_file() {
     fi
 
     if [ $return_value -ne 0 ]; then
-        sudo_log_errors "Failure while creating $label file at \"$path\""
+        sudo_log_errors "Failure while creating $label file at '$path'"
         return $return_value
     fi
 
@@ -2623,7 +2623,7 @@ sudo_create_sudo_temp_file() {
         sudo_set_post_su_variables
         if [ $return_value -ne 0 ]; then
             [ -n "$file_contents" ] && echo "$file_contents" 1>&2
-            sudo_log_errors "Failure while reading $label file at \"$path\""
+            sudo_log_errors "Failure while reading $label file at '$path'"
             return $return_value
         fi
         sudo_log 2 $'\n'"${label}_CONTENTS=\`$file_contents\`"
@@ -2658,7 +2658,7 @@ sudo_validate_shell \"SUDO_SHELL\" '${SUDO_SHELL//\'/\'\\\'\'}' '${SUDO_SUPPORTE
             return_value=$?
         fi
         if [ $return_value -ne 0 ]; then
-            sudo_log_errors "Failed to validate \"SUDO_SHELL\""
+            sudo_log_errors "Failed to validate 'SUDO_SHELL'"
             return $return_value
         fi
     else
@@ -2668,24 +2668,24 @@ sudo_validate_shell \"SUDO_SHELL\" '${SUDO_SHELL//\'/\'\\\'\'}' '${SUDO_SUPPORTE
 
     # If SUDO_SHELL is not a valid absolute path
     if [[ ! "$SUDO_SHELL" =~ $VALID_ABSOLUTE_PATH_REGEX ]]; then
-        sudo_log_errors "The SUDO_SHELL \"$SUDO_SHELL\" is not a valid absolute path"
+        sudo_log_errors "The SUDO_SHELL '$SUDO_SHELL' is not a valid absolute path"
         return 1
     fi
 
-    sudo_log 2 "SUDO_SHELL=\"$SUDO_SHELL\""
+    sudo_log 2 "SUDO_SHELL='$SUDO_SHELL'"
 
     # Find the basename and parent directory of the SUDO_SHELL
     SUDO_SHELL_BASENAME="${SUDO_SHELL##*/}" # Strip longest match of */ from start
     SUDO_SHELL_PARENT_DIR="${SUDO_SHELL:0:${#SUDO_SHELL} - ${#SUDO_SHELL_BASENAME}}" # Substring from 0 to position of basename
     case "$SUDO_SHELL_PARENT_DIR" in *[!/]*/) SUDO_SHELL_PARENT_DIR="${SUDO_SHELL_PARENT_DIR%"${SUDO_SHELL_PARENT_DIR##*[!/]}"}";; *[/]) SUDO_SHELL_PARENT_DIR="/";; esac # Remove trailing slashes if not root
 
-    sudo_log 3 "SUDO_SHELL_BASENAME=\"$SUDO_SHELL_BASENAME\""
-    sudo_log 3 "SUDO_SHELL_PARENT_DIR=\"$SUDO_SHELL_PARENT_DIR\""
+    sudo_log 3 "SUDO_SHELL_BASENAME='$SUDO_SHELL_BASENAME'"
+    sudo_log 3 "SUDO_SHELL_PARENT_DIR='$SUDO_SHELL_PARENT_DIR'"
 
     # If SUDO_SHELL is not in any of the SUDO_SUPPORTED_SHELLS, then exit with error
     # The basename of the shell file could be faked but the actual shell inside the file is not checked
     if [[ "$SUDO_SHELL_BASENAME" == *' '* ]] || [[ " $SUDO_SUPPORTED_SHELLS " != *" $SUDO_SHELL_BASENAME "* ]]; then
-        sudo_log_errors "The SUDO_SHELL \"$SUDO_SHELL\" is not supported. It must be one of \"$SUDO_SUPPORTED_SHELLS\""
+        sudo_log_errors "The SUDO_SHELL '$SUDO_SHELL' is not supported. It must be one of '$SUDO_SUPPORTED_SHELLS'"
         return 1
     fi
 
@@ -2717,7 +2717,7 @@ sudo_validate_shell \"SUDO_POST_SHELL\" '${SUDO_POST_SHELL//\'/\'\\\'\'}' '${SUD
             return_value=$?
         fi
         if [ $return_value -ne 0 ]; then
-            sudo_log_errors "Failed to validate \"SUDO_POST_SHELL\""
+            sudo_log_errors "Failed to validate 'SUDO_POST_SHELL'"
             return $return_value
         fi
     else
@@ -2727,24 +2727,24 @@ sudo_validate_shell \"SUDO_POST_SHELL\" '${SUDO_POST_SHELL//\'/\'\\\'\'}' '${SUD
 
     # If SUDO_POST_SHELL is not a valid absolute path
     if [[ ! "$SUDO_POST_SHELL" =~ $VALID_ABSOLUTE_PATH_REGEX ]]; then
-        sudo_log_errors "The SUDO_POST_SHELL \"$SUDO_POST_SHELL\" is not a valid absolute path"
+        sudo_log_errors "The SUDO_POST_SHELL '$SUDO_POST_SHELL' is not a valid absolute path"
         return 1
     fi
 
-    sudo_log 2 "SUDO_POST_SHELL=\"$SUDO_POST_SHELL\""
+    sudo_log 2 "SUDO_POST_SHELL='$SUDO_POST_SHELL'"
 
     # Find the basename and parent directory of the SUDO_POST_SHELL
     SUDO_POST_SHELL_BASENAME="${SUDO_POST_SHELL##*/}" # Strip longest match of */ from start
     SUDO_POST_SHELL_PARENT_DIR="${SUDO_POST_SHELL:0:${#SUDO_POST_SHELL} - ${#SUDO_POST_SHELL_BASENAME}}" # Substring from 0 to position of basename
     case "$SUDO_POST_SHELL_PARENT_DIR" in *[!/]*/) SUDO_POST_SHELL_PARENT_DIR="${SUDO_POST_SHELL_PARENT_DIR%"${SUDO_POST_SHELL_PARENT_DIR##*[!/]}"}";; *[/]) SUDO_POST_SHELL_PARENT_DIR="/";; esac # Remove trailing slashes if not root
 
-    sudo_log 3 "SUDO_POST_SHELL_BASENAME=\"$SUDO_POST_SHELL_BASENAME\""
-    sudo_log 3 "SUDO_POST_SHELL_PARENT_DIR=\"$SUDO_POST_SHELL_PARENT_DIR\""
+    sudo_log 3 "SUDO_POST_SHELL_BASENAME='$SUDO_POST_SHELL_BASENAME'"
+    sudo_log 3 "SUDO_POST_SHELL_PARENT_DIR='$SUDO_POST_SHELL_PARENT_DIR'"
 
     # If SUDO_POST_SHELL is not in any of the SUDO_SUPPORTED_SHELLS, then exit with error
     # The basename of the shell file could be faked but the actual shell inside the file is not checked
     if [[ "$SUDO_POST_SHELL_BASENAME" == *' '* ]] || [[ " $SUDO_SUPPORTED_POST_SHELLS " != *" $SUDO_POST_SHELL_BASENAME "* ]]; then
-        sudo_log_errors "The SUDO_POST_SHELL \"$SUDO_POST_SHELL\" is not supported. It must be one of \"$SUDO_SUPPORTED_POST_SHELLS\""
+        sudo_log_errors "The SUDO_POST_SHELL '$SUDO_POST_SHELL' is not supported. It must be one of '$SUDO_SUPPORTED_POST_SHELLS'"
         return 1
     fi
 
@@ -2761,7 +2761,7 @@ sudo_validate_shell() {
 
     # If argument count is not 6
     if [ $# -ne 6 ]; then
-        sudo_log_errors "Invalid argument count to \"sudo_validate_shell\""
+        sudo_log_errors "Invalid argument count to 'sudo_validate_shell'"
         return 1
     fi
 
@@ -2779,7 +2779,7 @@ sudo_validate_shell() {
         if [[ "$user_shell" != *' '* ]] && [[ " $supported_shells " == *" $user_shell "* ]]; then
             shell="$termux_bin/$user_shell"
         else
-            sudo_log_errors "The $shell_label \"$user_shell\" is not supported. It must be one of \"$supported_shells\""
+            sudo_log_errors "The $shell_label '$user_shell' is not supported. It must be one of '$supported_shells'"
             return 1
         fi
     else
@@ -2787,7 +2787,7 @@ sudo_validate_shell() {
         sudo_expand_termux_path "user_shell" "$shell_label" "$user_shell" "$termux_prefix" "$termux_home" 3
         return_value=$?
         if [ $return_value -ne 0 ]; then
-            sudo_log_errors "Failed to expand $shell_label \"$user_shell\""
+            sudo_log_errors "Failed to expand $shell_label '$user_shell'"
             return $return_value
         fi
 
@@ -2812,7 +2812,7 @@ sudo_set_sudo_shell_rcfile() {
     sudo_set_shell_rcfile "SUDO_SHELL" "$SUDO_SHELL_BASENAME" "$SUDO_SHELL_HOME"
     return_value=$?
     if [ $return_value -ne 0 ]; then
-        sudo_log_errors "Failure while running \"sudo_set_rcfile_functions\" for SUDO_SHELL \"$SUDO_SHELL\""
+        sudo_log_errors "Failure while running 'sudo_set_rcfile_functions' for SUDO_SHELL '$SUDO_SHELL'"
         return $return_value
     fi
 
@@ -2822,9 +2822,9 @@ sudo_set_sudo_shell_rcfile() {
     SUDO_SHELL_RCFILE_VALUE="$SHELL_RCFILE_VALUE"
     SUDO_SHELL_INTERACTIVE_ADDITIONAL_COMMAND_OPTIONS=("${SHELL_INTERACTIVE_ADDITIONAL_COMMAND_OPTIONS[@]}" "${SUDO_SHELL_INTERACTIVE_ADDITIONAL_COMMAND_OPTIONS[@]}")
 
-    sudo_log 3 "SUDO_SHELL_RCFILE=\"$SUDO_SHELL_RCFILE\""
-    sudo_log 3 "SUDO_SHELL_RCFILE_PARENT_DIR=\"$SUDO_SHELL_RCFILE_PARENT_DIR\""
-    sudo_log 3 "SUDO_SHELL_RCFILE_COMMANDS=\"$SUDO_SHELL_RCFILE_COMMANDS\""
+    sudo_log 3 "SUDO_SHELL_RCFILE='$SUDO_SHELL_RCFILE'"
+    sudo_log 3 "SUDO_SHELL_RCFILE_PARENT_DIR='$SUDO_SHELL_RCFILE_PARENT_DIR'"
+    sudo_log 3 "SUDO_SHELL_RCFILE_COMMANDS='$SUDO_SHELL_RCFILE_COMMANDS'"
     sudo_log 3 "SUDO_SHELL_RCFILE_VALUE=\`$SUDO_SHELL_RCFILE_VALUE\`"
 
     return 0
@@ -2841,7 +2841,7 @@ sudo_set_sudo_post_shell_rcfile() {
     sudo_set_shell_rcfile "SUDO_POST_SHELL" "$SUDO_POST_SHELL_BASENAME" "$SUDO_POST_SHELL_HOME"
     return_value=$?
     if [ $return_value -ne 0 ]; then
-        sudo_log_errors "Failure while running \"sudo_set_rcfile_functions\" for SUDO_POST_SHELL \"$SUDO_POST_SHELL\""
+        sudo_log_errors "Failure while running 'sudo_set_rcfile_functions' for SUDO_POST_SHELL '$SUDO_POST_SHELL'"
         return $return_value
     fi
 
@@ -2851,9 +2851,9 @@ sudo_set_sudo_post_shell_rcfile() {
     SUDO_POST_SHELL_RCFILE_VALUE="$SHELL_RCFILE_VALUE"
     SUDO_POST_SHELL_INTERACTIVE_ADDITIONAL_COMMAND_OPTIONS=("${SHELL_INTERACTIVE_ADDITIONAL_COMMAND_OPTIONS[@]}" "${SUDO_POST_SHELL_INTERACTIVE_ADDITIONAL_COMMAND_OPTIONS[@]}")
 
-    sudo_log 3 "SUDO_POST_SHELL_RCFILE=\"$SUDO_POST_SHELL_RCFILE\""
-    sudo_log 3 "SUDO_POST_SHELL_RCFILE_PARENT_DIR=\"$SUDO_POST_SHELL_RCFILE_PARENT_DIR\""
-    sudo_log 3 "SUDO_POST_SHELL_RCFILE_COMMANDS=\"$SUDO_POST_SHELL_RCFILE_COMMANDS\""
+    sudo_log 3 "SUDO_POST_SHELL_RCFILE='$SUDO_POST_SHELL_RCFILE'"
+    sudo_log 3 "SUDO_POST_SHELL_RCFILE_PARENT_DIR='$SUDO_POST_SHELL_RCFILE_PARENT_DIR'"
+    sudo_log 3 "SUDO_POST_SHELL_RCFILE_COMMANDS='$SUDO_POST_SHELL_RCFILE_COMMANDS'"
     sudo_log 3 "SUDO_POST_SHELL_RCFILE_VALUE=\`$SUDO_POST_SHELL_RCFILE_VALUE\`"
 
     return 0
@@ -2869,7 +2869,7 @@ sudo_set_shell_rcfile() {
 
     # If argument count is not 3
     if [ $# -ne 3 ]; then
-        sudo_log_errors "Invalid argument count to \"sudo_set_shell_rcfile\""
+        sudo_log_errors "Invalid argument count to 'sudo_set_shell_rcfile'"
         return 1
     fi
 
@@ -2962,9 +2962,9 @@ sudo_set_shell_rcfile() {
     # If shell is node, perl, lua5.2, lua5.3, lua5.4
     elif [[ " node perl lua5.2 lua5.3 lua5.4 " == *" $shell_basename "* ]]; then
         # The shell does not have a rc file or does not use it
-        sudo_log 3 "The \"$shell_basename\" shell does not have a rc file or does not use it"
+        sudo_log 3 "The '$shell_basename' shell does not have a rc file or does not use it"
     else
-        sudo_log_errors "shell_basename \"$shell_basename\" not handled while running \"sudo_set_shell_rcfile\""
+        sudo_log_errors "shell_basename '$shell_basename' not handled while running 'sudo_set_shell_rcfile'"
         return 1
     fi
 
@@ -2974,7 +2974,7 @@ sudo_set_shell_rcfile() {
 
         # If SHELL_RCFILE is not a valid absolute path
         if [[ ! "$SHELL_RCFILE" =~ $VALID_ABSOLUTE_PATH_REGEX ]]; then
-            sudo_log_errors "The ${shell_label}_RCFILE \"$SHELL_RCFILE\" is not a valid absolute path"
+            sudo_log_errors "The ${shell_label}_RCFILE '$SHELL_RCFILE' is not a valid absolute path"
             return 1
         fi
 
@@ -3024,7 +3024,7 @@ sudo_set_rcfile_functions() {
 
     # If argument count is not 1
     if [ $# -ne 1 ]; then
-        sudo_log_errors "Invalid argument count to \"sudo_set_rcfile_functions\""
+        sudo_log_errors "Invalid argument count to 'sudo_set_rcfile_functions'"
         return 1
     fi
 
@@ -3132,7 +3132,7 @@ sudo_set_sudo_shell_histfile() {
     sudo_set_shell_histfile "SUDO_SHELL" "$SUDO_SHELL_BASENAME" "$SUDO_SHELL_HOME" "$SUDO_SHELLS_HISTORY_ENABLED"
     return_value=$?
     if [ $return_value -ne 0 ]; then
-        sudo_log_errors "Failure while running \"sudo_set_shell_histfile\" for SUDO_SHELL \"$SUDO_SHELL\""
+        sudo_log_errors "Failure while running 'sudo_set_shell_histfile' for SUDO_SHELL '$SUDO_SHELL'"
         return $return_value
     fi
 
@@ -3141,9 +3141,9 @@ sudo_set_sudo_shell_histfile() {
     SUDO_SHELL_HISTFILE_COMMANDS="$SHELL_HISTFILE_COMMANDS"
     SUDO_SHELL_INTERACTIVE_ADDITIONAL_COMMAND_OPTIONS=("${SHELL_INTERACTIVE_ADDITIONAL_COMMAND_OPTIONS[@]}" "${SUDO_SHELL_INTERACTIVE_ADDITIONAL_COMMAND_OPTIONS[@]}")
 
-    sudo_log 3 "SUDO_SHELL_HISTFILE=\"$SUDO_SHELL_HISTFILE\""
-    sudo_log 3 "SUDO_SHELL_HISTFILE_PARENT_DIR=\"$SUDO_SHELL_HISTFILE_PARENT_DIR\""
-    sudo_log 3 "SUDO_SHELL_HISTFILE_COMMANDS=\"$SUDO_SHELL_HISTFILE_COMMANDS\""
+    sudo_log 3 "SUDO_SHELL_HISTFILE='$SUDO_SHELL_HISTFILE'"
+    sudo_log 3 "SUDO_SHELL_HISTFILE_PARENT_DIR='$SUDO_SHELL_HISTFILE_PARENT_DIR'"
+    sudo_log 3 "SUDO_SHELL_HISTFILE_COMMANDS='$SUDO_SHELL_HISTFILE_COMMANDS'"
 
     return 0
 
@@ -3159,7 +3159,7 @@ sudo_set_sudo_post_shell_histfile() {
     sudo_set_shell_histfile "SUDO_POST_SHELL" "$SUDO_POST_SHELL_BASENAME" "$SUDO_POST_SHELL_HOME" "$SUDO_SHELLS_HISTORY_ENABLED"
     return_value=$?
     if [ $return_value -ne 0 ]; then
-        sudo_log_errors "Failure while running \"sudo_set_shell_histfile\" for SUDO_POST_SHELL \"$SUDO_POST_SHELL\""
+        sudo_log_errors "Failure while running 'sudo_set_shell_histfile' for SUDO_POST_SHELL '$SUDO_POST_SHELL'"
         return $return_value
     fi
 
@@ -3168,9 +3168,9 @@ sudo_set_sudo_post_shell_histfile() {
     SUDO_POST_SHELL_HISTFILE_COMMANDS="$SHELL_HISTFILE_COMMANDS"
     SUDO_POST_SHELL_INTERACTIVE_ADDITIONAL_COMMAND_OPTIONS=("${SHELL_INTERACTIVE_ADDITIONAL_COMMAND_OPTIONS[@]}" "${SUDO_POST_SHELL_INTERACTIVE_ADDITIONAL_COMMAND_OPTIONS[@]}")
 
-    sudo_log 3 "SUDO_POST_SHELL_HISTFILE=\"$SUDO_POST_SHELL_HISTFILE\""
-    sudo_log 3 "SUDO_POST_SHELL_HISTFILE_PARENT_DIR=\"$SUDO_POST_SHELL_HISTFILE_PARENT_DIR\""
-    sudo_log 3 "SUDO_POST_SHELL_HISTFILE_COMMANDS=\"$SUDO_POST_SHELL_HISTFILE_COMMANDS\""
+    sudo_log 3 "SUDO_POST_SHELL_HISTFILE='$SUDO_POST_SHELL_HISTFILE'"
+    sudo_log 3 "SUDO_POST_SHELL_HISTFILE_PARENT_DIR='$SUDO_POST_SHELL_HISTFILE_PARENT_DIR'"
+    sudo_log 3 "SUDO_POST_SHELL_HISTFILE_COMMANDS='$SUDO_POST_SHELL_HISTFILE_COMMANDS'"
 
     return 0
 
@@ -3185,7 +3185,7 @@ sudo_set_shell_histfile() {
 
     # If argument count is not 4
     if [ $# -ne 4 ]; then
-        sudo_log_errors "Invalid argument count to \"sudo_set_shell_histfile\""
+        sudo_log_errors "Invalid argument count to 'sudo_set_shell_histfile'"
         return 1
     fi
 
@@ -3302,10 +3302,10 @@ sudo_set_shell_histfile() {
         # If shell is python2, lua5.2, lua5.3, lua5.4
         elif [[ " python2 lua5.2 lua5.3 lua5.4 " == *" $shell_basename "* ]]; then
             # The shell does not have a history file or does not use it
-            sudo_log 3 "The \"$shell_basename\" shell does not have a history file or does not use it"
+            sudo_log 3 "The '$shell_basename' shell does not have a history file or does not use it"
 
         else
-            sudo_log_errors "shell_basename \"$shell_basename\" not handled while running \"sudo_set_shell_histfile\""
+            sudo_log_errors "shell_basename '$shell_basename' not handled while running 'sudo_set_shell_histfile'"
             return 1
         fi
 
@@ -3314,7 +3314,7 @@ sudo_set_shell_histfile() {
         if [ -n "$SHELL_HISTFILE" ]; then
             # If SHELL_HISTFILE is not a valid absolute path
             if [[ ! "$SHELL_HISTFILE" =~ $VALID_ABSOLUTE_PATH_REGEX ]]; then
-                sudo_log_errors "The ${shell_label}_HISTFILE \"$SHELL_HISTFILE\" is not a valid absolute path"
+                sudo_log_errors "The ${shell_label}_HISTFILE '$SHELL_HISTFILE' is not a valid absolute path"
                 return 1
             fi
 
@@ -3378,10 +3378,10 @@ sudo_set_shell_histfile() {
         # If shell is ruby, lua5.2, lua5.3, lua5.4, php, python2
         elif [[ " ruby lua5.2 lua5.3 lua5.4 php python2 " == *" $shell_basename "* ]]; then
             # The shell does not have a history file or does not use it or cannot be disabled using any params or environment variables
-            sudo_log 3 "The \"$shell_basename\" shell does not have a history file or does not use it or cannot be disabled using any params or environment variables"
+            sudo_log 3 "The '$shell_basename' shell does not have a history file or does not use it or cannot be disabled using any params or environment variables"
 
         else
-            sudo_log_errors "shell_basename \"$shell_basename\" not handled while running \"sudo_set_shell_histfile\""
+            sudo_log_errors "shell_basename '$shell_basename' not handled while running 'sudo_set_shell_histfile'"
             return 1
         fi
     fi
@@ -3403,7 +3403,7 @@ sudo_set_sudo_shell_command() {
     sudo_set_shell_command "SUDO_SHELL" "$SUDO_SHELL" "$SUDO_SHELL_BASENAME" "$SUDO_SHELL_PARENT_DIR" "$interactive_sudo_shell_required"
     return_value=$?
     if [ $return_value -ne 0 ]; then
-        sudo_log_errors "Failure while running \"sudo_set_shell_command\" for SUDO_SHELL \"$SUDO_SHELL\""
+        sudo_log_errors "Failure while running 'sudo_set_shell_command' for SUDO_SHELL '$SUDO_SHELL'"
         return $return_value
     fi
 
@@ -3413,8 +3413,8 @@ sudo_set_sudo_shell_command() {
     SUDO_SHELL_INTERACTIVE_COMMAND_PRINT_FORMAT="$SHELL_INTERACTIVE_COMMAND_PRINT_FORMAT"
 
 
-    sudo_log 3 "SUDO_SHELL_COMMAND=\"${SUDO_SHELL_COMMAND[*]}\""
-    sudo_log 3 "SUDO_SHELL_INTERACTIVE_COMMAND=\"${SUDO_SHELL_INTERACTIVE_COMMAND[*]}\""
+    sudo_log 3 "SUDO_SHELL_COMMAND='${SUDO_SHELL_COMMAND[*]}'"
+    sudo_log 3 "SUDO_SHELL_INTERACTIVE_COMMAND='${SUDO_SHELL_INTERACTIVE_COMMAND[*]}'"
 
     return 0
 
@@ -3433,14 +3433,14 @@ sudo_set_sudo_post_shell_command() {
     sudo_set_shell_command "SUDO_POST_SHELL" "$SUDO_POST_SHELL" "$SUDO_POST_SHELL_BASENAME" "$SUDO_POST_SHELL_PARENT_DIR" 1
     return_value=$?
     if [ $return_value -ne 0 ]; then
-        sudo_log_errors "Failure while running \"sudo_set_shell_command\" for SUDO_POST_SHELL \"$SUDO_POST_SHELL\""
+        sudo_log_errors "Failure while running 'sudo_set_shell_command' for SUDO_POST_SHELL '$SUDO_POST_SHELL'"
         return $return_value
     fi
 
     SUDO_POST_SHELL_INTERACTIVE_COMMAND=("${SHELL_INTERACTIVE_COMMAND[@]}")
     SUDO_POST_SHELL_INTERACTIVE_COMMAND_PRINT_FORMAT="$SHELL_INTERACTIVE_COMMAND_PRINT_FORMAT"
 
-    sudo_log 3 "SUDO_POST_SHELL_INTERACTIVE_COMMAND=\"${SUDO_POST_SHELL_INTERACTIVE_COMMAND[*]}\""
+    sudo_log 3 "SUDO_POST_SHELL_INTERACTIVE_COMMAND='${SUDO_POST_SHELL_INTERACTIVE_COMMAND[*]}'"
 
     return 0
 
@@ -3455,7 +3455,7 @@ sudo_set_shell_command() {
 
     # If argument count is not 5
     if [ $# -ne 5 ]; then
-        sudo_log_errors "Invalid argument count to \"sudo_set_shell_command\""
+        sudo_log_errors "Invalid argument count to 'sudo_set_shell_command'"
         return 1
     fi
 
@@ -3529,7 +3529,7 @@ sudo_set_shell_command() {
         SHELL_COMMAND=("$shell" "${SHELL_ADDITIONAL_COMMAND_OPTIONS[@]}")
         SHELL_INTERACTIVE_COMMAND=("$shell" "${SHELL_INTERACTIVE_ADDITIONAL_COMMAND_OPTIONS[@]}" "-i")
     else
-        sudo_log_errors "shell_basename \"$shell_basename\" not handled while running \"sudo_set_shell_command\""
+        sudo_log_errors "shell_basename '$shell_basename' not handled while running 'sudo_set_shell_command'"
         return 1
     fi
 
@@ -3549,7 +3549,7 @@ sudo_set_shell_command() {
                 return_value=$?
             fi
             if [ $return_value -ne 0 ]; then
-                sudo_log_errors "\"$shell_dependency_label\" is required to run non-interactive \"$shell_basename\" shell"
+                sudo_log_errors "'$shell_dependency_label' is required to run non-interactive '$shell_basename' shell"
                 return $return_value
             fi
         fi
@@ -3568,7 +3568,7 @@ sudo_set_shell_command() {
                 return_value=$?
             fi
             if [ $return_value -ne 0 ]; then
-                sudo_log_errors "\"$shell_interactive_dependency_label\" is required to run interactive \"$shell_basename\" shell"
+                sudo_log_errors "'$shell_interactive_dependency_label' is required to run interactive '$shell_basename' shell"
                 return $return_value
             fi
         fi
@@ -3601,7 +3601,7 @@ sudo_setup_sudo_shell_home_and_working_environment_wrapper() {
                 return_value=$?
                 if [ $return_value -ne 0 ] || [[ ! "$SUDO_TEMP_DIRECTORY_FD_PATH" =~ $VALID_ABSOLUTE_PATH_REGEX ]]; then
                     sudo_log_errors "Failure while running mktemp to create SUDO_TEMP_DIRECTORY_FD_PATH"
-                    sudo_log_errors "SUDO_TEMP_DIRECTORY_FD_PATH=\"$SUDO_TEMP_DIRECTORY_FD_PATH\""
+                    sudo_log_errors "SUDO_TEMP_DIRECTORY_FD_PATH='$SUDO_TEMP_DIRECTORY_FD_PATH'"
                     if [ $return_value -eq 0 ]; then
                         return_value=1
                     fi
@@ -3615,7 +3615,7 @@ sudo_setup_sudo_shell_home_and_working_environment_wrapper() {
                 return_value=$?
                 if [ $return_value -ne 0 ] || [[ ! "$SUDO_TEMP_DIRECTORY_FD" =~ $VALID_NUMBER_REGEX ]]; then
                     sudo_log_errors "Failure while getting an unused file descriptor to write SUDO_TEMP_DIRECTORY"
-                    sudo_log_errors "SUDO_TEMP_DIRECTORY_FD = \"$SUDO_TEMP_DIRECTORY_FD\""
+                    sudo_log_errors "SUDO_TEMP_DIRECTORY_FD='$SUDO_TEMP_DIRECTORY_FD'"
                     if [ $return_value -eq 0 ]; then
                         return_value=1
                     fi
@@ -3626,13 +3626,13 @@ sudo_setup_sudo_shell_home_and_working_environment_wrapper() {
                 # Using $$ instead of self so that su can access it
                 SUDO_TEMP_DIRECTORY_FD_PATH="/proc/$$/fd/$SUDO_TEMP_DIRECTORY_FD"
 
-                sudo_log 3 "SUDO_TEMP_DIRECTORY_FD_PATH=\"$SUDO_TEMP_DIRECTORY_FD_PATH\""
+                sudo_log 3 "SUDO_TEMP_DIRECTORY_FD_PATH='$SUDO_TEMP_DIRECTORY_FD_PATH'"
 
                 # Write empty string to fd just to create it
                 eval "exec $SUDO_TEMP_DIRECTORY_FD<" <(echo -n "")
                 return_value=$?
                 if [ $return_value -ne 0 ]; then
-                    sudo_log_errors "Failure while opening SUDO_TEMP_DIRECTORY_FD \"$SUDO_TEMP_DIRECTORY_FD\" to write SUDO_TEMP_DIRECTORY"
+                    sudo_log_errors "Failure while opening SUDO_TEMP_DIRECTORY_FD '$SUDO_TEMP_DIRECTORY_FD' to write SUDO_TEMP_DIRECTORY"
                     return $return_value
                 fi
             fi
@@ -3714,7 +3714,7 @@ sudo_setup_sudo_shell_home_and_working_environment_wrapper() {
     sudo_set_post_su_variables
     [ -n "$su_output" ] && echo "$su_output"
     if [ $return_value -ne 0 ]; then
-        sudo_log_errors "Failure while running \"sudo_setup_sudo_shell_home_and_working_environment\""
+        sudo_log_errors "Failure while running 'sudo_setup_sudo_shell_home_and_working_environment'"
         return $return_value
     fi
 
@@ -3734,7 +3734,7 @@ sudo_setup_sudo_shell_home_and_working_environment_wrapper() {
     if [[ "$SETUP_SUDO_TEMP_DIRECTORY" == "1" ]]; then
         # If SUDO_TEMP_DIRECTORY_FD_PATH does not exist
         if [ ! -e "$SUDO_TEMP_DIRECTORY_FD_PATH" ]; then
-            sudo_log_errors "The SUDO_TEMP_DIRECTORY_FD_PATH \"$SUDO_TEMP_DIRECTORY_FD_PATH\" does not exist that needs to be used to read SUDO_TEMP_DIRECTORY"
+            sudo_log_errors "The SUDO_TEMP_DIRECTORY_FD_PATH '$SUDO_TEMP_DIRECTORY_FD_PATH' does not exist that needs to be used to read SUDO_TEMP_DIRECTORY"
             return 1
         fi
 
@@ -3742,17 +3742,17 @@ sudo_setup_sudo_shell_home_and_working_environment_wrapper() {
         SUDO_TEMP_DIRECTORY="$(cat "$SUDO_TEMP_DIRECTORY_FD_PATH")"
         return_value=$?
         if [ $return_value -ne 0 ]; then
-            sudo_log_errors "Failure to read SUDO_TEMP_DIRECTORY from SUDO_TEMP_DIRECTORY_FD_PATH \"$SUDO_TEMP_DIRECTORY_FD_PATH\""
+            sudo_log_errors "Failure to read SUDO_TEMP_DIRECTORY from SUDO_TEMP_DIRECTORY_FD_PATH '$SUDO_TEMP_DIRECTORY_FD_PATH'"
             return $return_value
         fi
 
         # If SUDO_TEMP_DIRECTORY is not a valid absolute path
         if [[ ! "$SUDO_TEMP_DIRECTORY" =~ $VALID_ABSOLUTE_PATH_REGEX ]]; then
-            sudo_log_errors "The SUDO_TEMP_DIRECTORY \"$SUDO_TEMP_DIRECTORY\" is not a valid absolute path"
+            sudo_log_errors "The SUDO_TEMP_DIRECTORY '$SUDO_TEMP_DIRECTORY' is not a valid absolute path"
             return 1
         fi
 
-        sudo_log 3 "SUDO_TEMP_DIRECTORY=\"$SUDO_TEMP_DIRECTORY\""
+        sudo_log 3 "SUDO_TEMP_DIRECTORY='$SUDO_TEMP_DIRECTORY'"
 
 
         sudo_cleanup_temp_directory_fd_path
@@ -3772,7 +3772,7 @@ sudo_cleanup_temp_directory_fd_path() {
             rm -f "$SUDO_TEMP_DIRECTORY_FD_PATH"
             return_value=$?
             if [ $return_value -ne 0 ]; then
-                sudo_log_errors "Failure to delete SUDO_TEMP_DIRECTORY_FD_PATH \"$SUDO_TEMP_DIRECTORY_FD_PATH\""
+                sudo_log_errors "Failure to delete SUDO_TEMP_DIRECTORY_FD_PATH '$SUDO_TEMP_DIRECTORY_FD_PATH'"
                 return $return_value
             fi
         fi
@@ -3830,7 +3830,7 @@ sudo_setup_sudo_shell_home_and_working_environment() {
     sudo_setup_sudo_temp_directory
     return_value=$?
     if [ $return_value -ne 0 ]; then
-        sudo_log_errors "Failure while running \"sudo_setup_sudo_temp_directory\""
+        sudo_log_errors "Failure while running 'sudo_setup_sudo_temp_directory'"
         return $return_value
     fi
 
@@ -3847,7 +3847,7 @@ sudo_setup_shell_home() {
 
     # If argument count is not 10
     if [ $# -ne 10 ]; then
-        sudo_log_errors "Invalid argument count to \"sudo_setup_shell_home\""
+        sudo_log_errors "Invalid argument count to 'sudo_setup_shell_home'"
         return 1
     fi
 
@@ -3923,7 +3923,7 @@ sudo_setup_shell_home() {
         fi
     # If shell_home is a blacklisted path under TERMUX_ROOTFS
     elif [ $validation_result -eq 2 ]; then
-        sudo_log_errors "The \"$shell_home\" cannot be used as ${shell_label}_HOME"
+        sudo_log_errors "The '$shell_home' cannot be used as ${shell_label}_HOME"
         return 1
     # If shell_home is not under TERMUX_ROOTFS
     else
@@ -3942,7 +3942,7 @@ sudo_setup_shell_home() {
         # If shell_rcfile_parent_dir is not the same as shell_home or one of subdirectories,
         # otherwise remounting rootfs and system partition would become too complicated
         if [[ "$shell_rcfile_parent_dir" != "$shell_home" ]] && [[ "$shell_rcfile_parent_dir" != "$shell_home"/* ]]; then
-            sudo_log_errors "The ${shell_label}_RCFILE_PARENT_DIR \"$shell_rcfile_parent_dir\" must be same as ${shell_label}_HOME \"$shell_home\" or be one of its subdirectories"
+            sudo_log_errors "The ${shell_label}_RCFILE_PARENT_DIR '$shell_rcfile_parent_dir' must be same as ${shell_label}_HOME '$shell_home' or be one of its subdirectories"
             return 1
         fi
 
@@ -3978,7 +3978,7 @@ sudo_setup_shell_home() {
             fi
         # If shell_rcfile_parent_dir is a blacklisted path under TERMUX_ROOTFS
         elif [ $validation_result -eq 2 ]; then
-            sudo_log_errors "The \"$shell_rcfile_parent_dir\" cannot be used as ${shell_label}_RCFILE_PARENT_DIR"
+            sudo_log_errors "The '$shell_rcfile_parent_dir' cannot be used as ${shell_label}_RCFILE_PARENT_DIR"
             return 1
         # If shell_rcfile_parent_dir is not under TERMUX_ROOTFS
         else
@@ -4012,7 +4012,7 @@ sudo_setup_shell_home() {
         # If shell_histfile_parent_dir is not the same as shell_home or one of subdirectories,
         # otherwise remounting rootfs and system partition would become too complicated
         if [[ "$shell_histfile_parent_dir" != "$shell_home" ]] && [[ "$shell_histfile_parent_dir" != "$shell_home"/* ]]; then
-            sudo_log_errors "The ${shell_label}_HISTFILE_PARENT_DIR \"$shell_histfile_parent_dir\" must be same as ${shell_label}_HOME \"$shell_home\" or be one of its subdirectories"
+            sudo_log_errors "The ${shell_label}_HISTFILE_PARENT_DIR '$shell_histfile_parent_dir' must be same as ${shell_label}_HOME '$shell_home' or be one of its subdirectories"
             return 1
         fi
 
@@ -4048,7 +4048,7 @@ sudo_setup_shell_home() {
             fi
         # If shell_histfile_parent_dir is a blacklisted path under TERMUX_ROOTFS
         elif [ $validation_result -eq 2 ]; then
-            sudo_log_errors "The \"$shell_histfile_parent_dir\" cannot be used as ${shell_label}_HISTFILE_PARENT_DIR"
+            sudo_log_errors "The '$shell_histfile_parent_dir' cannot be used as ${shell_label}_HISTFILE_PARENT_DIR"
             return 1
         # If shell_histfile_parent_dir is not under TERMUX_ROOTFS
         else
@@ -4078,7 +4078,7 @@ sudo_setup_shell_home() {
         "$shell_histfile" "$create_shell_histfile_if_it_does_not_exist" "$only_set_perms_and_ownership_on_creation_of_shell_histfile" "$shell_histfile_ownership" "$shell_histfile_permission" "$shell_histfile_file_type_tests"
     return_value=$?
     if [ $return_value -ne 0 ]; then
-        sudo_log_errors "Failure while running \"sudo_create_shell_home\""
+        sudo_log_errors "Failure while running 'sudo_create_shell_home'"
         return $return_value
     fi
 
@@ -4100,7 +4100,7 @@ sudo_create_shell_home() {
 
     # If argument count is not 32
     if [ $# -ne 32 ]; then
-        sudo_log_errors "Invalid argument count to \"sudo_create_shell_home\""
+        sudo_log_errors "Invalid argument count to 'sudo_create_shell_home'"
         return 1
     fi
 
@@ -4226,25 +4226,25 @@ sudo_set_sudo_shell_working_dir() {
         sudo_expand_termux_path "SUDO_SHELL_WORKING_DIR" "SUDO_SHELL_WORKING_DIR" "$SUDO_SHELL_WORKING_DIR" "$TERMUX_PREFIX" "$TERMUX_HOME" 1
         return_value=$?
         if [ $return_value -ne 0 ]; then
-            sudo_log_errors "Failed to expand SUDO_SHELL_WORKING_DIR \"$SUDO_SHELL_WORKING_DIR\""
+            sudo_log_errors "Failed to expand SUDO_SHELL_WORKING_DIR '$SUDO_SHELL_WORKING_DIR'"
             return $return_value
         fi
     fi
 
     # If SUDO_SHELL_WORKING_DIR is not a valid absolute path
     if [[ ! "$SUDO_SHELL_WORKING_DIR" =~ $VALID_ROOTFS_OR_ABSOLUTE_PATH_REGEX ]]; then
-        sudo_log_errors "The SUDO_SHELL_WORKING_DIR \"$SUDO_SHELL_WORKING_DIR\" is not a valid absolute path"
+        sudo_log_errors "The SUDO_SHELL_WORKING_DIR '$SUDO_SHELL_WORKING_DIR' is not a valid absolute path"
         return 1
     fi
 
-    sudo_log 2 "SUDO_SHELL_WORKING_DIR=\"$SUDO_SHELL_WORKING_DIR\""
+    sudo_log 2 "SUDO_SHELL_WORKING_DIR='$SUDO_SHELL_WORKING_DIR'"
 
     # Find the parent directory of the SUDO_SHELL_WORKING_DIR
     SUDO_SHELL_WORKING_DIR_BASENAME="${SUDO_SHELL_WORKING_DIR##*/}" # Strip longest match of */ from start
     SUDO_SHELL_WORKING_DIR_PARENT_DIR="${SUDO_SHELL_WORKING_DIR:0:${#SUDO_SHELL_WORKING_DIR} - ${#SUDO_SHELL_WORKING_DIR_BASENAME}}" # Substring from 0 to position of basename
     case "$SUDO_SHELL_WORKING_DIR_PARENT_DIR" in *[!/]*/) SUDO_SHELL_WORKING_DIR_PARENT_DIR="${SUDO_SHELL_WORKING_DIR_PARENT_DIR%"${SUDO_SHELL_WORKING_DIR_PARENT_DIR##*[!/]}"}";; *[/]) SUDO_SHELL_WORKING_DIR_PARENT_DIR="/";; esac # Remove trailing slashes if not root
 
-    sudo_log 3 "SUDO_SHELL_WORKING_DIR_PARENT_DIR=\"$SUDO_SHELL_WORKING_DIR_PARENT_DIR\""
+    sudo_log 3 "SUDO_SHELL_WORKING_DIR_PARENT_DIR='$SUDO_SHELL_WORKING_DIR_PARENT_DIR'"
 
     return 0
 
@@ -4302,11 +4302,11 @@ sudo_setup_sudo_temp_directory() {
         # If SUDO_TEMP_DIRECTORY_PARENT_DIRECTORY is set to an absolute path and SUDO_TEMP_DIRECTORY_PREFIX is not empty
         if [[ "$SUDO_TEMP_DIRECTORY_PARENT_DIRECTORY" =~ $valid_absolute_path_regex ]] && [ -n "$SUDO_TEMP_DIRECTORY_PREFIX" ]; then
             # Remove all directories with the prefix SUDO_TEMP_DIRECTORY_PREFIX
-            sudo_log_literal 3 "\nRemove all directories with the prefix \"$SUDO_TEMP_DIRECTORY_PREFIX\" in SUDO_TEMP_DIRECTORY_PARENT_DIRECTORY \"$SUDO_TEMP_DIRECTORY_PARENT_DIRECTORY\""
+            sudo_log_literal 3 "\nRemove all directories with the prefix '$SUDO_TEMP_DIRECTORY_PREFIX' in SUDO_TEMP_DIRECTORY_PARENT_DIRECTORY '$SUDO_TEMP_DIRECTORY_PARENT_DIRECTORY'"
             find "$SUDO_TEMP_DIRECTORY_PARENT_DIRECTORY" -maxdepth 1 -type d -name "$SUDO_TEMP_DIRECTORY_PREFIX*" -exec rm -rf "{}" \;
             return_value=$?
             if [ $return_value -ne 0 ]; then
-                sudo_log_errors "Failure while removing all directories with the prefix \"$SUDO_TEMP_DIRECTORY_PREFIX\" in SUDO_TEMP_DIRECTORY_PARENT_DIRECTORY \"$SUDO_TEMP_DIRECTORY_PARENT_DIRECTORY\""
+                sudo_log_errors "Failure while removing all directories with the prefix '$SUDO_TEMP_DIRECTORY_PREFIX' in SUDO_TEMP_DIRECTORY_PARENT_DIRECTORY '$SUDO_TEMP_DIRECTORY_PARENT_DIRECTORY'"
                 return $return_value
             fi
         fi
@@ -4321,13 +4321,13 @@ sudo_setup_sudo_temp_directory() {
 
     # If SUDO_TEMP_DIRECTORY_PARENT_DIRECTORY is not a valid absolute path
     if [[ ! "$SUDO_TEMP_DIRECTORY_PARENT_DIRECTORY" =~ $valid_absolute_path_regex ]]; then
-        sudo_log_errors "The SUDO_TEMP_DIRECTORY_PARENT_DIRECTORY \"$SUDO_TEMP_DIRECTORY_PARENT_DIRECTORY\" is not a valid absolute path"
+        sudo_log_errors "The SUDO_TEMP_DIRECTORY_PARENT_DIRECTORY '$SUDO_TEMP_DIRECTORY_PARENT_DIRECTORY' is not a valid absolute path"
         return 1
     fi
 
     # If SUDO_TEMP_DIRECTORY_FD_PATH is not a valid absolute path
     if [[ ! "$SUDO_TEMP_DIRECTORY_FD_PATH" =~ $valid_absolute_path_regex ]]; then
-        sudo_log_errors "The SUDO_TEMP_DIRECTORY_FD_PATH \"$SUDO_TEMP_DIRECTORY_FD_PATH\" is not a valid absolute path"
+        sudo_log_errors "The SUDO_TEMP_DIRECTORY_FD_PATH '$SUDO_TEMP_DIRECTORY_FD_PATH' is not a valid absolute path"
         return 1
     fi
 
@@ -4346,7 +4346,7 @@ sudo_setup_sudo_temp_directory() {
     return_value=$?
     if [ $return_value -ne 0 ] || [[ ! "$SUDO_TEMP_DIRECTORY" =~ $valid_absolute_path_regex ]]; then
         sudo_log_errors "Failure while running mktemp to create SUDO_TEMP_DIRECTORY"
-        sudo_log_errors "SUDO_TEMP_DIRECTORY=\"$SUDO_TEMP_DIRECTORY\""
+        sudo_log_errors "SUDO_TEMP_DIRECTORY='$SUDO_TEMP_DIRECTORY'"
         if [ $return_value -eq 0 ]; then
             return_value=1
         fi
@@ -4357,7 +4357,7 @@ sudo_setup_sudo_temp_directory() {
     printf "%s" "$SUDO_TEMP_DIRECTORY" > "$SUDO_TEMP_DIRECTORY_FD_PATH"
     return_value=$?
     if [ $return_value -ne 0 ]; then
-        sudo_log_errors "Failure while writing SUDO_TEMP_DIRECTORY to SUDO_TEMP_DIRECTORY_FD_PATH \"$SUDO_TEMP_DIRECTORY_FD_PATH\""
+        sudo_log_errors "Failure while writing SUDO_TEMP_DIRECTORY to SUDO_TEMP_DIRECTORY_FD_PATH '$SUDO_TEMP_DIRECTORY_FD_PATH'"
         return $return_value
     fi
 
@@ -4499,7 +4499,7 @@ sudo_run_file_type_tests_on_path() {
 
     # If argument count is not 6
     if [ $# -ne 6 ]; then
-        sudo_log_errors "Invalid argument count to \"sudo_run_file_type_tests_on_path\""
+        sudo_log_errors "Invalid argument count to 'sudo_run_file_type_tests_on_path'"
         return 1
     fi
 
@@ -4512,14 +4512,14 @@ sudo_run_file_type_tests_on_path() {
 
     # If file_type_tests is invalid
     if [[ ! "$file_type_tests" =~ ^[bcdefgGkhLOprSsuwx]+$ ]]; then
-        sudo_log_errors "file_type_tests \"$file_type_tests\" passed to \"sudo_run_file_type_tests_on_path\" is not valid"
+        sudo_log_errors "file_type_tests '$file_type_tests' passed to 'sudo_run_file_type_tests_on_path' is not valid"
         return 1
     fi
 
     # If check_if_absolute_path is enabled and path is not a valid absolute path
     local valid_rootfs_or_absolute_path_regex='^((/)|((/[^/]+)+))$'
     if [[ "$check_if_absolute_path" == "1" ]] && [[ ! "$path" =~ $valid_rootfs_or_absolute_path_regex ]]; then
-        sudo_log_errors "The \"$label\" file \"$path\" is not an absolute path"
+        sudo_log_errors "The '$label' file '$path' is not an absolute path"
         return 2
     fi
 
@@ -4579,10 +4579,10 @@ sudo_run_file_type_tests_on_path() {
     fi
 
     if [ $return_value -ne 1 ]; then
-        sudo_log_errors "Failed to run the following test types on the file \"$label\" at path \"$path\": $file_type_tests_label"
+        sudo_log_errors "Failed to run the following test types on the file '$label' at path '$path': $file_type_tests_label"
     else
         if [[ "$log_file_tests_failure_errors" == "1" ]]; then
-            sudo_log_errors "The \"$label\" file at path \"$path\" failed one or more of the following test types: $file_type_tests_label"
+            sudo_log_errors "The '$label' file at path '$path' failed one or more of the following test types: $file_type_tests_label"
             if [[ "$show_stat_output_on_file_tests_failure" == "1" ]]; then
                 current_user_id="$(id -u 2>/dev/null)"
                 current_user_name="$(id -un 2>/dev/null)"
@@ -4608,7 +4608,7 @@ sudo_create_modify_validate_directory() {
 
     # If argument count is not 12
     if [ $# -ne 12 ]; then
-        sudo_log_errors "Invalid argument count to \"sudo_create_modify_validate_directory\""
+        sudo_log_errors "Invalid argument count to 'sudo_create_modify_validate_directory'"
         return 1
     fi
 
@@ -4631,26 +4631,26 @@ sudo_create_modify_validate_directory() {
 
     # If create_directory_if_it_does_not_exist is not set to 0 or 1
     if [[ "$create_directory_if_it_does_not_exist" != "0" ]] && [[ "$create_directory_if_it_does_not_exist" != "1" ]]; then
-        sudo_log_errors "create_directory_if_it_does_not_exist \"$create_directory_if_it_does_not_exist\" passed to \"sudo_create_modify_validate_directory\" is not equal to \"0\" or \"1\""
+        sudo_log_errors "create_directory_if_it_does_not_exist '$create_directory_if_it_does_not_exist' passed to 'sudo_create_modify_validate_directory' is not equal to '0' or '1'"
         return 1
     fi
 
     # If only_set_perms_and_ownership_on_creation is not set to 0 or 1
     if [[ "$only_set_perms_and_ownership_on_creation" != "0" ]] && [[ "$only_set_perms_and_ownership_on_creation" != "1" ]]; then
-        sudo_log_errors "only_set_perms_and_ownership_on_creation \"$only_set_perms_and_ownership_on_creation\" passed to \"sudo_create_modify_validate_directory\" is not equal to \"0\" or \"1\""
+        sudo_log_errors "only_set_perms_and_ownership_on_creation '$only_set_perms_and_ownership_on_creation' passed to 'sudo_create_modify_validate_directory' is not equal to '0' or '1'"
         return 1
     fi
 
     # If check_if_absolute_path is enabled and directory_path is not a valid absolute path
     local valid_rootfs_or_absolute_path_regex='^((/)|((/[^/]+)+))$'
     if [[ "$check_if_absolute_path" == "1" ]] && [[ ! "$directory_path" =~ $valid_rootfs_or_absolute_path_regex ]]; then
-        sudo_log_errors "The \"$directory_path_label\" directory \"$directory_path\" is not an absolute path"
+        sudo_log_errors "The '$directory_path_label' directory '$directory_path' is not an absolute path"
         return 2
     fi
 
     # Check if a non-directory file exists at directory path
     if [ -e "$directory_path" ] && [ ! -d "$directory_path" ]; then
-        sudo_log_errors "A non-directory file exists at $directory_path_label \"$directory_path\""
+        sudo_log_errors "A non-directory file exists at $directory_path_label '$directory_path'"
         return 1
     fi
 
@@ -4658,30 +4658,30 @@ sudo_create_modify_validate_directory() {
     if [ ! -d "$directory_path" ]; then
         # If create_directory_if_it_does_not_exist is enabled, then create directory
         if [[ "$create_directory_if_it_does_not_exist" == "1" ]]; then
-            sudo_log 3 "Creating $directory_path_label directory at \"$directory_path\""
+            sudo_log 3 "Creating $directory_path_label directory at '$directory_path'"
 
             mkdir -p "$directory_path"
             return_value=$?
             if [ $return_value -ne 0 ]; then
-                sudo_log_errors "Failed to create $directory_path_label directory at \"$directory_path\""
+                sudo_log_errors "Failed to create $directory_path_label directory at '$directory_path'"
                 return $return_value
             fi
 
             if [ ! -d "$directory_path" ]; then
-                sudo_log_errors "Failed to find $directory_path_label directory at \"$directory_path\" after creation"
+                sudo_log_errors "Failed to find $directory_path_label directory at '$directory_path' after creation"
                 return 1
             fi
 
             directory_created=1
         else
-            sudo_log_errors "Failed to find $directory_path_label directory at \"$directory_path\""
+            sudo_log_errors "Failed to find $directory_path_label directory at '$directory_path'"
             return 1
         fi
     else
         if [[ "$create_directory_if_it_does_not_exist" == "1" ]]; then
-            sudo_log 3 "The $directory_path_label directory already exists at \"$directory_path\""
+            sudo_log 3 "The $directory_path_label directory already exists at '$directory_path'"
         else
-            sudo_log 3 "The $directory_path_label directory exists at \"$directory_path\""
+            sudo_log 3 "The $directory_path_label directory exists at '$directory_path'"
         fi
     fi
 
@@ -4696,11 +4696,11 @@ sudo_create_modify_validate_directory() {
             sudo_set_shell_command_args_array directory_chown_command_options_array \
                 "directory_chown_command_options" "$directory_chown_command_options" || return $?
 
-            sudo_log 3 "Setting \"${directory_chown_command_options_array[*]}\" ownership to $directory_path_label directory at \"$directory_path\" directory"
+            sudo_log 3 "Setting '${directory_chown_command_options_array[*]}' ownership to $directory_path_label directory at '$directory_path' directory"
             chown "${directory_chown_command_options_array[@]}" "$directory_path"
             return_value=$?
             if [ $return_value -ne 0 ]; then
-                sudo_log_errors "Failed to set ownership of $directory_path_label directory at \"$directory_path\""
+                sudo_log_errors "Failed to set ownership of $directory_path_label directory at '$directory_path'"
                 return $return_value
             fi
         fi
@@ -4711,11 +4711,11 @@ sudo_create_modify_validate_directory() {
             sudo_set_shell_command_args_array directory_chmod_command_options_array \
                 "directory_chmod_command_options" "$directory_chmod_command_options" || return $?
 
-            sudo_log 3 "Setting \"${directory_chmod_command_options_array[*]}\" permissions to $directory_path_label directory at \"$directory_path\" directory"
+            sudo_log 3 "Setting '${directory_chmod_command_options_array[*]}' permissions to $directory_path_label directory at '$directory_path' directory"
             chmod "${directory_chmod_command_options_array[@]}" "$directory_path"
             return_value=$?
             if [ $return_value -ne 0 ]; then
-                sudo_log_errors "Failed to set permissions of $directory_path_label directory at \"$directory_path\""
+                sudo_log_errors "Failed to set permissions of $directory_path_label directory at '$directory_path'"
                 return $return_value
             fi
         fi
@@ -4726,11 +4726,11 @@ sudo_create_modify_validate_directory() {
             sudo_set_shell_command_args_array sub_directories_chown_command_options_array \
                 "sub_directories_chown_command_options" "$sub_directories_chown_command_options" || return $?
 
-            sudo_log 3 "Setting \"${sub_directories_chown_command_options_array[*]}\" ownership to $directory_path_label directory at \"$directory_path\" subdirectories"
+            sudo_log 3 "Setting '${sub_directories_chown_command_options_array[*]}' ownership to $directory_path_label directory at '$directory_path' subdirectories"
             find "$directory_path" -type d -print0 | xargs -0 -r -- chown "${sub_directories_chown_command_options_array[@]}" --
             return_value=$?
             if [ $return_value -ne 0 ]; then
-                sudo_log_errors "Failed to set ownership of subdirectories in $directory_path_label directory at \"$directory_path\""
+                sudo_log_errors "Failed to set ownership of subdirectories in $directory_path_label directory at '$directory_path'"
                 return $return_value
             fi
         fi
@@ -4741,11 +4741,11 @@ sudo_create_modify_validate_directory() {
             sudo_set_shell_command_args_array sub_directories_chmod_command_options_array \
                 "sub_directories_chmod_command_options" "$sub_directories_chmod_command_options" || return $?
 
-            sudo_log 3 "Setting \"${sub_directories_chmod_command_options_array[*]}\" permissions to $directory_path_label directory at \"$directory_path\" subdirectories"
+            sudo_log 3 "Setting '${sub_directories_chmod_command_options_array[*]}' permissions to $directory_path_label directory at '$directory_path' subdirectories"
             find "$directory_path" -type d -print0 | xargs -0 -r -- chmod "${sub_directories_chmod_command_options_array[@]}" --
             return_value=$?
             if [ $return_value -ne 0 ]; then
-                sudo_log_errors "Failed to set permissions of subdirectories in $directory_path_label directory at \"$directory_path\""
+                sudo_log_errors "Failed to set permissions of subdirectories in $directory_path_label directory at '$directory_path'"
                 return $return_value
             fi
         fi
@@ -4756,11 +4756,11 @@ sudo_create_modify_validate_directory() {
             sudo_set_shell_command_args_array sub_files_chown_command_options_array \
                 "sub_files_chown_command_options" "$sub_files_chown_command_options" || return $?
 
-            sudo_log 3 "Setting \"${sub_files_chown_command_options_array[*]}\" ownership to $directory_path_label directory at \"$directory_path\" subfiles"
+            sudo_log 3 "Setting '${sub_files_chown_command_options_array[*]}' ownership to $directory_path_label directory at '$directory_path' subfiles"
             find "$directory_path" -type f -print0 | xargs -0 -r -- chown "${sub_files_chown_command_options_array[@]}" --
             return_value=$?
             if [ $return_value -ne 0 ]; then
-                sudo_log_errors "Failed to set ownership of subfiles in $directory_path_label directory at \"$directory_path\""
+                sudo_log_errors "Failed to set ownership of subfiles in $directory_path_label directory at '$directory_path'"
                 return $return_value
             fi
         fi
@@ -4771,11 +4771,11 @@ sudo_create_modify_validate_directory() {
             sudo_set_shell_command_args_array sub_files_chmod_command_options_array \
                 "sub_files_chmod_command_options" "$sub_files_chmod_command_options" || return $?
 
-            sudo_log 3 "Setting \"${sub_files_chmod_command_options_array[*]}\" permissions to $directory_path_label directory at \"$directory_path\" subfiles"
+            sudo_log 3 "Setting '${sub_files_chmod_command_options_array[*]}' permissions to $directory_path_label directory at '$directory_path' subfiles"
             find "$directory_path" -type f -print0 | xargs -0 -r -- chmod "${sub_files_chmod_command_options_array[@]}" --
             return_value=$?
             if [ $return_value -ne 0 ]; then
-                sudo_log_errors "Failed to set permissions of subfiles in $directory_path_label directory at \"$directory_path\""
+                sudo_log_errors "Failed to set permissions of subfiles in $directory_path_label directory at '$directory_path'"
                 return $return_value
             fi
         fi
@@ -4802,7 +4802,7 @@ sudo_create_modify_validate_file() {
 
     # If argument count is not 10
     if [ $# -ne 10 ]; then
-        sudo_log_errors "Invalid argument count to \"sudo_create_modify_validate_file\""
+        sudo_log_errors "Invalid argument count to 'sudo_create_modify_validate_file'"
         return 1
     fi
 
@@ -4823,26 +4823,26 @@ sudo_create_modify_validate_file() {
 
     # If create_file_if_it_does_not_exist is not set to 0 or 1
     if [[ "$create_file_if_it_does_not_exist" != "0" ]] && [[ "$create_file_if_it_does_not_exist" != "1" ]]; then
-        sudo_log_errors "create_file_if_it_does_not_exist \"$create_file_if_it_does_not_exist\" passed to \"sudo_create_modify_validate_file\" is not equal to \"0\" or \"1\""
+        sudo_log_errors "create_file_if_it_does_not_exist '$create_file_if_it_does_not_exist' passed to 'sudo_create_modify_validate_file' is not equal to '0' or '1'"
         return 1
     fi
 
     # If only_set_perms_and_ownership_on_creation is not set to 0 or 1
     if [[ "$only_set_perms_and_ownership_on_creation" != "0" ]] && [[ "$only_set_perms_and_ownership_on_creation" != "1" ]]; then
-        sudo_log_errors "only_set_perms_and_ownership_on_creation \"$only_set_perms_and_ownership_on_creation\" passed to \"sudo_create_modify_validate_file\" is not equal to \"0\" or \"1\""
+        sudo_log_errors "only_set_perms_and_ownership_on_creation '$only_set_perms_and_ownership_on_creation' passed to 'sudo_create_modify_validate_file' is not equal to '0' or '1'"
         return 1
     fi
 
     # If check_if_absolute_path is enabled and file_path is not a valid absolute path
     local valid_absolute_path_regex='^(/[^/]+)+$'
     if [[ "$check_if_absolute_path" == "1" ]] && [[ ! "$file_path" =~ $valid_absolute_path_regex ]]; then
-        sudo_log_errors "The \"$file_path_label\" file \"$file_path\" is not an absolute path"
+        sudo_log_errors "The '$file_path_label' file '$file_path' is not an absolute path"
         return 2
     fi
 
     # Check if a non-file file exists at file path
     if [ -e "$file_path" ] && [ ! -f "$file_path" ]; then
-        sudo_log_errors "A non-regular file exists at $file_path_label \"$file_path\""
+        sudo_log_errors "A non-regular file exists at $file_path_label '$file_path'"
         return 1
     fi
 
@@ -4850,7 +4850,7 @@ sudo_create_modify_validate_file() {
     if [ ! -f "$file_path" ]; then
         # If create_file_if_it_does_not_exist is enabled, then create file
         if [[ "$create_file_if_it_does_not_exist" == "1" ]]; then
-            sudo_log 3 "Creating $file_path_label \"$file_path\" file"
+            sudo_log 3 "Creating $file_path_label '$file_path' file"
 
             local -a file_creation_command_options_array
             if [[ "$file_creation_command_options" != "-" ]]; then
@@ -4867,25 +4867,25 @@ sudo_create_modify_validate_file() {
             fi
             return_value=$?
             if [ $return_value -ne 0 ]; then
-                sudo_log_errors "Failed to create $file_path_label file at \"$file_path\""
+                sudo_log_errors "Failed to create $file_path_label file at '$file_path'"
                 return $return_value
             fi
 
             if [ ! -f "$file_path" ]; then
-                sudo_log_errors "Failed to find $file_path_label file at \"$file_path\" after creation"
+                sudo_log_errors "Failed to find $file_path_label file at '$file_path' after creation"
                 return 1
             fi
 
             file_created=1
         else
-            sudo_log_errors "Failed to find $file_path_label file at \"$file_path\""
+            sudo_log_errors "Failed to find $file_path_label file at '$file_path'"
             return 1
         fi
     else
         if [[ "$create_file_if_it_does_not_exist" == "1" ]]; then
-            sudo_log 3 "The $file_path_label file already exists at \"$file_path\""
+            sudo_log 3 "The $file_path_label file already exists at '$file_path'"
         else
-            sudo_log 3 "The $file_path_label file exists at \"$file_path\""
+            sudo_log 3 "The $file_path_label file exists at '$file_path'"
         fi
     fi
 
@@ -4899,11 +4899,11 @@ sudo_create_modify_validate_file() {
             sudo_set_shell_command_args_array file_chown_command_options_array \
                 "file_chown_command_options" "$file_chown_command_options" || return $?
 
-            sudo_log 3 "Setting \"${file_chown_command_options_array[*]}\" ownership to $file_path_label \"$file_path\" file"
+            sudo_log 3 "Setting '${file_chown_command_options_array[*]}' ownership to $file_path_label '$file_path' file"
             chown "${file_chown_command_options_array[@]}" "$file_path"
             return_value=$?
             if [ $return_value -ne 0 ]; then
-                sudo_log_errors "Failed to set ownership of $file_path_label file at \"$file_path\""
+                sudo_log_errors "Failed to set ownership of $file_path_label file at '$file_path'"
                 return $return_value
             fi
         fi
@@ -4914,11 +4914,11 @@ sudo_create_modify_validate_file() {
             sudo_set_shell_command_args_array file_chmod_command_options_array \
                 "file_chmod_command_options" "$file_chmod_command_options" || return $?
 
-            sudo_log 3 "Setting \"${file_chmod_command_options_array[*]}\" permissions to $file_path_label \"$file_path\" file"
+            sudo_log 3 "Setting '${file_chmod_command_options_array[*]}' permissions to $file_path_label '$file_path' file"
             chmod "${file_chmod_command_options_array[@]}" "$file_path"
             return_value=$?
             if [ $return_value -ne 0 ]; then
-                sudo_log_errors "Failed to set permissions of $file_path_label file at \"$file_path\""
+                sudo_log_errors "Failed to set permissions of $file_path_label file at '$file_path'"
                 return $return_value
             fi
         fi
@@ -4945,7 +4945,7 @@ sudo_expand_termux_path() {
 
     # If argument count is not 6
     if [ $# -ne 6 ]; then
-        sudo_log_errors "Invalid argument count to \"sudo_expand_termux_path\""
+        sudo_log_errors "Invalid argument count to 'sudo_expand_termux_path'"
         return 1
     fi
 
@@ -4971,8 +4971,8 @@ sudo_expand_termux_path() {
         path_to_expand="$(readlink -m -- "$path_to_expand")"
         return_value=$?
         if [ $return_value -ne 0 ] || [[ ! "$path_to_expand" =~ $valid_absolute_path_regex ]]; then
-            sudo_log_errors "Failure while finding canonical path for path_to_expand \"$absolute_path_to_expand\""
-            sudo_log_errors "canonical_path_to_expand = \"$path_to_expand\""
+            sudo_log_errors "Failure while finding canonical path for path_to_expand '$absolute_path_to_expand'"
+            sudo_log_errors "canonical_path_to_expand = '$path_to_expand'"
             if [ $return_value -eq 0 ]; then
                 return_value=1
             fi
@@ -5000,7 +5000,7 @@ sudo_expand_termux_path() {
         # Set variable_name to path_to_expand
         printf -v "$variable_name" "%s" "$path_to_expand"
     else
-        sudo_log_errors "variable_name \"$1\" passed to \"sudo_expand_termux_path\" equals \"path_to_expand\" or is not a valid bash variable name"
+        sudo_log_errors "variable_name '$1' passed to 'sudo_expand_termux_path' equals 'path_to_expand' or is not a valid bash variable name"
         return 1
     fi
 
@@ -5021,7 +5021,7 @@ sudo_find_absolute_path_for_executable_and_validate() {
 
     # If argument count is not 7
     if [ $# -ne 7 ]; then
-        sudo_log_errors "Invalid argument count to \"sudo_find_absolute_path_for_executable_and_validate\""
+        sudo_log_errors "Invalid argument count to 'sudo_find_absolute_path_for_executable_and_validate'"
         return 1
     fi
 
@@ -5042,21 +5042,21 @@ sudo_find_absolute_path_for_executable_and_validate() {
     sudo_expand_termux_path "expanded_path" "${label}_PATH" "$path" "$termux_prefix" "$termux_home" 3
     return_value=$?
     if [ $return_value -ne 0 ]; then
-        sudo_log_errors "Failed to expand ${label}_PATH \"$path\""
+        sudo_log_errors "Failed to expand ${label}_PATH '$path'"
         return $return_value
     fi
 
-    [[ "$output_path_to_stdout" == "1" ]] || sudo_log 3 "${label}_EXPANDED_PATH=\"$expanded_path\""
+    [[ "$output_path_to_stdout" == "1" ]] || sudo_log 3 "${label}_EXPANDED_PATH='$expanded_path'"
 
     if [[ "$expanded_path" =~ $valid_absolute_path_regex ]]; then
         absolute_path="$expanded_path"
         test -f "$absolute_path" && test -r "$absolute_path" && test -x "$absolute_path"
         return_value=$?
         if [ $return_value -ne 0 ] && [ $return_value -ne 1 ]; then
-            sudo_log_errors "Failed to run the following test types on the file \"${label}_PATH\" at path \"$absolute_path\": [regular file], [readable], [executable]"
+            sudo_log_errors "Failed to run the following test types on the file '${label}_PATH' at path '$absolute_path': [regular file], [readable], [executable]"
             return $return_value
         elif [ $return_value -eq 0 ]; then
-            [[ "$output_path_to_stdout" == "1" ]] || sudo_log 3 "Executable found at \"$absolute_path\""
+            [[ "$output_path_to_stdout" == "1" ]] || sudo_log 3 "Executable found at '$absolute_path'"
             executable_found=1
         fi
     fi
@@ -5067,24 +5067,24 @@ sudo_find_absolute_path_for_executable_and_validate() {
         # Check if paths_to_check_for_executable is valid
         local invalid_value_for_path_variable_regex='^:|:$|.*::.*|.*'$'\n''.*'
         if [[ "$paths_to_check_for_executable" =~ $invalid_value_for_path_variable_regex ]]; then
-            sudo_log_errors "PATHS_TO_CHECK_FOR_EXECUTABLE \"$paths_to_check_for_executable\" is invalid, it cannot start or end with a colon, contain two consecutive colons \":\" or contain newline characters"
+            sudo_log_errors "PATHS_TO_CHECK_FOR_EXECUTABLE '$paths_to_check_for_executable' is invalid, it cannot start or end with a colon, contain two consecutive colons ':' or contain newline characters"
             return 1
         fi
 
-        [[ "$output_path_to_stdout" == "1" ]] || sudo_log 3 "Checking for \"$path\" executable at following paths: \"$paths_to_check_for_executable\""
+        [[ "$output_path_to_stdout" == "1" ]] || sudo_log 3 "Checking for '$path' executable at following paths: '$paths_to_check_for_executable'"
 
         # Check if path is a binary or any executable in paths_to_check_for_executable
         for path_to_check_for_executable in ${paths_to_check_for_executable//:/ }; do
             absolute_path="$path_to_check_for_executable/$path"
-            [[ "$output_path_to_stdout" == "1" ]] || sudo_log 3 "\"$absolute_path\""
+            [[ "$output_path_to_stdout" == "1" ]] || sudo_log 3 "'$absolute_path'"
 
             test -f "$absolute_path" && test -r "$absolute_path" && test -x "$absolute_path"
             return_value=$?
             if [ $return_value -ne 0 ] && [ $return_value -ne 1 ]; then
-                sudo_log_errors "Failed to run the following test types on the file \"${label}_PATH\" at path \"$absolute_path\": [regular file], [readable], [executable]"
+                sudo_log_errors "Failed to run the following test types on the file '${label}_PATH' at path '$absolute_path': [regular file], [readable], [executable]"
                 return $return_value
             elif [ $return_value -eq 0 ]; then
-                [[ "$output_path_to_stdout" == "1" ]] || sudo_log 3 "Executable found at \"$absolute_path\""
+                [[ "$output_path_to_stdout" == "1" ]] || sudo_log 3 "Executable found at '$absolute_path'"
                 executable_found=1
                 break
             fi
@@ -5108,7 +5108,7 @@ sudo_find_absolute_path_for_executable_and_validate() {
             # Set variable_name to absolute_path
             printf -v "$variable_name" "%s" "$absolute_path"
         else
-            sudo_log_errors "variable_name \"$1\" passed to \"sudo_find_absolute_path_for_executable_and_validate\" equals \"absolute_path\" or is not a valid bash variable name"
+            sudo_log_errors "variable_name '$1' passed to 'sudo_find_absolute_path_for_executable_and_validate' equals 'absolute_path' or is not a valid bash variable name"
             return 1
         fi
     fi
@@ -5126,7 +5126,7 @@ sudo_validate_path_is_a_whitelisted_path_under_termux_rootfs() {
 
     # If argument count is not 2
     if [ $# -ne 2 ]; then
-        sudo_log_errors "Invalid argument count to \"sudo_validate_path_is_a_whitelisted_path_under_termux_rootfs\""
+        sudo_log_errors "Invalid argument count to 'sudo_validate_path_is_a_whitelisted_path_under_termux_rootfs'"
         return 1
     fi
 
@@ -5159,14 +5159,14 @@ sudo_validate_path_is_a_whitelisted_path_under_termux_rootfs() {
 
     # If path same as TERMUX_ROOTFS
     if [[ "$path" == "$TERMUX_ROOTFS" ]]; then
-        sudo_log 3 "$label \"$path\" is the same as TERMUX_ROOTFS"
+        sudo_log 3 "$label '$path' is the same as TERMUX_ROOTFS"
         return 2
     # If path is set to an absolute path under TERMUX_ROOTFS
     elif [[ "$path" =~ $valid_path_under_termux_rootfs_regex ]]; then
         # If path is set to a blacklist path under TERMUX_ROOTFS
         if [[ "$path" =~ $blacklisted_path_in_termux_rootfs_regex ]]; then
-            sudo_log 3 "$label \"$path\" matches one of following blacklisted paths:"
-            sudo_log 3 "\"$TERMUX_HOME/.{cache,config,local,termux}\", \"$TERMUX_PREFIX/*\""
+            sudo_log 3 "$label '$path' matches one of following blacklisted paths:"
+            sudo_log 3 "'$TERMUX_HOME/.{cache,config,local,termux}', '$TERMUX_PREFIX/*'"
             return 2
         else
             return 0
@@ -5186,7 +5186,7 @@ sudo_parse_and_validate_path_variable() {
 
     # If argument count is not 4
     if [ $# -ne 4 ]; then
-        sudo_log_errors "Invalid argument count to \"sudo_parse_and_validate_path_variable\""
+        sudo_log_errors "Invalid argument count to 'sudo_parse_and_validate_path_variable'"
         return 1
     fi
 
@@ -5201,7 +5201,7 @@ sudo_parse_and_validate_path_variable() {
         path_to_parse="$(printf "%s" "$path_to_parse" | awk -v RS=: -v ORS= '!a[$0]++ {if (NR>1) printf(":"); printf("%s", $0) }' )"
         return_value=$?
         if [ $return_value -ne 0 ]; then
-            sudo_log_errors "Failed to remove duplicates from $label \"$path_to_parse\""
+            sudo_log_errors "Failed to remove duplicates from $label '$path_to_parse'"
             return $return_value
         fi
     fi
@@ -5209,7 +5209,7 @@ sudo_parse_and_validate_path_variable() {
     # Check if path_to_parse is valid
     local invalid_value_for_path_variable_regex='^:|:$|.*::.*|.*'$'\n''.*'
     if [[ "$path_to_parse" =~ $invalid_value_for_path_variable_regex ]]; then
-        sudo_log_errors "$label \"$path_to_parse\" is invalid, it cannot start or end with a colon, contain two consecutive colons \":\" or contain newline characters"
+        sudo_log_errors "$label '$path_to_parse' is invalid, it cannot start or end with a colon, contain two consecutive colons ':' or contain newline characters"
         return 1
     fi
 
@@ -5220,7 +5220,7 @@ sudo_parse_and_validate_path_variable() {
         # Set variable_name to path
         printf -v "$variable_name" "%s" "$path_to_parse"
     else
-        sudo_log_errors "variable_name \"$1\" passed to \"sudo_parse_and_validate_path_variable\" equals \"path_to_parse\" or is not a valid bash variable name"
+        sudo_log_errors "variable_name '$1' passed to 'sudo_parse_and_validate_path_variable' equals 'path_to_parse' or is not a valid bash variable name"
         return 1
     fi
 
@@ -5251,13 +5251,13 @@ sudo_remount_partitions_for_sudo_shell_homes() {
 
     # If argument count is not 1
     if [ $# -ne 1 ]; then
-        sudo_log_errors "Invalid argument count to \"sudo_remount_partitions_for_sudo_shell_homes\""
+        sudo_log_errors "Invalid argument count to 'sudo_remount_partitions_for_sudo_shell_homes'"
         return 1
     fi
 
     local remount_mode="$1"
     if [[ "$remount_mode" != "ro" ]] && [[ "$remount_mode" != "rw" ]]; then
-        sudo_log_errors "remount_mode \"$remount_mode\" passed to \"sudo_remount_partitions_for_sudo_shell_homes\" does not equal \"ro\" or \"rw\""
+        sudo_log_errors "remount_mode '$remount_mode' passed to 'sudo_remount_partitions_for_sudo_shell_homes' does not equal 'ro' or 'rw'"
         return 1
     fi
 
@@ -5266,11 +5266,11 @@ sudo_remount_partitions_for_sudo_shell_homes() {
         # If remount_mode equals "rw"
         if [[ "$remount_mode" == "rw" ]]; then
             # Remount android rootfs partition as rw
-            sudo_log 3 "Remounting rootfs \"/\" partition as rw to be used for$ROOTFS_PARTITION_RW_DEPENDENT_PATHS"
+            sudo_log 3 "Remounting rootfs '/' partition as rw to be used for$ROOTFS_PARTITION_RW_DEPENDENT_PATHS"
             sudo_remount_partition "rootfs" "rw" 0
             return_value=$?
             if [ $return_value -ne 0 ] && [ $return_value -ne 112 ]; then
-                sudo_log_errors "Failed to mount rootfs \"/\" partition as rw to be used for$ROOTFS_PARTITION_RW_DEPENDENT_PATHS"
+                sudo_log_errors "Failed to mount rootfs '/' partition as rw to be used for$ROOTFS_PARTITION_RW_DEPENDENT_PATHS"
                 return $return_value
             fi
 
@@ -5294,11 +5294,11 @@ sudo_remount_partitions_for_sudo_shell_homes() {
         # If remount_mode equals "rw"
         if [[ "$remount_mode" == "rw" ]]; then
             # Remount android system partition as rw
-            sudo_log 3 "Remounting system \"/system\" partition as rw to be used for$SYSTEM_PARTITION_RW_DEPENDENT_PATHS"
+            sudo_log 3 "Remounting system '/system' partition as rw to be used for$SYSTEM_PARTITION_RW_DEPENDENT_PATHS"
             sudo_remount_partition "system" "rw" 0
             return_value=$?
             if [ $return_value -ne 0 ] && [ $return_value -ne 112 ]; then
-                sudo_log_errors "Failed to mount system \"/system\" partition as rw to be used for$SYSTEM_PARTITION_RW_DEPENDENT_PATHS"
+                sudo_log_errors "Failed to mount system '/system' partition as rw to be used for$SYSTEM_PARTITION_RW_DEPENDENT_PATHS"
                 return $return_value
             fi
 
@@ -5355,7 +5355,7 @@ sudo_get_unsed_file_descriptor() {
         # Set variable_name to fd
         printf -v "$variable_name" "%s" "$fd"
     else
-        sudo_log_errors "variable_name \"$1\" passed to \"sudo_get_unsed_file_descriptor\" equals \"fd\" or is not a valid bash variable name"
+        sudo_log_errors "variable_name '$1' passed to 'sudo_get_unsed_file_descriptor' equals 'fd' or is not a valid bash variable name"
         return 1
     fi
 
@@ -5376,25 +5376,25 @@ sudo_remount_partition() {
 
     # If argument count is not 3
     if [ $# -ne 3 ]; then
-        sudo_log_errors "Invalid argument count to \"remount_android_rootfs_for_cldia\""
+        sudo_log_errors "Invalid argument count to 'remount_android_rootfs_for_cldia'"
         return 1
     fi
 
     local remount_partition="$1"
     if [[ "$remount_partition" != "rootfs" ]] && [[ "$remount_partition" != "system" ]]; then
-        sudo_log_errors "remount_partition \"$remount_partition\" passed to \"sudo_remount_partition\" does not equal \"rootfs\" or \"system\""
+        sudo_log_errors "remount_partition '$remount_partition' passed to 'sudo_remount_partition' does not equal 'rootfs' or 'system'"
         return 1
     fi
 
     local remount_mode="$2"
     if [[ "$remount_mode" != "ro" ]] && [[ "$remount_mode" != "rw" ]]; then
-        sudo_log_errors "remount_mode \"$remount_mode\" passed to \"sudo_remount_partition\" does not equal \"ro\" or \"rw\""
+        sudo_log_errors "remount_mode '$remount_mode' passed to 'sudo_remount_partition' does not equal 'ro' or 'rw'"
         return 1
     fi
 
     local force_remount="$3"
     if [[ "$force_remount" != "0" ]] && [[ "$force_remount" != "1" ]]; then
-        sudo_log_errors "remount_mode \"$remount_mode\" passed to \"sudo_remount_partition\" does not equal \"0\" or \"1\""
+        sudo_log_errors "remount_mode '$remount_mode' passed to 'sudo_remount_partition' does not equal '0' or '1'"
         return 1
     fi
 
@@ -5411,7 +5411,7 @@ sudo_remount_partition() {
         test -x "$f/mount"
         return_value=$?
         if [ $return_value -ne 0 ] && [ $return_value -ne 1 ]; then
-            sudo_log_errors "test command for \"$f/mount\" failed"
+            sudo_log_errors "test command for '$f/mount' failed"
             return $return_value
         fi
 
@@ -5435,7 +5435,7 @@ sudo_remount_partition() {
     elif [[ "$remount_partition" == "system" ]]; then
         remount_partition_mount_point="/system"
     else
-        sudo_log_errors "remount_partition \"$remount_partition\" not handled"
+        sudo_log_errors "remount_partition '$remount_partition' not handled"
         return 1
     fi
 
@@ -5450,12 +5450,12 @@ sudo_remount_partition() {
         sudo_log_errors "Failed to run grep to get remount_partition_mount_entry from /proc/mounts"
         return $return_value
     fi
-    sudo_log 3 "remount_partition_mount_entry = \"$remount_partition_mount_entry\""
+    sudo_log 3 "remount_partition_mount_entry='$remount_partition_mount_entry'"
 
     # If remount_partition_mount_entry is empty, then mount_point is not mounted
     if [[ -z "$remount_partition_mount_entry" ]]; then
-        sudo_log 3 "No mount entries found for \"$remount_partition_mount_point\" in /proc/mounts"
-        sudo_log 3 "\"$remount_partition_mount_point\" is not mounted"
+        sudo_log 3 "No mount entries found for '$remount_partition_mount_point' in /proc/mounts"
+        sudo_log 3 "'$remount_partition_mount_point' is not mounted"
         return 112
     fi
 
@@ -5486,16 +5486,16 @@ sudo_remount_partition() {
 
     # If remount_mode is equal to current_mount_mode
     if [[ "$remount_mode" == "$current_mount_mode" ]]; then
-        sudo_log 3 "\"$remount_partition_mount_point\" is already mounted as $remount_mode"
+        sudo_log 3 "'$remount_partition_mount_point' is already mounted as $remount_mode"
 
         # If force_remount is not enabled, then exit
         if [[ $force_remount != "1" ]]; then
             return 0
         else
-            sudo_log 3 "Force remounting \"$remount_partition_mount_point\" as $remount_mode"
+            sudo_log 3 "Force remounting '$remount_partition_mount_point' as $remount_mode"
         fi
     else
-        sudo_log 3 "\"$remount_partition_mount_point\" is mounted as $current_mount_mode"
+        sudo_log 3 "'$remount_partition_mount_point' is mounted as $current_mount_mode"
     fi
 
     # If remount_mode equals "ro"
@@ -5507,7 +5507,7 @@ sudo_remount_partition() {
         # If rootfs was previously mounted as rw and force_remount is not set to 1
         # remount_partition_previous_state_ro will be 0 if it was ro, 1 if it was rw
         if [[ "$remount_partition_previous_state_ro" == "1" ]] && [[ $force_remount -ne 1 ]]; then
-            sudo_log 3 "Skipping remount \"$remount_partition_mount_point\" as ro since it was previously mounted as rw"
+            sudo_log 3 "Skipping remount '$remount_partition_mount_point' as ro since it was previously mounted as rw"
             return 0
         fi
     fi
@@ -5532,7 +5532,7 @@ sudo_remount_partition() {
     # If mount_point is busy error received, then just ignore
     if [ $return_value -eq 32 ] && [[ "$remount_mode" == "ro" ]] && [[ "$remount_command_output" == *"$remount_partition_mount_point is busy"* ]]; then
         sudo_log 3 "Failed to remount $remount_partition_mount_point as $remount_mode, since its busy"
-        sudo_log 3 "Ignoring error and force setting result_code to \"0\""
+        sudo_log 3 "Ignoring error and force setting result_code to '0'"
         return 0
     # Else if non zero exit code received or output is set, then exit with error
     # in some cases exit code is 0, even though mount actually fails like if partition is read only
@@ -5987,7 +5987,7 @@ sudo_replace_comma_alternative_chars_with_commas_in_string() {
         # Set variable_name stored in $1 to variable_value in $2 after replacing all COMMA_ALTERNATIVE characters with a comma ',' in $2
         printf -v "$1" "%s" "${2//$COMMA_ALTERNATIVE/,}"
     else
-        sudo_log_errors "variable_name \"$1\" passed to \"sudo_replace_comma_alternative_chars_with_commas_in_string\" is not a valid bash variable name"
+        sudo_log_errors "variable_name '$1' passed to 'sudo_replace_comma_alternative_chars_with_commas_in_string' is not a valid bash variable name"
     fi
 
 }
@@ -6008,7 +6008,7 @@ sudo_trim_trailing_newlines() {
         # Set variable_name stored in $1 to variable_value in $2 without trailing newline and carriage return characters
         printf -v "$1" "%s" "${2%%*([$'\r\n'])}"
     else
-        sudo_log_errors "variable_name \"$1\" passed to \"sudo_trim_trailing_newlines\" is not a valid bash variable name"
+        sudo_log_errors "variable_name '$1' passed to 'sudo_trim_trailing_newlines' is not a valid bash variable name"
     fi
 
     (( extglob_was_unset )) && shopt -u extglob # Unset 'extglob', if previously unset
@@ -6649,7 +6649,7 @@ sudo_process_script_arguments() {
 
             # If more arguments are given
             if [ $# -ne 0 ]; then
-                sudo_log_arg_errors "Unknown arguments to \"$COMMAND_TYPE\": '$*'"
+                sudo_log_arg_errors "Unknown arguments to '$COMMAND_TYPE': '$*'"
                 sudo_exit_on_args_error || return $?
             fi
 

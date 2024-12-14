@@ -195,7 +195,7 @@ sudo_tests_main() {
     return_value=$?
     if [ $return_value -ne 0 ] || [[ ! "$SUDO_SCRIPT_PATH" =~ $VALID_ABSOLUTE_PATH_REGEX ]]; then
         sudo_log_errors "Failure while finding SUDO_SCRIPT_PATH"
-        sudo_log_errors "SUDO_SCRIPT_PATH=\"$SUDO_SCRIPT_PATH\""
+        sudo_log_errors "SUDO_SCRIPT_PATH='$SUDO_SCRIPT_PATH'"
         if [ $return_value -eq 0 ]; then
             return_value=1
         fi
@@ -204,7 +204,7 @@ sudo_tests_main() {
 
     # Source the sudo script
     if [ ! -x "$SUDO_SCRIPT_PATH" ]; then
-        sudo_tests_log_errors "The SUDO_SCRIPT_PATH \"$SUDO_SCRIPT_PATH\" found is not executable"
+        sudo_tests_log_errors "The SUDO_SCRIPT_PATH '$SUDO_SCRIPT_PATH' found is not executable"
         return 1
     else
         # shellcheck source=sudo
@@ -225,7 +225,7 @@ sudo_tests_main() {
     for var in "${SUDO_TESTS_REQUIRED_VARIABLES_ARRAY[@]}"; do
         # If var is not set
         if [ -z "${!var}" ]; then
-            sudo_tests_log_errors "The required variable \"$var\" for sudo_tests is not set"
+            sudo_tests_log_errors "The required variable '$var' for sudo_tests is not set"
             return 1
         fi
     done
@@ -291,8 +291,8 @@ sudo_tests_set_pre_required_variables() {
         ANDROID__BUILD_VERSION_SDK="$(unset LD_LIBRARY_PATH; unset LD_PRELOAD; getprop "ro.build.version.sdk")"
         return_value=$?
         if [ $return_value -ne 0 ] || [[ ! "$ANDROID__BUILD_VERSION_SDK" =~ $VALID_NUMBER_REGEX ]]; then
-            sudo_tests_log_errors "Failure while finding \"ro.build.version.sdk\" property"
-            sudo_tests_log_errors "ANDROID__BUILD_VERSION_SDK = \"$ANDROID__BUILD_VERSION_SDK\""
+            sudo_tests_log_errors "Failure while finding 'ro.build.version.sdk' property"
+            sudo_tests_log_errors "ANDROID__BUILD_VERSION_SDK='$ANDROID__BUILD_VERSION_SDK'"
             if [ $return_value -eq 0 ]; then
                 return_value=1
             fi
@@ -300,7 +300,7 @@ sudo_tests_set_pre_required_variables() {
         fi
     fi
 
-    sudo_tests_log 3 "ANDROID__BUILD_VERSION_SDK=\"$ANDROID__BUILD_VERSION_SDK\""
+    sudo_tests_log 3 "ANDROID__BUILD_VERSION_SDK='$ANDROID__BUILD_VERSION_SDK'"
 
 
 
@@ -317,7 +317,7 @@ sudo_tests_set_pre_required_variables() {
     # Used by sudo_set_post_su_variables
     SUDO_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
 
-    sudo_tests_log 3 "LD_LIBRARY_PATH=\"$LD_LIBRARY_PATH\""
+    sudo_tests_log 3 "LD_LIBRARY_PATH='$LD_LIBRARY_PATH'"
 
     return 0
 
@@ -341,7 +341,7 @@ sudo_tests_set_required_variables() {
     return_value=$?
     if [ $return_value -ne 0 ] || [[ ! "$SUDO_TESTS_TEMP_DIRECTORY_SUFFIX" =~  ^sudo\.......$ ]]; then
         sudo_tests_log_errors "Failure while running mktemp to create SUDO_TESTS_TEMP_DIRECTORY_SUFFIX"
-        sudo_tests_log_errors "SUDO_TESTS_TEMP_DIRECTORY_SUFFIX=\"$SUDO_TESTS_TEMP_DIRECTORY_SUFFIX\""
+        sudo_tests_log_errors "SUDO_TESTS_TEMP_DIRECTORY_SUFFIX='$SUDO_TESTS_TEMP_DIRECTORY_SUFFIX'"
         if [ $return_value -eq 0 ]; then
             return_value=1
         fi
@@ -744,7 +744,7 @@ echo "VARIABLE_2=\`$VARIABLE_2\`"
     return_value=$?
     # If android >= 10
     if [ "$ANDROID__BUILD_VERSION_SDK" -ge 29 ]; then
-        validate_sudo_test 1 $return_value "$output" "" "The rootfs \"/\" partition cannot be mounted as rw to be used for SUDO_SHELL_HOME \"$sudo_test_temp_shell_home\"" "*"
+        validate_sudo_test 1 $return_value "$output" "" "The rootfs '/' partition cannot be mounted as rw to be used for SUDO_SHELL_HOME '$sudo_test_temp_shell_home'" "*"
     else
         validate_sudo_test 0 $return_value "$output" "$sudo_test_temp_shell_home"
     fi
@@ -758,7 +758,7 @@ echo "VARIABLE_2=\`$VARIABLE_2\`"
     return_value=$?
     # If android >= 10
     if [ "$ANDROID__BUILD_VERSION_SDK" -ge 29 ]; then
-        validate_sudo_test 1 $return_value "$output" "" "The rootfs \"/\" partition cannot be mounted as rw to be used for SUDO_POST_SHELL_HOME \"$sudo_test_temp_post_shell_home\"" "*"
+        validate_sudo_test 1 $return_value "$output" "" "The rootfs '/' partition cannot be mounted as rw to be used for SUDO_POST_SHELL_HOME '$sudo_test_temp_post_shell_home'" "*"
     else
         validate_sudo_test 0 $return_value "$output" "$sudo_test_temp_post_shell_home"$'\n'"# exit"$'\n'"exit"
     fi
@@ -772,7 +772,7 @@ echo "VARIABLE_2=\`$VARIABLE_2\`"
     return_value=$?
     # If android >= 10
     if [ "$ANDROID__BUILD_VERSION_SDK" -ge 29 ] || [[ "$SUDO_TESTS_SYSTEM_PARTITION_IS_RO" == "1" ]]; then
-        validate_sudo_test 1 $return_value "$output" "" "The system \"/system\" partition cannot be mounted as rw to be used for SUDO_SHELL_HOME \"$sudo_test_temp_shell_home\"" "*"
+        validate_sudo_test 1 $return_value "$output" "" "The system '/system' partition cannot be mounted as rw to be used for SUDO_SHELL_HOME '$sudo_test_temp_shell_home'" "*"
     else
         validate_sudo_test 0 $return_value "$output" "$sudo_test_temp_shell_home"
     fi
@@ -786,7 +786,7 @@ echo "VARIABLE_2=\`$VARIABLE_2\`"
     return_value=$?
     # If android >= 10
     if [ "$ANDROID__BUILD_VERSION_SDK" -ge 29 ] || [[ "$SUDO_TESTS_SYSTEM_PARTITION_IS_RO" == "1" ]]; then
-        validate_sudo_test 1 $return_value "$output" "" "The system \"/system\" partition cannot be mounted as rw to be used for SUDO_POST_SHELL_HOME \"$sudo_test_temp_post_shell_home\"" "*"
+        validate_sudo_test 1 $return_value "$output" "" "The system '/system' partition cannot be mounted as rw to be used for SUDO_POST_SHELL_HOME '$sudo_test_temp_post_shell_home'" "*"
     else
         validate_sudo_test 0 $return_value "$output" "$sudo_test_temp_post_shell_home"$'\n'"# exit"$'\n'"exit"
     fi
@@ -923,49 +923,49 @@ SUDO_EOF
 
     run_sudo_test 39 && \
     output="$(sudo -s --shell=bas 'echo "Hi, $1 $2."' "$shell" "shell" 2>&1)"
-    validate_sudo_test 1 $? "$output" "" "The SUDO_SHELL \"bas\" is not supported. It must be one of" "*"
+    validate_sudo_test 1 $? "$output" "" "The SUDO_SHELL 'bas' is not supported. It must be one of" "*"
 
 
 
     run_sudo_test 40 && \
     output="$(sudo -si --post-shell=bas 'echo "Hi, $1 $2."' "$shell" "shell" 2>&1)"
-    validate_sudo_test 1 $? "$output" "" "The SUDO_POST_SHELL \"bas\" is not supported. It must be one of" "*"
+    validate_sudo_test 1 $? "$output" "" "The SUDO_POST_SHELL 'bas' is not supported. It must be one of" "*"
 
 
 
     run_sudo_test 41 && \
     output="$(sudo -s --shell-home='~/.config' 'echo "Hi, $1 $2."' "$shell" "shell" 2>&1)"
-    validate_sudo_test 1 $? "$output" "" "The \"$TERMUX_HOME/.config\" cannot be used as SUDO_SHELL_HOME" "*"
+    validate_sudo_test 1 $? "$output" "" "The '$TERMUX_HOME/.config' cannot be used as SUDO_SHELL_HOME" "*"
 
 
 
     run_sudo_test 42 && \
     output="$(sudo -s --shell-home='$PREFIX/' 'echo "Hi, $1 $2."' "$shell" "shell" 2>&1)"
-    validate_sudo_test 1 $? "$output" "" "The \"$TERMUX_PREFIX\" cannot be used as SUDO_SHELL_HOME" "*"
+    validate_sudo_test 1 $? "$output" "" "The '$TERMUX_PREFIX' cannot be used as SUDO_SHELL_HOME" "*"
 
 
 
     run_sudo_test 43 && \
     output="$(sudo -s --shell-home='$PREFIX/home' 'echo "Hi, $1 $2."' "$shell" "shell" 2>&1)"
-    validate_sudo_test 1 $? "$output" "" "The \"$TERMUX_PREFIX/home\" cannot be used as SUDO_SHELL_HOME" "*"
+    validate_sudo_test 1 $? "$output" "" "The '$TERMUX_PREFIX/home' cannot be used as SUDO_SHELL_HOME" "*"
 
 
 
     run_sudo_test 44 && \
     output="$(sudo -si --post-shell-home='~/.config' 'echo "Hi, $1 $2."' "$shell" "shell" 2>&1)"
-    validate_sudo_test 1 $? "$output" "" "The \"$TERMUX_HOME/.config\" cannot be used as SUDO_POST_SHELL_HOME" "*"
+    validate_sudo_test 1 $? "$output" "" "The '$TERMUX_HOME/.config' cannot be used as SUDO_POST_SHELL_HOME" "*"
 
 
 
     run_sudo_test 45 && \
     output="$(sudo -si --post-shell-home='$PREFIX/' 'echo "Hi, $1 $2."' "$shell" "shell" 2>&1)"
-    validate_sudo_test 1 $? "$output" "" "The \"$TERMUX_PREFIX\" cannot be used as SUDO_POST_SHELL_HOME" "*"
+    validate_sudo_test 1 $? "$output" "" "The '$TERMUX_PREFIX' cannot be used as SUDO_POST_SHELL_HOME" "*"
 
 
 
     run_sudo_test 46 && \
     output="$(sudo -si --post-shell-home='$PREFIX/home' 'echo "Hi, $1 $2."' "$shell" "shell" 2>&1)"
-    validate_sudo_test 1 $? "$output" "" "The \"$TERMUX_PREFIX/home\" cannot be used as SUDO_POST_SHELL_HOME" "*"
+    validate_sudo_test 1 $? "$output" "" "The '$TERMUX_PREFIX/home' cannot be used as SUDO_POST_SHELL_HOME" "*"
 
 
 
@@ -1493,13 +1493,13 @@ sudo_tests_run_subshell_command() {
 
     # If stdout_variable_name does equals "stdout_variable_name" and or is not a valid bash variable_name
     if [[ "$stdout_variable_name" == "stdout_variable_name" ]]|| [[ ! "$stdout_variable_name" =~ $valid_bash_variable_name_regex ]]; then
-        sudo_tests_log_errors "stdout_variable_name \"$1\" passed to \"sudo_tests_run_subshell_command\" equals \"stdout_variable_name\" or is not a valid bash variable name"
+        sudo_tests_log_errors "stdout_variable_name '$1' passed to 'sudo_tests_run_subshell_command' equals 'stdout_variable_name' or is not a valid bash variable name"
         return 1
     fi
 
     # If stderr_variable_name does equals "stderr_variable_name" and or is not a valid bash variable_name
     if [[ "$stderr_variable_name" == "stderr_variable_name" ]]|| [[ ! "$stderr_variable_name" =~ $valid_bash_variable_name_regex ]]; then
-        sudo_tests_log_errors "stderr_variable_name \"$1\" passed to \"sudo_tests_run_subshell_command\" equals \"stderr_variable_name\" or is not a valid bash variable name"
+        sudo_tests_log_errors "stderr_variable_name '$1' passed to 'sudo_tests_run_subshell_command' equals 'stderr_variable_name' or is not a valid bash variable name"
         return 1
     fi
 
@@ -1720,12 +1720,12 @@ sudo_tests_remove_sudo_tests_temp_directories() {
 
             # If SUDO_TESTS_DIRECTORY_PARENT_DIR is in rootfs "/" partition
             if [[ "$SUDO_TESTS_DIRECTORY_PARENT_DIR" =~ $VALID_PATH_IN_ROOTFS_PARTITION_REGEX ]]; then
-                rootfs_partition_dependent_paths+=" \"$SUDO_TESTS_DIRECTORY\""
+                rootfs_partition_dependent_paths+=" '$SUDO_TESTS_DIRECTORY'"
             fi
 
             # If SUDO_TESTS_DIRECTORY is in system "/system" partition
             if [[ "$SUDO_TESTS_DIRECTORY" =~ $VALID_PATH_IN_SYSTEM_PARTITION_REGEX ]] && [[ "$SUDO_TESTS_SYSTEM_PARTITION_IS_RO" != "1" ]]; then
-                system_partition_dependent_paths+=" \"$SUDO_TESTS_DIRECTORY\""
+                system_partition_dependent_paths+=" '$SUDO_TESTS_DIRECTORY'"
             fi
         done
 
@@ -1735,11 +1735,11 @@ sudo_tests_remove_sudo_tests_temp_directories() {
             # If rootfs_partition_dependent_paths is set
             if [ -n "$rootfs_partition_dependent_paths" ]; then
                 # Remount android rootfs partition as rw
-                sudo_tests_log 4 "Remounting rootfs \"/\" partition as rw to be used for$rootfs_partition_dependent_paths"
+                sudo_tests_log 4 "Remounting rootfs '/' partition as rw to be used for$rootfs_partition_dependent_paths"
                 sudo_remount_partition "rootfs" "rw" 0
                 return_value=$?
                 if [ $return_value -ne 0 ] && [ $return_value -ne 112 ]; then
-                    sudo_tests_log_errors "Failed to mount rootfs \"/\" partition as rw to be used for$rootfs_partition_dependent_paths"
+                    sudo_tests_log_errors "Failed to mount rootfs '/' partition as rw to be used for$rootfs_partition_dependent_paths"
                     return $return_value
                 fi
             fi
@@ -1747,11 +1747,11 @@ sudo_tests_remove_sudo_tests_temp_directories() {
             # If system_partition_dependent_paths is set
             if [ -n "$system_partition_dependent_paths" ]; then
                 # Remount android system partition as rw
-                sudo_tests_log 4 "Remounting system \"/system\" partition as rw to be used for$system_partition_dependent_paths"
+                sudo_tests_log 4 "Remounting system '/system' partition as rw to be used for$system_partition_dependent_paths"
                 sudo_remount_partition "system" "rw" 0
                 return_value=$?
                 if [ $return_value -ne 0 ] && [ $return_value -ne 112 ]; then
-                    sudo_tests_log_errors "Failed to mount system \"/system\" partition as rw to be used for$system_partition_dependent_paths"
+                    sudo_tests_log_errors "Failed to mount system '/system' partition as rw to be used for$system_partition_dependent_paths"
                     return $return_value
                 fi
             fi
