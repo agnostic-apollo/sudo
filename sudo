@@ -4472,7 +4472,7 @@ sudo_script__killtree() {
 
 sudo_script__trap() {
     local sudo_script__exit_code=$?
-    local return_value; sudo_script__custom_trap "$@"; return_value=$?
+    local return_value=0; sudo_script__custom_trap "$@" || return_value=$?
     [ $return_value -eq 125 ] && return 0
     [ $return_value -ne 0 ] && sudo_script__exit_code=$return_value
     trap - EXIT '"${SUDO_SCRIPT_COMMAND_TRAPS_REMOVE_TEMP_DIRECTORY_FUNCTION:+$'\n'    $SUDO_SCRIPT_COMMAND_TRAPS_REMOVE_TEMP_DIRECTORY_FUNCTION}"'
