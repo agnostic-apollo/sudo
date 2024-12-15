@@ -254,6 +254,9 @@ sudo_tests_run() {
 
     cd "$SUDO_TESTS_WORKING_DIR"
 
+    local tests_start_time
+    local tests_end_time
+    tests_start_time="$(date "+%s")" || return $?
 
     # Run tests
     if [ -z "$SUDO_TESTS_COMMAND_TYPE" ]; then
@@ -270,7 +273,10 @@ sudo_tests_run() {
         return 1
     fi
 
-    sudo_tests_log 1 $'\n\n'"All 'sudo' tests successful"
+    tests_end_time=$(($(date "+%s") - tests_start_time)) || return $?
+    sudo_tests_log 5 $'\n\n'
+    sudo_tests_log 1 "All 'sudo' tests successful in \
+$((tests_end_time / 3600 )) hours $(((tests_end_time % 3600) / 60)) minutes $((tests_end_time % 60)) seconds"
 
     return 0
 
