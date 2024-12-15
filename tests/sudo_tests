@@ -31,7 +31,8 @@ Available command_options:
   [ --help-extra ]   Display more help about how sudo_tests command
                      works.
   [ -q | --quiet ]   Set log level to 'OFF'.
-  [ -v | -vv ]       Set log level to 'DEBUG', 'VERBOSE', `VVERBOSE'.
+  [ -v | -vv | -vvv | -vvvvv ]  Set log level to 'DEBUG', 'VERBOSE',
+                                'VVERBOSE' and 'VVVERBOSE'.
   [ --only-bash-tests ] Run only bash shell tests.
 
 
@@ -141,11 +142,11 @@ SUDO_TESTS_HELP_EXTRA
 
 ### Set Default Variables Start
 
-SUDO_TESTS_MAX_LOG_LEVEL=4 # Default: `4` (VVERBOSE=4)
+SUDO_TESTS_MAX_LOG_LEVEL=5 # Default: `5` (VVVERBOSE=5)
 # shellcheck disable=SC2153
 SUDO_TESTS_LOG_LEVEL="$SUDO_TESTS__LOG_LEVEL"
 { [[ ! "$SUDO_TESTS_LOG_LEVEL" =~ ^[0-9]+$ ]] || [[ "$SUDO_TESTS_LOG_LEVEL" -gt "$SUDO_TESTS_MAX_LOG_LEVEL" ]]; } && \
-SUDO_TESTS_LOG_LEVEL=1 # Default: `1` (OFF=0, NORMAL=1, DEBUG=2, VERBOSE=3, VVERBOSE=4)
+SUDO_TESTS_LOG_LEVEL=1 # Default: `1` (OFF=0, NORMAL=1, DEBUG=2, VERBOSE=3, VVERBOSE=4 and VVVERBOSE=5)
 SUDO_TESTS_LOG_ARGS="${SUDO_TESTS__LOG_ARGS:-0}" # Default: `0` (Export or manually set to `1` if you want to debug arguments received)
 
 SUDO_TESTS_COMMAND_TYPE="" # Default: ``
@@ -171,11 +172,12 @@ VALID_ABSOLUTE_PATH_REGEX='^(/[^/]+)+$'
 
 
 
-function sudo_tests_log () { local log_level="${1}"; shift; if [[ $SUDO_TESTS_LOG_LEVEL -ge $log_level ]]; then echo "$@"; fi }
-function sudo_tests_log_literal() { local log_level="${1}"; shift; if [[ $SUDO_TESTS_LOG_LEVEL -ge $log_level ]]; then echo -e "$@"; fi }
-function sudo_tests_log_errors () { echo "$@" 1>&2; }
-function sudo_tests_log_args() { if [[ $SUDO_TESTS_LOG_ARGS == "1" ]]; then echo "$@"; fi }
-function sudo_tests_log_arg_errors() { echo "$@" 1>&2; }
+function sudo_tests_log() { local log_level="${1}"; shift; if [[ $SUDO_TESTS_LOG_LEVEL -ge $log_level ]]; then echo "sudo-tests:" "$@"; fi }
+function sudo_tests_log_no_tag() { local log_level="${1}"; shift; if [[ $SUDO_TESTS_LOG_LEVEL -ge $log_level ]]; then echo "$@"; fi }
+function sudo_tests_log_literal() { local log_level="${1}"; shift; if [[ $SUDO_TESTS_LOG_LEVEL -ge $log_level ]]; then echo -e "sudo-tests:" "$@"; fi }
+function sudo_tests_log_errors() { echo "sudo-tests:" "$@" 1>&2; }
+function sudo_tests_log_args() { if [[ $SUDO_TESTS_LOG_ARGS == "1" ]]; then echo "sudo-tests:" "$@"; fi }
+function sudo_tests_log_arg_errors() { echo "sudo-tests:" "$@" 1>&2; }
 
 # stdin in closed for some tests as a patch to SuperSU automatic redirection of stderr to stdout when running in interactive mode
 function close_stdin () {  if [ -t 0 ]; then exec <&-; fi }
@@ -261,10 +263,10 @@ sudo_tests_run() {
     # Run tests
     if [ -z "$SUDO_TESTS_COMMAND_TYPE" ]; then
         sudo_tests_log 1 "Running 'sudo' tests"
-        sudo_tests_log 1 $'\n\n'; sudo_tests_run_su_tests || return $?
-        sudo_tests_log 1 $'\n\n'; sudo_tests_run_asu_tests || return $?
-        sudo_tests_log 1 $'\n\n'; sudo_tests_run_path_tests || return $?
-        sudo_tests_log 1 $'\n\n'; sudo_tests_run_script_tests || return $?
+        sudo_tests_log 5 $'\n\n'; sudo_tests_run_su_tests || return $?
+        sudo_tests_log 5 $'\n\n'; sudo_tests_run_asu_tests || return $?
+        sudo_tests_log 5 $'\n\n'; sudo_tests_run_path_tests || return $?
+        sudo_tests_log 5 $'\n\n'; sudo_tests_run_script_tests || return $?
     elif [[ "$SUDO_TESTS_COMMAND_TYPE" != *,* ]] && [[ ",su,asu,path,script," == *",$SUDO_TESTS_COMMAND_TYPE,"* ]]; then
         sudo_tests_run_"${SUDO_TESTS_COMMAND_TYPE,,}"_tests || return $?
     else
@@ -306,7 +308,7 @@ sudo_tests_set_pre_required_variables() {
         fi
     fi
 
-    sudo_tests_log 3 "ANDROID__BUILD_VERSION_SDK='$ANDROID__BUILD_VERSION_SDK'"
+    sudo_tests_log 5 "ANDROID__BUILD_VERSION_SDK='$ANDROID__BUILD_VERSION_SDK'"
 
 
 
@@ -323,7 +325,7 @@ sudo_tests_set_pre_required_variables() {
     # Used by sudo_set_post_su_variables
     SUDO_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
 
-    sudo_tests_log 3 "LD_LIBRARY_PATH='$LD_LIBRARY_PATH'"
+    sudo_tests_log 5 "LD_LIBRARY_PATH='$LD_LIBRARY_PATH'"
 
     return 0
 
@@ -394,7 +396,7 @@ sudo_tests_run_su_tests() {
     local return_value
 
     SUDO_TESTS_COMMAND_TYPE="su"
-    sudo_tests_log 1 "Running '$SUDO_TESTS_COMMAND_TYPE' command type tests"
+    sudo_tests_log 2 "Start '$SUDO_TESTS_COMMAND_TYPE' tests"
 
 
 
@@ -446,7 +448,8 @@ sudo_tests_run_su_tests() {
     fi
 
 
-    sudo_tests_log 1 $'\n\n'"All 'su' command type tests successful"
+    sudo_tests_log 5 $'\n\n'
+    sudo_tests_log 2 "End '$SUDO_TESTS_COMMAND_TYPE' tests"
 
     return 0
 
@@ -457,7 +460,7 @@ sudo_tests_run_asu_tests() {
     local return_value
 
     SUDO_TESTS_COMMAND_TYPE="asu"
-    sudo_tests_log 1 "Running '$SUDO_TESTS_COMMAND_TYPE' command type tests"
+    sudo_tests_log 2 "Start '$SUDO_TESTS_COMMAND_TYPE' tests"
 
 
 
@@ -509,7 +512,8 @@ sudo_tests_run_asu_tests() {
     fi
 
 
-    sudo_tests_log 1 $'\n\n'"All 'asu' command type tests successful"
+    sudo_tests_log 5 $'\n\n'
+    sudo_tests_log 2 "End '$SUDO_TESTS_COMMAND_TYPE' tests"
 
     return 0
 }
@@ -519,7 +523,7 @@ sudo_tests_run_path_tests() {
     local return_value
 
     SUDO_TESTS_COMMAND_TYPE="path"
-    sudo_tests_log 1 "Running '$SUDO_TESTS_COMMAND_TYPE' command type tests"
+    sudo_tests_log 2 "Start '$SUDO_TESTS_COMMAND_TYPE' tests"
 
 
 
@@ -576,7 +580,8 @@ sudo_tests_run_path_tests() {
 
 
 
-    sudo_tests_log 1 $'\n\n'"All 'path' command type tests successful"
+    sudo_tests_log 5 $'\n\n'
+    sudo_tests_log 2 "End '$SUDO_TESTS_COMMAND_TYPE' tests"
 
     return 0
 
@@ -587,7 +592,7 @@ sudo_tests_run_script_tests() {
     local return_value
 
     SUDO_TESTS_COMMAND_TYPE="script"
-    sudo_tests_log 1 "Running '$SUDO_TESTS_COMMAND_TYPE' command type tests"
+    sudo_tests_log 2 "Start '$SUDO_TESTS_COMMAND_TYPE' tests"
 
 
 
@@ -1033,7 +1038,7 @@ SUDO_EOF
         validate_sudo_test 0 $? "$output" "What is your name?"$'\n'"Hi, $shell."
 
     else
-        sudo_tests_log 2 "Skipping zsh tests since its not installed"
+        sudo_tests_log 3 "Skipping zsh tests since its not installed"
     fi
 
 
@@ -1068,7 +1073,7 @@ SUDO_EOF
         validate_sudo_test 0 $? "$output" "What is your name?"$'\n'"Hi, $shell."
 
     else
-        sudo_tests_log 2 "Skipping dash tests since its not installed"
+        sudo_tests_log 3 "Skipping dash tests since its not installed"
     fi
 
 
@@ -1103,7 +1108,7 @@ SUDO_EOF
         validate_sudo_test 0 $? "$output" "What is your name?"$'\n'"Hi, $shell."
 
     else
-        sudo_tests_log 2 "Skipping sh tests since its not installed"
+        sudo_tests_log 3 "Skipping sh tests since its not installed"
     fi
 
 
@@ -1142,7 +1147,7 @@ SUDO_EOF
         validate_sudo_test 0 $? "$output" "What is your name?"$'\n'"Hi, $shell."
 
     else
-        sudo_tests_log 2 "Skipping fish tests since its not installed"
+        sudo_tests_log 3 "Skipping fish tests since its not installed"
     fi
 
 
@@ -1218,7 +1223,7 @@ SUDO_EOF
         fi
 
     else
-        sudo_tests_log 2 "Skipping python tests since its not installed"
+        sudo_tests_log 3 "Skipping python tests since its not installed"
     fi
 
 
@@ -1254,7 +1259,7 @@ SUDO_EOF
         validate_sudo_test 0 $? "$output" "What is your name?"$'\n'"Hi, $shell."
 
     else
-        sudo_tests_log 2 "Skipping ruby tests since its not installed"
+        sudo_tests_log 3 "Skipping ruby tests since its not installed"
     fi
 
 
@@ -1295,7 +1300,7 @@ SUDO_EOF
                 validate_sudo_test 0 $? "$output" "*" "Hi, $shell." ""
 
     else
-        sudo_tests_log 2 "Skipping node tests since its not installed"
+        sudo_tests_log 3 "Skipping node tests since its not installed"
     fi
 
 
@@ -1331,7 +1336,7 @@ SUDO_EOF
         validate_sudo_test 0 $? "$output" "What is your name?"$'\n'"Hi, $shell."
 
     else
-        sudo_tests_log 2 "Skipping perl tests since its not installed"
+        sudo_tests_log 3 "Skipping perl tests since its not installed"
     fi
 
 
@@ -1366,7 +1371,7 @@ SUDO_EOF
         validate_sudo_test 0 $? "$output" "What is your name?"$'\n'"Hi, $shell."
 
     else
-        sudo_tests_log 2 "Skipping lua5.2 tests since its not installed"
+        sudo_tests_log 3 "Skipping lua5.2 tests since its not installed"
     fi
 
 
@@ -1401,7 +1406,7 @@ SUDO_EOF
         validate_sudo_test 0 $? "$output" "What is your name?"$'\n'"Hi, $shell."
 
     else
-        sudo_tests_log 2 "Skipping lua5.3 tests since its not installed"
+        sudo_tests_log 3 "Skipping lua5.3 tests since its not installed"
     fi
 
 
@@ -1436,7 +1441,7 @@ SUDO_EOF
         validate_sudo_test 0 $? "$output" "What is your name?"$'\n'"Hi, $shell."
 
     else
-        sudo_tests_log 2 "Skipping lua5.4 tests since its not installed"
+        sudo_tests_log 3 "Skipping lua5.4 tests since its not installed"
     fi
 
 
@@ -1473,12 +1478,13 @@ SUDO_EOF
         validate_sudo_test 0 $? "$output" "What is your name?"$'\n'"php"$'\n'"Hi, $shell."
 
     else
-        sudo_tests_log 2 "Skipping php tests since its not installed"
+        sudo_tests_log 3 "Skipping php tests since its not installed"
     fi
 
 
 
-    sudo_tests_log 1 $'\n\n'"All 'script' command type tests successful"
+    sudo_tests_log 5 $'\n\n'
+    sudo_tests_log 2 "End '$SUDO_TESTS_COMMAND_TYPE' tests"
 
     return 0
 
@@ -1547,6 +1553,8 @@ sudo_tests_run_subshell_command() {
 
 set_sudo_tests_current_test_shell () {
 
+    sudo_tests_log 3 "$1()"
+
     SUDO_TESTS_PREVIOUS_TEMP_TEST_SHELL="$SUDO_TESTS_CURRENT_TEST_SHELL";
     SUDO_TESTS_CURRENT_TEST_SHELL="$1"
 
@@ -1574,7 +1582,8 @@ set_sudo_tests_current_test_number () {
     if [ -n "$SUDO_TESTS_USER_TEST_SHELL" ] && [ -n "$SUDO_TESTS_USER_TEST_NUMBER" ] && \
             [[ "$SUDO_TESTS_PREVIOUS_TEST_SHELL" == "$SUDO_TESTS_USER_TEST_SHELL" ]] && \
                 [[ "$SUDO_TESTS_PREVIOUS_TEST_NUMBER" == "$SUDO_TESTS_USER_TEST_NUMBER" ]]; then
-        sudo_tests_log 1 $'\n\n'"User 'sudo' test successful"
+        sudo_tests_log 5 $'\n\n'
+        sudo_tests_log 1 "User 'sudo' test successful"
         exit 0
     fi
 
@@ -1601,7 +1610,8 @@ set_sudo_tests_current_test_number () {
 run_sudo_test () {
 
     set_sudo_tests_current_test_number "$1" || return $?
-    sudo_tests_log 2 $'\n\n'"Running $SUDO_TESTS_CURRENT_TEST_SHELL shell test $SUDO_TESTS_CURRENT_TEST_NUMBER";
+    sudo_tests_log 5 $'\n\n'
+    sudo_tests_log 4 "$SUDO_TESTS_CURRENT_TEST_NUMBER()"
 
 }
 
@@ -1611,7 +1621,7 @@ run_sudo_test () {
 skip_sudo_test () {
 
     set_sudo_tests_current_test_number "$1" || return $?
-    sudo_tests_log 2 $'\n\n'"Skipping $SUDO_TESTS_CURRENT_TEST_SHELL shell test $SUDO_TESTS_CURRENT_TEST_NUMBER";
+    sudo_tests_log 5 $'\n\n'"Skipping $SUDO_TESTS_CURRENT_TEST_SHELL shell test $SUDO_TESTS_CURRENT_TEST_NUMBER";
 
 }
 
@@ -1638,7 +1648,7 @@ validate_sudo_test () {
 
     # If actual_output is set
     if [ -n "$actual_output" ]; then
-        cat -v <<<"$actual_output"
+        sudo_tests_log_no_tag 5 "$(cat -v <<<"$actual_output")"
     fi
 
     # If argument count equals 4 and actual_output does not exactly match $4
@@ -1686,8 +1696,6 @@ validate_sudo_test () {
         exit "$actual_result_value"
     fi
 
-    sudo_tests_log 2 $'\n'"Test successful";
-
     return 0
 
 }
@@ -1717,7 +1725,7 @@ sudo_tests_remove_sudo_tests_temp_directories() {
     # If SU, SUDO_TESTS_DIRECTORIES and SUDO_TESTS_TEMP_DIRECTORY_SUFFIX are set
     if [ -n "$SU" ] && [ ${#SUDO_TESTS_DIRECTORIES[@]} -ne 0 ] && [ -n "$SUDO_TESTS_TEMP_DIRECTORY_SUFFIX" ]; then
 
-        sudo_tests_log 3 $'\n\n'"Running sudo_tests_remove_sudo_tests_temp_directories"
+        sudo_tests_log 5 $'\n\n'"Running sudo_tests_remove_sudo_tests_temp_directories"
 
         local rootfs_partition_dependent_paths=""
         local system_partition_dependent_paths=""
@@ -1750,7 +1758,7 @@ sudo_tests_remove_sudo_tests_temp_directories() {
             # If rootfs_partition_dependent_paths is set
             if [ -n "$rootfs_partition_dependent_paths" ]; then
                 # Remount android rootfs partition as rw
-                sudo_tests_log 4 "Remounting rootfs '/' partition as rw to be used for$rootfs_partition_dependent_paths"
+                sudo_tests_log 5 "Remounting rootfs '/' partition as rw to be used for$rootfs_partition_dependent_paths"
                 sudo_remount_partition "rootfs" "rw" 0
                 return_value=$?
                 if [ $return_value -ne 0 ] && [ $return_value -ne 112 ]; then
@@ -1762,7 +1770,7 @@ sudo_tests_remove_sudo_tests_temp_directories() {
             # If system_partition_dependent_paths is set
             if [ -n "$system_partition_dependent_paths" ]; then
                 # Remount android system partition as rw
-                sudo_tests_log 4 "Remounting system '/system' partition as rw to be used for$system_partition_dependent_paths"
+                sudo_tests_log 5 "Remounting system '/system' partition as rw to be used for$system_partition_dependent_paths"
                 sudo_remount_partition "system" "rw" 0
                 return_value=$?
                 if [ $return_value -ne 0 ] && [ $return_value -ne 112 ]; then
