@@ -989,9 +989,11 @@ SUDO_EOF
 
 
 
-    run_sudo_test 48 && \
-    output="$(sudo -si --post-shell="python" --post-shell-stdin-string='exit(0)' 2>&1)"
-    validate_sudo_test 0 $? "$output" "*" "Python" "*"
+    if [ -x "$TERMUX_PREFIX/bin/python" ]; then
+        run_sudo_test 48 && \
+        output="$(sudo -si --post-shell="python" --post-shell-stdin-string='exit(0)' 2>&1)"
+        validate_sudo_test 0 $? "$output" "*" "Python" "*"
+    fi
 
 
 
