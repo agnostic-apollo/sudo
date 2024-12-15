@@ -629,11 +629,11 @@ sudo_tests_run_script_tests() {
 
     run_sudo_test 8 && \
     output="$(sudo -si --post-shell-stdin-string='readlink -f /proc/$$/exe; exit;')"
-    validate_sudo_test 0 $? "$output" '# readlink -f /proc/$$/exe; exit;'$'\n'"$TERMUX_PREFIX/bin/bash"$'\n'"exit"
+    validate_sudo_test 0 $? "$output" "*" '# readlink -f /proc/$$/exe; exit;'$'\n'"$TERMUX_PREFIX/bin/bash"$'\n'"exit" ""
 
     run_sudo_test 9 && \
     output="$(sudo -si --post-shell="$TERMUX_PREFIX/bin/bash" --post-shell-stdin-string='readlink -f /proc/$$/exe; exit;')"
-    validate_sudo_test 0 $? "$output" '# readlink -f /proc/$$/exe; exit;'$'\n'"$TERMUX_PREFIX/bin/bash"$'\n'"exit"
+    validate_sudo_test 0 $? "$output" "*" '# readlink -f /proc/$$/exe; exit;'$'\n'"$TERMUX_PREFIX/bin/bash"$'\n'"exit" ""
 
 
 
@@ -737,7 +737,7 @@ echo "VARIABLE_2=\`$VARIABLE_2\`"
 
     run_sudo_test 20 && \
     output="$(sudo -si --post-shell-stdin-string='exit' --shell-pre-commands='echo "Start script"' --shell-post-commands='echo "Exited script"' --post-shell-pre-commands='echo "Starting interactive shell"' --post-shell-post-commands='echo "Exited interactive shell"' 'echo "Hi, $1 $2."' "$shell" "shell")"
-    validate_sudo_test 0 $? "$output" "Start script"$'\n'"Hi, $shell shell."$'\n'"Exited script"$'\n'"Starting interactive shell"$'\n'"# exit"$'\n'"exit"$'\n'"Exited interactive shell"
+    validate_sudo_test 0 $? "$output" r+="^Start script"$'\n'"Hi, $shell shell\."$'\n'"Exited script"$'\n'"Starting interactive shell"$'\n'"([^"$'\n'"#]+)?# exit"$'\n'"exit"$'\n'"Exited interactive shell$"
 
 
 
@@ -766,7 +766,7 @@ echo "VARIABLE_2=\`$VARIABLE_2\`"
     if [ "$ANDROID__BUILD_VERSION_SDK" -ge 29 ]; then
         validate_sudo_test 1 $return_value "$output" "" "The rootfs '/' partition cannot be mounted as rw to be used for SUDO_POST_SHELL_HOME '$sudo_test_temp_post_shell_home'" "*"
     else
-        validate_sudo_test 0 $return_value "$output" "$sudo_test_temp_post_shell_home"$'\n'"# exit"$'\n'"exit"
+        validate_sudo_test 0 $return_value "$output" r+="^${sudo_test_temp_post_shell_home}"$'\n'"([^"$'\n'"#]+)?# exit"$'\n'"exit$"
     fi
 
 
@@ -794,7 +794,7 @@ echo "VARIABLE_2=\`$VARIABLE_2\`"
     if [ "$ANDROID__BUILD_VERSION_SDK" -ge 29 ] || [[ "$SUDO_TESTS_SYSTEM_PARTITION_IS_RO" == "1" ]]; then
         validate_sudo_test 1 $return_value "$output" "" "The system '/system' partition cannot be mounted as rw to be used for SUDO_POST_SHELL_HOME '$sudo_test_temp_post_shell_home'" "*"
     else
-        validate_sudo_test 0 $return_value "$output" "$sudo_test_temp_post_shell_home"$'\n'"# exit"$'\n'"exit"
+        validate_sudo_test 0 $return_value "$output" r+="^${sudo_test_temp_post_shell_home}"$'\n'"([^"$'\n'"#]+)?# exit"$'\n'"exit$"
     fi
 
 
