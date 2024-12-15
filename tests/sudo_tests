@@ -1642,13 +1642,20 @@ validate_sudo_test () {
     fi
 
     # If argument count equals 4 and actual_output does not exactly match $4
-    if [ $# -eq 4 ] && [[  "$actual_output" != "$4" ]]; then
-        output_match_test_failed=1
-        expected_output="$4"
+    if [ $# -eq 4 ]; then
+        if [[  "$4" == "r+="* ]]; then
+            if [[ ! "$actual_output" =~ ${4:3} ]]; then
+                output_match_test_failed=1
+                expected_output="$4"
+            fi
+        elif [[ "$actual_output" != "$4" ]]; then
+            output_match_test_failed=1
+            expected_output="$4"
+        fi
     fi
 
     # If argument count greater than 4 and actual_output does not exactly match $5 with $4 and $6 as optional globs
-    if [ $# -gt 4 ] && [[  "$actual_output" != $4"$5"$6 ]]; then
+    if [ $# -gt 4 ] && [[ "$actual_output" != $4"$5"$6 ]]; then
         output_match_test_failed=1
         expected_output="$4$5$6"
     fi
