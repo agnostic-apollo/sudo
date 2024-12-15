@@ -362,7 +362,7 @@ sudo_tests_set_required_variables() {
 
 
 
-    if [[ "$(mount)" == *"/.magisk/mirror/system"* ]]; then
+    if [[ "$(cat /proc/self/mounts)" == *"/.magisk/mirror/system"* ]]; then
         SUDO_TESTS_SYSTEM_PARTITION_IS_RO=1
     else
         SUDO_TESTS_SYSTEM_PARTITION_IS_RO=0
