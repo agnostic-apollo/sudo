@@ -4401,7 +4401,8 @@ sudo_trap() {
     [ $sudo_exit_code -ne 0 ] && sudo_remove_sudo_temp_directory
     sudo_remount_partitions_for_sudo_shell_homes "ro"
 
-    [ -n "$1" ] && trap - $1; exit $sudo_exit_code
+    [ -n "${1:-}" ] && trap - "$1"
+    exit $sudo_exit_code
 
 }
 
@@ -4466,6 +4467,14 @@ export SUDO_SCRIPT__TEMP_DIR='"'${SUDO_TEMP_DIRECTORY//\'/\'\\\'\'}'"'
         SUDO_SCRIPT_COMMAND_TRAPS_REMOVE_TEMP_DIRECTORY_FUNCTION=""
     fi
 
+    # FIXME: Use alternate for `pgrep` as its not available on Android `< 6`.
+    # shellcheck disable=SC2016
+    local sudo_script__killtree_command='sudo_script__killtree "${1:-}" $$'
+    # If on Android `< 6`
+    if [ "$ANDROID__BUILD_VERSION_SDK" -lt 25 ]; then
+        sudo_script__killtree_command=':'
+    fi
+
     # shellcheck disable=SC2016
     SUDO_SCRIPT_COMMAND_TRAPS+='
 sudo_script__custom_trap() { :; }
@@ -4473,7 +4482,7 @@ sudo_script__custom_trap() { :; }
 sudo_script__killtree() {
     local signal="$1"; local pid="$2"; local cpid
     for cpid in $(pgrep -P "$pid"); do sudo_script__killtree "$signal" "$cpid"; done
-    [[ "$pid" != "$$" ]] && kill "-${signal:-15}" "$pid" 2>/dev/null
+    [ "$pid" != "$$" ] && kill "-${signal:-15}" "$pid" 2>/dev/null
 }
 
 sudo_script__trap() {
@@ -4482,8 +4491,8 @@ sudo_script__trap() {
     [ $return_value -eq 125 ] && return 0
     [ $return_value -ne 0 ] && sudo_script__exit_code=$return_value
     trap - EXIT '"${SUDO_SCRIPT_COMMAND_TRAPS_REMOVE_TEMP_DIRECTORY_FUNCTION:+$'\n'    $SUDO_SCRIPT_COMMAND_TRAPS_REMOVE_TEMP_DIRECTORY_FUNCTION}"'
-    [ -n "$1" ] && trap - $1
-    sudo_script__killtree "$1" $$; exit $sudo_script__exit_code
+    [ -n "${1:-}" ] && trap - "$1"
+    '"$sudo_script__killtree_command"' "${1:-}" $$; exit $sudo_script__exit_code
 }
 '"
 trap 'sudo_script__trap' EXIT
