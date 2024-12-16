@@ -4780,7 +4780,7 @@ sudo_create_modify_validate_directory() {
                 "sub_directories_chown_command_options" "$sub_directories_chown_command_options" || return $?
 
             sudo_log 3 "Setting '${sub_directories_chown_command_options_array[*]}' ownership to $directory_path_label directory at '$directory_path' subdirectories"
-            find "$directory_path" -type d -print0 | xargs -0 -r -- chown "${sub_directories_chown_command_options_array[@]}" --
+            (sudo_trim_env_for_xargs && find "$directory_path" -type d -print0 | xargs -0 -r -- chown "${sub_directories_chown_command_options_array[@]}" --)
             return_value=$?
             if [ $return_value -ne 0 ]; then
                 sudo_log_errors "Failed to set ownership of subdirectories in $directory_path_label directory at '$directory_path'"
@@ -4795,7 +4795,7 @@ sudo_create_modify_validate_directory() {
                 "sub_directories_chmod_command_options" "$sub_directories_chmod_command_options" || return $?
 
             sudo_log 3 "Setting '${sub_directories_chmod_command_options_array[*]}' permissions to $directory_path_label directory at '$directory_path' subdirectories"
-            find "$directory_path" -type d -print0 | xargs -0 -r -- chmod "${sub_directories_chmod_command_options_array[@]}" --
+            (sudo_trim_env_for_xargs && find "$directory_path" -type d -print0 | xargs -0 -r -- chmod "${sub_directories_chmod_command_options_array[@]}" --)
             return_value=$?
             if [ $return_value -ne 0 ]; then
                 sudo_log_errors "Failed to set permissions of subdirectories in $directory_path_label directory at '$directory_path'"
@@ -4810,7 +4810,7 @@ sudo_create_modify_validate_directory() {
                 "sub_files_chown_command_options" "$sub_files_chown_command_options" || return $?
 
             sudo_log 3 "Setting '${sub_files_chown_command_options_array[*]}' ownership to $directory_path_label directory at '$directory_path' subfiles"
-            find "$directory_path" -type f -print0 | xargs -0 -r -- chown "${sub_files_chown_command_options_array[@]}" --
+            (sudo_trim_env_for_xargs && find "$directory_path" -type f -print0 | xargs -0 -r -- chown "${sub_files_chown_command_options_array[@]}" --)
             return_value=$?
             if [ $return_value -ne 0 ]; then
                 sudo_log_errors "Failed to set ownership of subfiles in $directory_path_label directory at '$directory_path'"
@@ -4825,7 +4825,7 @@ sudo_create_modify_validate_directory() {
                 "sub_files_chmod_command_options" "$sub_files_chmod_command_options" || return $?
 
             sudo_log 3 "Setting '${sub_files_chmod_command_options_array[*]}' permissions to $directory_path_label directory at '$directory_path' subfiles"
-            find "$directory_path" -type f -print0 | xargs -0 -r -- chmod "${sub_files_chmod_command_options_array[@]}" --
+            (sudo_trim_env_for_xargs && find "$directory_path" -type f -print0 | xargs -0 -r -- chmod "${sub_files_chmod_command_options_array[@]}" --)
             return_value=$?
             if [ $return_value -ne 0 ]; then
                 sudo_log_errors "Failed to set permissions of subfiles in $directory_path_label directory at '$directory_path'"
@@ -5965,7 +5965,8 @@ converted to a command array cannot contain a newline '\n' character:"
                 # on `libalteran-sh` `bash___shell__set_is_xargs_command_args_parsing_valid()`
                 # function, check it for more info and comments.
                 return_value=0
-                xargs_command_output="$(printf "%s" "'' 'arg' '' 'arg with space' 'arg surround by single quote' \"arg surround by double quote\" 'arg with '\'' single quote' 'arg with \" double quote' 'arg with \" double quote surround by single quote' \"arg with ' single quote surround by double quote\" arg\ with\ escaped\ space 'arg with backslash \\ and forward slash / surround by single quote' \"arg with backslash \\ and forward slash / surround by double quote\" \\/ \\\\ ''" | \
+                xargs_command_output="$(sudo_trim_env_for_xargs && \
+                    printf "%s" "'' 'arg' '' 'arg with space' 'arg surround by single quote' \"arg surround by double quote\" 'arg with '\'' single quote' 'arg with \" double quote' 'arg with \" double quote surround by single quote' \"arg with ' single quote surround by double quote\" arg\ with\ escaped\ space 'arg with backslash \\ and forward slash / surround by single quote' \"arg with backslash \\ and forward slash / surround by double quote\" \\/ \\\\ ''" | \
                     xargs -r -n1 -- printf "%s\n" && echo -n x)" || return_value=$?
                 if [ $return_value -ne 0 ]; then
                     sudo_log_errors "Failed to check if xargs command args parsing is valid."
@@ -5990,8 +5991,9 @@ shell special characters and 'xargs' command args parsing is not valid:"
             return_value=0
             while IFS= read -r command_arg; return_value=$?; [[ $return_value -eq 0 ]]; do
                 command_args_array+=("$command_arg")
-            done < <(printf "%s\n" "$command_args_string" | \
-                xargs -r -n1 -- printf "%s\n" || echo -n "CMD_ERROR")
+            done < <({ sudo_trim_env_for_xargs && \
+                printf "%s\n" "$command_args_string" | \
+                xargs -r -n1 -- printf "%s\n"; } || echo -n "CMD_ERROR")
             if [[ -n "${command_arg:-}" ]] || [ $return_value -ne 1 ]; then
                 sudo_log_errors "Failed to create command array for \
 command arguments string \`$command_args_string\`."
@@ -6023,6 +6025,32 @@ command arguments string \`$command_args_string\`."
     unset -n  command_args_array || return $?
 
     return 0
+
+}
+
+##
+# Trim exported environment variables before running `xargs` to
+# prevent `environment is too large for exec` error on Android `< 6`.
+#
+# On Android `5`, `getconf ARG_MAX` equals `4096` and `xargs` always
+# fails to run.
+#
+# Only `PATH`, `$LD_LIBRARY_PATH` and `$LD_PRELOAD` variables are kept,
+# and all other variables are unset.
+#
+# - https://www.gnu.org/software/findutils/manual/html_node/find_html/Error-Messages-From-xargs.html
+##
+sudo_trim_env_for_xargs() {
+
+    # If on Android `< 6`
+    if [ "$ANDROID__BUILD_VERSION_SDK" -lt 25 ]; then
+        local env_variables
+        env_variables="$(compgen -e | grep -v -E "^PATH|LD_LIBRARY_PATH|LD_PRELOAD$")" || return $?
+        if [ -n "$env_variables" ]; then
+            # shellcheck disable=SC2086
+            unset $env_variables
+        fi
+    fi
 
 }
 
