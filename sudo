@@ -3035,6 +3035,12 @@ sudo_set_rcfile_functions() {
     # If shell is fish
     if [[ "$shell_basename" == "fish" ]]; then
 
+        local fish_quiet_option=" -q"
+        # If on Android `< 7`
+        if [ "$ANDROID__BUILD_VERSION_SDK" -lt 24 ]; then
+            fish_quiet_option=""
+        fi
+
         # Define export helper function for fish shell that allows export command in bash to be used
         # shellcheck disable=SC2016
         FISH_SHELL_EXPORT_FUNCTION='
@@ -3046,8 +3052,8 @@ function export
     end
 end
 
-funcsave -q export
-'
+'"funcsave$fish_quiet_option export
+"
 
         # Define unset helper function for fish shell that allows export command in bash to be used
         # shellcheck disable=SC2016
@@ -3056,8 +3062,8 @@ function unset
     set --erase $argv
 end
 
-funcsave -q unset
-'
+'"funcsave$fish_quiet_option unset
+"
 
     # Define tpath helper function for fish shell that sets priority to termux paths
     # shellcheck disable=SC2016
