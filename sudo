@@ -14,7 +14,7 @@
 #                https://github.com/cswl/tsu
 SUDO__VERSION="@SUDO_PKG__VERSION@"
 [ "$SUDO__VERSION" = @"SUDO_PKG__VERSION"@ ] && \
-SUDO__VERSION=0.2.0
+SUDO__VERSION=1.0.0
 
 
 

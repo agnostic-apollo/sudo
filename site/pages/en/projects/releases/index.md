@@ -6,7 +6,7 @@ page_ref: "@ARK_PROJECT__VARIANT@/agnostic-apollo/sudo/releases/index.html"
 
 This page lists the releases info for [`sudo`](https://github.com/agnostic-apollo/sudo).
 
-**The currently latest release of `sudo` is [`v0.2.0`](0/v0.2.0.md).**
+**The currently latest release of `sudo` is [`v1.0.0`](1/v1.0.0.md).**
 
 ---
 
@@ -38,6 +38,10 @@ Open a release to view its release notes and/or changelogs. Changelogs are gener
 
 - [`v0.1.0`](0/v0.1.0.md)
 - [`v0.2.0`](0/v0.2.0.md)
+
+### `v1`
+
+- [`v1.0.0`](1/v1.0.0.md)
 
 ---
 

@@ -1,4 +1,4 @@
-export SUDO_PKG__VERSION := 0.2.0
+export SUDO_PKG__VERSION := 1.0.0
 export SUDO_PKG__ARCH
 export SUDO__INSTALL_PREFIX
 
