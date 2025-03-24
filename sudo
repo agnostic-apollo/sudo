@@ -6137,7 +6137,7 @@ sudo_process_script_arguments() {
                         ;;
                     version)
                         sudo_log_args "Parsing option: '--${OPTARG%=*}'"
-                        echo "$SUDO__VERSION"
+                        echo "sudo version=$SUDO__VERSION org=agnostic-apollo project=sudo"
                         SUDO_NOOP_COMMAND=1; return 0
                         ;;
                     version=*)
