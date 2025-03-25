@@ -4458,6 +4458,8 @@ sudo_trap() {
 
 sudo_remove_sudo_temp_directory() {
 
+    local return_value
+
     local su_output
 
     # If SUDO_TEMP_DIRECTORY is a valid absolute path and SU_ENV_COMMAND is set and
@@ -4470,6 +4472,7 @@ sudo_remove_sudo_temp_directory() {
         sudo_log_literal 3 "\nRemoving SUDO_TEMP_DIRECTORY in case it wasn't already removed"
         sudo_unset_pre_su_variables
         su_output=$($SU_ENV_COMMAND "rm -rf '${SUDO_TEMP_DIRECTORY//\'/\'\\\'\'}'" 2>&1 < /dev/null)
+        return_value=$?
         sudo_set_post_su_variables
         { [ $return_value -ne 0 ] && [ -n "$su_output" ]; } && sudo_log_errors "$su_output"
         SUDO_TEMP_DIRECTORY=""
