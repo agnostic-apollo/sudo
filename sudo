@@ -653,7 +653,7 @@ sudo_run() {
 
         # If SUDO_PATH_FD_PATH is set, then close it
         if [ -n "$SUDO_PATH_FD_PATH" ]; then
-            exec {SUDO_PATH_FD_PATH}>&-
+            exec {SUDO_PATH_FD_PATH}<&-
             SUDO_PATH_FD_PATH=""
         fi
 
@@ -711,7 +711,7 @@ sudo_run() {
 
         # If SUDO_SCRIPT_FD is set, then close it
         if [ -n "$SUDO_SCRIPT_FD" ]; then
-            exec {SUDO_SCRIPT_FD}>&-
+            exec {SUDO_SCRIPT_FD}<&-
             SUDO_SCRIPT_FD=""
         fi
 
@@ -2606,7 +2606,7 @@ sudo_create_sudo_temp_file() {
 
     # If temp_file_fd is set, then close it
     if [ -n "$temp_file_fd" ]; then
-        exec {temp_file_fd}>&-
+        exec {temp_file_fd}<&-
     fi
 
     if [ $return_value -ne 0 ]; then
@@ -3823,7 +3823,7 @@ sudo_cleanup_temp_directory_fd_path() {
     else
         # If SUDO_TEMP_DIRECTORY_FD is set, then close it
         if [ -n "$SUDO_TEMP_DIRECTORY_FD" ]; then
-            exec {SUDO_TEMP_DIRECTORY_FD}>&-
+            exec {SUDO_TEMP_DIRECTORY_FD}<&-
             SUDO_TEMP_DIRECTORY_FD=""
         fi
     fi
