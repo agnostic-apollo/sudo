@@ -156,11 +156,11 @@ SUDO_SU_PATH="${SUDO__SU_PATH:-}" # Default: ``
 ### Set Default Variables Start
 # The following variables must not be modified unless you know what you are doing
 
-SUDO_MAX_LOG_LEVEL=3 # Default: `3` (VERBOSE=3)
+SUDO_MAX_LOG_LEVEL=5 # Default: `5` (VVVERBOSE=5)
 # shellcheck disable=SC2153
 SUDO_LOG_LEVEL="$SUDO__LOG_LEVEL"
 { [[ ! "${SUDO_LOG_LEVEL:-}" =~ ^[0-9]+$ ]] || [[ "$SUDO_LOG_LEVEL" -gt "$SUDO_MAX_LOG_LEVEL" ]]; } && \
-SUDO_LOG_LEVEL=1 # Default: `1` (OFF=0, NORMAL=1, DEBUG=2, VERBOSE=3)
+SUDO_LOG_LEVEL=1 # Default: `1` (OFF=0, NORMAL=1, DEBUG=2, VERBOSE=3, VVERBOSE=4 and VVVERBOSE=5)
 SUDO_LOG_ARGS="${SUDO__LOG_ARGS:-0}" # Default: `0` (Export or manually set to `1` if you want to debug arguments received)
 
 SUDO_NOOP_COMMAND=0 # Default: `0`
