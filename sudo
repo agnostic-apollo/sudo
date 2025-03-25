@@ -4505,12 +4505,14 @@ export SUDO_SCRIPT__TEMP_DIR='"'${SUDO_TEMP_DIRECTORY//\'/\'\\\'\'}'"'
         SUDO_SCRIPT_COMMAND_TRAPS_REMOVE_TEMP_DIRECTORY_FUNCTION=""
     fi
 
-    # FIXME: Use alternate for `pgrep` as its not available on Android `< 6`.
+    # FIXME: Use alternate for `pgrep` as it will not be available on
+    # Android `< 6` if PATH is set to `/system/bin`. Termux does
+    # provide it with `procps` package under `$TERMUX_PREFIX/bin`.
     # shellcheck disable=SC2016
     local sudo_script__killtree_command='sudo_script__killtree "${1:-}" $$'
     # If on Android `< 6`
     if [ "$ANDROID__BUILD_VERSION_SDK" -lt 23 ]; then
-        sudo_script__killtree_command=':'
+        sudo_script__killtree_command='command -v "pgrep" 1>/dev/null 2>&1 && '"$sudo_script__killtree_command"
     fi
 
     # shellcheck disable=SC2016
@@ -4530,7 +4532,7 @@ sudo_script__trap() {
     [ $return_value -ne 0 ] && sudo_script__exit_code=$return_value
     trap - EXIT '"${SUDO_SCRIPT_COMMAND_TRAPS_REMOVE_TEMP_DIRECTORY_FUNCTION:+$'\n'    $SUDO_SCRIPT_COMMAND_TRAPS_REMOVE_TEMP_DIRECTORY_FUNCTION}"'
     [ -n "${1:-}" ] && trap - "$1"
-    '"$sudo_script__killtree_command"' "${1:-}" $$; exit $sudo_script__exit_code
+    '"$sudo_script__killtree_command"'; exit $sudo_script__exit_code
 }
 '"
 trap 'sudo_script__trap' EXIT
