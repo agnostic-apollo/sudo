@@ -13,6 +13,7 @@ These docs are meant for the developers, maintainers and contributors of the [`a
 - [Build](build/index.md)
 - [Test](test/index.md)
 - [Contribute](contribute/index.md)
+- [Guides](guides/index.md)
 
 ---
 

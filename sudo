@@ -545,7 +545,6 @@ sudo_run() {
     sudo_setup_sudo_shell_home_and_working_environment_wrapper
     return_value=$?
     if [ $return_value -ne 0 ]; then
-        sudo_cleanup_temp_directory_fd_path
         return $return_value
     fi
 
@@ -651,10 +650,10 @@ sudo_run() {
             sudo_set_post_su_variables
         fi
 
-        # If SUDO_PATH_FD_PATH is set, then close it
-        if [ -n "$SUDO_PATH_FD_PATH" ]; then
-            exec {SUDO_PATH_FD_PATH}<&-
-            SUDO_PATH_FD_PATH=""
+        # If SUDO_PATH_FD is set, then close it
+        if [ -n "${SUDO_PATH_FD:-}" ]; then
+            exec {SUDO_PATH_FD}<&-
+            SUDO_PATH_FD=""
         fi
 
 
@@ -710,7 +709,7 @@ sudo_run() {
         fi
 
         # If SUDO_SCRIPT_FD is set, then close it
-        if [ -n "$SUDO_SCRIPT_FD" ]; then
+        if [ -n "${SUDO_SCRIPT_FD:-}" ]; then
             exec {SUDO_SCRIPT_FD}<&-
             SUDO_SCRIPT_FD=""
         fi
@@ -1924,33 +1923,22 @@ sudo_set_sudo_path_command() {
         SUDO_PATH_COMMAND_TO_RUN+="'${SUDO_PATH_COMMAND//\'/\'\\\'\'}' $SUDO_PATH_COMMAND_ARGS"
     fi
 
-    # SUDO_PATH_COMMAND_TO_RUN and SUDO_SCRIPT_COMMAND_TO_RUN needs to be passed to the BASH_SHELL inside su
-    # by the sudo_run function
-    # We pass the SUDO_PATH_COMMAND_TO_RUN to bash instead of directly passing commands to 'su -c' because
-    # LD_PRELOAD does not work in the later case and scripts that are using #!/usr/bin/* shebang instead of termux
-    # shebang fail
-    # Check sudo_set_sudo_script_command function for more details on why fd is used
-    sudo_get_unsed_file_descriptor "SUDO_SCRIPT_FD"
-    return_value=$?
-    if [ $return_value -ne 0 ] || [[ ! "$SUDO_SCRIPT_FD" =~ $VALID_NUMBER_REGEX ]]; then
-        sudo_log_errors "Failure while getting an unused file descriptor to write SUDO_PATH_COMMAND_TO_RUN"
-        sudo_log_errors "SUDO_SCRIPT_FD='$SUDO_SCRIPT_FD'"
-        if [ $return_value -eq 0 ]; then
-            return_value=1
-        fi
-        return $return_value
-    fi
+    # `SUDO_PATH_COMMAND_TO_RUN` and `SUDO_SCRIPT_COMMAND_TO_RUN` needs
+    # to be passed to the `bash` shell inside `su` by the `sudo_run` function.
+    # We pass the `SUDO_PATH_COMMAND_TO_RUN` to bash instead of directly
+    # passing commands to `su -c` because `LD_PRELOAD` does not work
+    # in the later case and scripts that are using `#!/usr/bin/*`
+    # shebang instead of Termux shebang fail.
+    # Check https://github.com/agnostic-apollo/sudo/blob/master/site/pages/en/projects/docs/developer/guides/su-sub-process-communication/index.md
+    # for more info on why `fd` with process substitution is used.
+    sudo_get_unsed_file_descriptor_and_path SUDO_PATH_FD SUDO_PATH_FD_PATH "to write SUDO_PATH_COMMAND_TO_RUN" || return $?
 
-    # Android fd directory is /proc/self/fd
-    # Using $$ instead of self so that su can access it
-    SUDO_PATH_FD_PATH="/proc/$$/fd/$SUDO_SCRIPT_FD"
-
-    # Use printf to write to SUDO_SCRIPT_FD
+    # Use printf to write to SUDO_PATH_FD
     sudo_log_literal 3 "Writing SUDO_PATH_COMMAND_TO_RUN to SUDO_PATH_FD_PATH '$SUDO_PATH_FD_PATH'"
-    eval "exec $SUDO_SCRIPT_FD<" <(printf "%s" "$SUDO_PATH_COMMAND_TO_RUN")
+    eval "exec $SUDO_PATH_FD<" <(printf "%s" "$SUDO_PATH_COMMAND_TO_RUN")
     return_value=$?
     if [ $return_value -ne 0 ]; then
-        sudo_log_errors "Failure while writing SUDO_PATH_COMMAND_TO_RUN to SUDO_SCRIPT_FD '$SUDO_SCRIPT_FD'"
+        sudo_log_errors "Failure while writing SUDO_PATH_COMMAND_TO_RUN to SUDO_PATH_FD '$SUDO_PATH_FD'"
         return $return_value
     fi
 
@@ -2244,131 +2232,10 @@ sudo_set_sudo_script_command() {
 
 
 
-    # SUDO_SCRIPT_COMMAND_TO_RUN cannot be passed to the bash shell inside su using process substitution
-    # since the "self" in "proc/self/fd/#" passed by process substitution is for the sudo script process
-    # and not for the bash process inside su
-    # so when bash shell inside su tries to read from it, then there will be errors like
-    # "/proc/self/fd/63: No such file or directory"
-    # Hence we manually create a file descriptor and pass its path to su or to be more specific to the bash shell
-    # for the path and script commands
-    # /system/xbin/su --shell="${TERMUX__PREFIX:-$PREFIX}/bin/bash" --preserve-environment -c "bash --noprofile --norc" <(echo 'echo 1')
-
-    # The method that is used for passing data to su using file descriptors in sudo_run function and elsewhere is the following
-    # Get an unsed file descriptor for the current sudo script process
-    # Manually set fd path in /proc/$$/fd since that is where the fd are created in android
-    # $$ returns pid of current process
-    # Then run something like `exec 3< <(printf "%s" "string")`
-    # This will create a pseudo pipe file descriptor and attach stdout of printf to the file descriptor 3
-    # This file descriptor will exist at /proc/$$/fd/3
-    # This basically creates the file descriptor and "saves" the output of printf before su is started
-    # so /proc/self/fd issues do not occur
-    # We pass this path to whatever requires it inside su, like bash or cat
-    # The path will of course be for current sudo script process and not for bash because of $$
-    # but since bash is being run with root it will be able to read from it
-    # The file descriptor will be like a read only stream like in pipes. seeking forward/backward is not possibly
-    # and once data has been read by another process, it is gone and cannot be read again from the start
-    # Credits and details: https://stackoverflow.com/a/20018118/14686958 by Jo So
-
-    # There are other reasons as well why this method is being used other than the /proc/self/fd issues
-    # 1) This method is faster than heredocs and herestrings since data is processed only in memory
-    #    and does not create temp files on the disk increasing execution time like the later. The data is of course
-    #    buffered with a likely limit of 64KB but that's still large enough not to cause problems for average script text passing
-    # 2) The temp files created by heredocs and herestrings are in TMPDIR which in termux's case is $PREFIX/usr/tmp.
-    #    The TMPDIR is relatively less secure since non-root processes can access it and ideally shouldn't be used due to
-    #    potential risk of privilege escalation or private data leakage. Although any process in termux context could get
-    #   su access if termux app has been granted root access but other apps granted SAF access can by default only access
-    #    $TERMUX_HOME/ and not $PREFIX/.
-    #    You can confirm usage of TMPDIR by running:
-    #   ```
-    #   # For herestrings
-    #   sleep 3 <<<"here string" & lsof -w -p $! | grep 0r
-    #
-    #   # For heredocs
-    #   sleep 3 <<EOF &
-    #   here doc
-    #   EOF
-    #   lsof -w -p $! | grep 0r
-    #   ```
-    # 3) The script COMMAND_TYPE may require stdin to be usable by the scripts
-    #    If heredocs and herestrings are used, then they will be read by the bash shell through the stdin
-    #    which will prevent the script shells to use it for user input and they may even read characters from
-    #    the script itself as stdin in some cases
-    #    Hence process substitution should be used which leaves stdin free, but of course that is not possible due
-    #    to /proc/self/fd issues due to su usage.
-    #    The other alternative is to create another temp file in SUDO_TEMP_DIRECTORY and store the SUDO_SCRIPT_COMMAND_TO_RUN
-    #    in it and pass the path to bash. This will of course increase execution time significantly due to creation of
-    #    the SUDO_TEMP_DIRECTORY directory on every run even if sudo_script__core_script temp file is not to be created
-    #    and also due to another call to the su shell for the creation of the another temp file.
-    #    Another hacky alternative that will work is to solve the /proc/self/fd issue itself
-    #    That can be done by guessing the real path of fd inside the su shell and pass that to bash instead
-    #    That can be done by running:
-    #    ```
-    #    fd_number="$(echo <(echo "") | sed -E 's|/proc/self/fd/([0-9]+)|\1|')"
-    #    /system/xbin/su --shell="${TERMUX__PREFIX:-$PREFIX}/bin/bash" --preserve-environment -c "bash_shell_pid=$$; "'su_shell_pid=$(pgrep -P $bash_shell_pid); bash /proc/$su_shell_pid/fd/'"$fd_number" <(echo 'echo 1')
-    #    ```
-    #    Use the path to the 'su' installed on your device if its not at '/system/xbin/su'
-    #    The first line will just get the fd number that is chosen by default by bash when it uses process substitution which
-    #    which is likely going to be 63
-    #    The second line is the shorter version of SU_RUN_COMMAND used by the sudo script
-    #    The single and double quoting is extremely important to make sure some things are
-    #    run in the local sudo script bash shell and others inside the su shell
-    #    note that the local bash shell is of the sudo script and is different from the bash shell that is inside the su shell
-    #    First we get store the pid of the local bash shell in bash_shell_pid. Note the double quotes so that $$ expands locally.
-    #    Then we get pid of su shell by finding the process whose parent pid matches the bash_shell_pid.
-    #    Since there are no background processes run by the sudo script, pgrep should return a single pid.
-    #    Then we pass the /proc/su_shell_pid/fd/fd_number path to bash directly that the `<(echo 'echo 1')` process substitution will create
-    #    The su_shell_pid is inside single quotes so it expands inside the su shell and fd_number is inside double quotes so it expands locally.
-    #    Despite the /proc/self/fd/63 argument passed due to process substitution, bash will read from the path manually passed.
-    #    Note that we cannot create the path using $PPID variable because multiple processes are created by the su shell and PPID will
-    #    not match su_shell_pid.
-    #    If the $PREFIX/bin/su is directly used by running `su --shell...` instead of full path, then another process is created
-    #    because su in termux bin is actually a wrapper script and process substitution path will be created for it instead, it may even
-    #    give errors while executing commands.
-    #    This method is however not used because its a bit hacky but could work, but would require multiple device and multiple su implementation testing.
-    #    Another reason this isn't used is because normally, the sudo binary of linux distros will close all open file descriptors other
-    #    than standard input, standard output and standard error when its called for security reasons to prevent child processes
-    #    from getting access to file descriptors of the parent processes that were not intended for it.
-    #    Some su binaries behave in the same way. There are however not closed by SuperSU v2.82 as shown by the above test and neither by magisk v21.1
-    #    but other android su implementations may close the file descriptors, breaking this method.
-    #
-    #   To monitor the file descriptors 63 opened by child processes, run the following
-    #   ```
-    #   # Drop to a root shell so that root processes can also be monitored
-    #   sudo su
-    #   # Run a background infinite loop that passes a comma separated list of pids returned by ps to ls using brace expansion that will list
-    #   # all files in /proc/{pids}/fd paths and then grep only fds matching 63 and output their pid to stdout which is captured by $pid
-    #   # If $pid is set, then ps is used to display pid,ppid,cmd of all pids stored in the $pid variable
-    #   (while true; do pid="$(eval "ls --color=never -d -1 /proc/{$(ps --no-headers -o pid -g | sed -z -e 's/\n/,/g' -e 's/ //g' -e 's/,$//')}/fd/* 2>/dev/null" | grep "/fd/63" | sed -E 's|/proc/([0-9]+)/fd/.*|\1|g')"; [ -n "$pid" ] && ps -wwo pid,ppid,cmd $(echo "$pid" | sed -z -E 's/[ \n\t]+/ /'); done) &
-    #   # Store the pid of the background process so that it can be killed later
-    #   while_pid=$!
-    #   # Then drop to another root shell
-    #   sudo su
-    #   # Then run the su command with an added sleep command for background monitoring to work, you may want to increase the sleep time
-    #   # Ideally two commands would be shown by ps that created fd 63, one for the local bash interactive shell of the sudo su command
-    #   # and the other for the newly created su shell since the fd will be copied during the fork
-    #   fd_number="$(echo <(echo "") | sed -E 's|/proc/self/fd/([0-9]+)|\1|')"
-    #   /system/xbin/su --shell="${TERMUX__PREFIX:-$PREFIX}/bin/bash" --preserve-environment -c "bash_shell_pid=$$; "'su_shell_pid=$(pgrep -P $bash_shell_pid); sleep 0.3; bash /proc/$su_shell_pid/fd/'"$fd_number" <(echo 'echo 1')
-    #   # Exit the second root shell once done
-    #   exit
-    #   # Kill background process, do not leave it running since it will consume lots of resources and may slow down the system
-    #   kill $while_pid
-    #   ```
-    #  # There are probably other methods using lsof etc.
-
-    sudo_get_unsed_file_descriptor "SUDO_SCRIPT_FD"
-    return_value=$?
-    if [ $return_value -ne 0 ] || [[ ! "$SUDO_SCRIPT_FD" =~ $VALID_NUMBER_REGEX ]]; then
-        sudo_log_errors "Failure while getting an unused file descriptor to write SUDO_SCRIPT_COMMAND_TO_RUN"
-        sudo_log_errors "SUDO_SCRIPT_FD='$SUDO_SCRIPT_FD'"
-        if [ $return_value -eq 0 ]; then
-            return_value=1
-        fi
-        return $return_value
-    fi
-
-    # Android fd directory is /proc/self/fd
-    # Using $$ instead of self so that su can access it
-    SUDO_SCRIPT_FD_PATH="/proc/$$/fd/$SUDO_SCRIPT_FD"
+    # `SUDO_SCRIPT_COMMAND_TO_RUN` cannot be passed to the `bash` inside `su` using process substitution.
+    # Check https://github.com/agnostic-apollo/sudo/blob/master/site/pages/en/projects/docs/developer/guides/su-sub-process-communication/index.md
+    # for more info on why `fd` with process substitution is used.
+    sudo_get_unsed_file_descriptor_and_path SUDO_SCRIPT_FD SUDO_SCRIPT_FD_PATH "to write SUDO_SCRIPT_COMMAND_TO_RUN" || return $?
 
     # Use printf to write to SUDO_SCRIPT_FD
     sudo_log_literal 3 "\nWriting SUDO_SCRIPT_COMMAND_TO_RUN to SUDO_SCRIPT_FD_PATH '$SUDO_SCRIPT_FD_PATH'"
@@ -2557,25 +2424,15 @@ sudo_create_sudo_temp_file() {
         return 2
     fi
 
-    local temp_file_fd
-    local temp_file_fd_path
+    local TEMP_FILE_FD
+    local TEMP_FILE_FD_PATH
 
-    sudo_get_unsed_file_descriptor "temp_file_fd"
-    return_value=$?
-    if [ $return_value -ne 0 ] || [[ ! "$temp_file_fd" =~ $VALID_NUMBER_REGEX ]]; then
-        sudo_log_errors "Failure while getting an unused file descriptor to write decoded $label"
-        sudo_log_errors "temp_file_fd='$temp_file_fd'"
-        if [ $return_value -eq 0 ]; then
-            return_value=1
-        fi
-        return $return_value
-    fi
+    # `content` cannot be passed to the `bash` inside `su` using process substitution.
+    # Check https://github.com/agnostic-apollo/sudo/blob/master/site/pages/en/projects/docs/developer/guides/su-sub-process-communication/index.md
+    # for more info on why `fd` with process substitution is used.
+    sudo_get_unsed_file_descriptor_and_path TEMP_FILE_FD TEMP_FILE_FD_PATH "to write decoded $label" || return $?
 
-    # Android fd directory is /proc/self/fd
-    # Using $$ instead of self so that su can access it
-    temp_file_fd_path="/proc/$$/fd/$temp_file_fd"
-
-    # Write the contents to temp_file_fd_path
+    # Write the contents to TEMP_FILE_FD_PATH
     # Decode first if required
     # Decoding of binary data needs to be done on the fly since
     # binary data cannot be stored in a variable to be passed using herestring
@@ -2584,29 +2441,30 @@ sudo_create_sudo_temp_file() {
     # hence a fd is opened and used instead
     # a herestring or heredoc could have been used for passing text only data
     # but those will create a temp file in TMPDIR which is slower and less secure
-    sudo_log 3 "Writing $label to temp_file_fd '$temp_file_fd'"
+    sudo_log 3 "Writing $label to TEMP_FILE_FD '$TEMP_FILE_FD'"
     if [[ "$decode_content" == "1" ]]; then
-        eval "exec $temp_file_fd<" <(printf '%s' "$content" | base64 -d)
+        eval "exec $TEMP_FILE_FD<" <(printf '%s' "$content" | base64 -d)
     else
-        eval "exec $temp_file_fd<" <(printf '%s' "$content")
+        eval "exec $TEMP_FILE_FD<" <(printf '%s' "$content")
     fi
     return_value=$?
     if [ $return_value -ne 0 ]; then
-        sudo_log_errors "Failure while writing $label to temp_file_fd '$temp_file_fd'"
+        sudo_log_errors "Failure while writing $label to TEMP_FILE_FD '$TEMP_FILE_FD'"
     else
-        # Use cat to read contents from fd at temp_file_fd_path
+        # Use cat to read contents from fd at TEMP_FILE_FD_PATH
         # and redirect stdout to file at path to write to it
         sudo_log 3 "Creating $label file at '$path'"
         sudo_unset_pre_su_variables
-        su_output=$($SU_ENV_COMMAND "cat \"$temp_file_fd_path\" > '${path//\'/\'\\\'\'}'" 2>&1 < /dev/null)
+        su_output=$($SU_ENV_COMMAND "cat \"$TEMP_FILE_FD_PATH\" > '${path//\'/\'\\\'\'}'" 2>&1 < /dev/null)
         return_value=$?
         sudo_set_post_su_variables
         { [ $return_value -ne 0 ] && [ -n "$su_output" ]; } && sudo_log_errors "$su_output"
     fi
 
-    # If temp_file_fd is set, then close it
-    if [ -n "$temp_file_fd" ]; then
-        exec {temp_file_fd}<&-
+    # If TEMP_FILE_FD is set, then close it
+    if [ -n "$TEMP_FILE_FD" ]; then
+        exec {TEMP_FILE_FD}<&-
+        TEMP_FILE_FD=""
     fi
 
     if [ $return_value -ne 0 ]; then
@@ -3630,8 +3488,6 @@ sudo_setup_sudo_shell_home_and_working_environment_wrapper() {
     sudo_log_literal 3 "\n\n\nRunning sudo_setup_sudo_shell_home_and_working_environment_wrapper stage 1"
 
     SETUP_SUDO_TEMP_DIRECTORY=0
-    SUDO_TEMP_DIRECTORY_FD=""
-    SUDO_TEMP_DIRECTORY_FD_PATH=""
 
     # If COMMAND_TYPE equals "script" and
     if [[ "$COMMAND_TYPE" == "script" ]]; then
@@ -3640,46 +3496,10 @@ sudo_setup_sudo_shell_home_and_working_environment_wrapper() {
 
         # If SETUP_SUDO_TEMP_DIRECTORY is enabled
         if [[ "$SETUP_SUDO_TEMP_DIRECTORY" == "1" ]]; then
-            if [ "$ANDROID__BUILD_VERSION_SDK" -lt 24 ]; then
-                SUDO_TEMP_DIRECTORY_FD_PATH="$(mktemp --tmpdir="$TMPDIR" "$SUDO_TEMP_DIRECTORY_PREFIX.path.XXXXXX")"
-                return_value=$?
-                if [ $return_value -ne 0 ] || [[ ! "$SUDO_TEMP_DIRECTORY_FD_PATH" =~ $VALID_ABSOLUTE_PATH_REGEX ]]; then
-                    sudo_log_errors "Failure while running mktemp to create SUDO_TEMP_DIRECTORY_FD_PATH"
-                    sudo_log_errors "SUDO_TEMP_DIRECTORY_FD_PATH='$SUDO_TEMP_DIRECTORY_FD_PATH'"
-                    if [ $return_value -eq 0 ]; then
-                        return_value=1
-                    fi
-                    return $return_value
-                fi
-            else
-                # Find an unused fd that is passed to su which the function sudo_setup_sudo_temp_directory will use to write the SUDO_TEMP_DIRECTORY value
-                # which is later read after su returns
-                # stdout cannot be used to return SUDO_TEMP_DIRECTORY from su using a subshell due to logging and possibly other output to stdout
-                sudo_get_unsed_file_descriptor "SUDO_TEMP_DIRECTORY_FD"
-                return_value=$?
-                if [ $return_value -ne 0 ] || [[ ! "$SUDO_TEMP_DIRECTORY_FD" =~ $VALID_NUMBER_REGEX ]]; then
-                    sudo_log_errors "Failure while getting an unused file descriptor to write SUDO_TEMP_DIRECTORY"
-                    sudo_log_errors "SUDO_TEMP_DIRECTORY_FD='$SUDO_TEMP_DIRECTORY_FD'"
-                    if [ $return_value -eq 0 ]; then
-                        return_value=1
-                    fi
-                    return $return_value
-                fi
-
-                # Android fd directory is /proc/self/fd
-                # Using $$ instead of self so that su can access it
-                SUDO_TEMP_DIRECTORY_FD_PATH="/proc/$$/fd/$SUDO_TEMP_DIRECTORY_FD"
-
-                sudo_log 3 "SUDO_TEMP_DIRECTORY_FD_PATH='$SUDO_TEMP_DIRECTORY_FD_PATH'"
-
-                # Write empty string to fd just to create it
-                eval "exec $SUDO_TEMP_DIRECTORY_FD<" <(echo -n "")
-                return_value=$?
-                if [ $return_value -ne 0 ]; then
-                    sudo_log_errors "Failure while opening SUDO_TEMP_DIRECTORY_FD '$SUDO_TEMP_DIRECTORY_FD' to write SUDO_TEMP_DIRECTORY"
-                    return $return_value
-                fi
-            fi
+            # Find an unused fd that is passed to su which the function sudo_setup_sudo_temp_directory will use to write the SUDO_TEMP_DIRECTORY value
+            # which is later read after su returns
+            # stdout cannot be used to return SUDO_TEMP_DIRECTORY from su using a subshell due to logging and possibly other output to stdout
+            sudo_su_sub_process__receive_comm__start || return $?
         fi
     fi
 
@@ -3731,7 +3551,6 @@ sudo_setup_sudo_shell_home_and_working_environment_wrapper() {
         SUDO_TEMP_DIRECTORY_PARENT_DIRECTORY
         SUDO_TEMP_DIRECTORY_PREFIX
         SUDO_TEMP_DIRECTORY
-        SUDO_TEMP_DIRECTORY_FD_PATH
 
         TERMUX_ROOTFS
         TERMUX_PREFIX
@@ -3776,17 +3595,19 @@ sudo_setup_sudo_shell_home_and_working_environment_wrapper() {
 
     # If SETUP_SUDO_TEMP_DIRECTORY is enabled
     if [[ "$SETUP_SUDO_TEMP_DIRECTORY" == "1" ]]; then
-        # If SUDO_TEMP_DIRECTORY_FD_PATH does not exist
-        if [ ! -e "$SUDO_TEMP_DIRECTORY_FD_PATH" ]; then
-            sudo_log_errors "The SUDO_TEMP_DIRECTORY_FD_PATH '$SUDO_TEMP_DIRECTORY_FD_PATH' does not exist that needs to be used to read SUDO_TEMP_DIRECTORY"
+        sudo_su_sub_process__receive_comm__stop || return $?
+
+        # If SUDO_SU_SUB_PROCESS__RECEIVE_COMM__FD_PATH does not exist
+        if [ ! -e "$SUDO_SU_SUB_PROCESS__RECEIVE_COMM__FD_PATH" ]; then
+            sudo_log_errors "The SUDO_SU_SUB_PROCESS__RECEIVE_COMM__FD_PATH '$SUDO_SU_SUB_PROCESS__RECEIVE_COMM__FD_PATH' does not exist that needs to be used to read SUDO_TEMP_DIRECTORY"
             return 1
         fi
 
-        # Read the value of SUDO_TEMP_DIRECTORY from SUDO_TEMP_DIRECTORY_FD_PATH which the sudo_setup_sudo_temp_directory function would have written while running su
-        SUDO_TEMP_DIRECTORY="$(cat "$SUDO_TEMP_DIRECTORY_FD_PATH")"
+        # Read the value of SUDO_TEMP_DIRECTORY from SUDO_SU_SUB_PROCESS__RECEIVE_COMM__FD_PATH which the sudo_setup_sudo_temp_directory function would have written while running su
+        SUDO_TEMP_DIRECTORY="$(cat "$SUDO_SU_SUB_PROCESS__RECEIVE_COMM__FD_PATH")"
         return_value=$?
         if [ $return_value -ne 0 ]; then
-            sudo_log_errors "Failure to read SUDO_TEMP_DIRECTORY from SUDO_TEMP_DIRECTORY_FD_PATH '$SUDO_TEMP_DIRECTORY_FD_PATH'"
+            sudo_log_errors "Failure to read SUDO_TEMP_DIRECTORY from SUDO_SU_SUB_PROCESS__RECEIVE_COMM__FD_PATH '$SUDO_SU_SUB_PROCESS__RECEIVE_COMM__FD_PATH'"
             return $return_value
         fi
 
@@ -3798,41 +3619,18 @@ sudo_setup_sudo_shell_home_and_working_environment_wrapper() {
 
         sudo_log 3 "SUDO_TEMP_DIRECTORY='$SUDO_TEMP_DIRECTORY'"
 
-
-        sudo_cleanup_temp_directory_fd_path
+        sudo_su_sub_process__receive_comm__cleanup || return $?
     fi
 
     return 0
 
 }
 
-sudo_cleanup_temp_directory_fd_path() {
-
-    local return_value
-
-    if [ "$ANDROID__BUILD_VERSION_SDK" -lt 24 ]; then
-        # If SUDO_TEMP_DIRECTORY_FD_PATH exists, then delete it
-        if [ -f "$SUDO_TEMP_DIRECTORY_FD_PATH" ]; then
-            rm -f "$SUDO_TEMP_DIRECTORY_FD_PATH"
-            return_value=$?
-            if [ $return_value -ne 0 ]; then
-                sudo_log_errors "Failure to delete SUDO_TEMP_DIRECTORY_FD_PATH '$SUDO_TEMP_DIRECTORY_FD_PATH'"
-                return $return_value
-            fi
-        fi
-    else
-        # If SUDO_TEMP_DIRECTORY_FD is set, then close it
-        if [ -n "$SUDO_TEMP_DIRECTORY_FD" ]; then
-            exec {SUDO_TEMP_DIRECTORY_FD}<&-
-            SUDO_TEMP_DIRECTORY_FD=""
-        fi
-    fi
-
-}
-
 sudo_setup_sudo_shell_home_and_working_environment() {
 
     local return_value
+
+    sudo_log_literal 3 "Started sudo_setup_sudo_shell_home_and_working_environment"
 
     # sudo_setup_shell_home shell_label shell_home_parent_dir shell_home shell_automatically_create_rc_file shell_rcfile_parent_dir shell_rcfile shell_rcfile_value  shell_histfile_parent_dir shell_histfile
     sudo_setup_shell_home "SUDO_SHELL" "$SUDO_SHELL_HOME_PARENT_DIR" "$SUDO_SHELL_HOME" "$SUDO_SHELLS_AUTOMATICALLY_CREATE_RC_FILES" "$SUDO_SHELL_RCFILE_PARENT_DIR" "$SUDO_SHELL_RCFILE" "$SUDO_SHELL_RCFILE_VALUE" "$SUDO_SHELLS_AUTOMATICALLY_CREATE_HISTORY_FILES" "$SUDO_SHELL_HISTFILE_PARENT_DIR" "$SUDO_SHELL_HISTFILE"
@@ -4369,9 +4167,9 @@ sudo_setup_sudo_temp_directory() {
         return 1
     fi
 
-    # If SUDO_TEMP_DIRECTORY_FD_PATH is not a valid absolute path
-    if [[ ! "$SUDO_TEMP_DIRECTORY_FD_PATH" =~ $valid_absolute_path_regex ]]; then
-        sudo_log_errors "The SUDO_TEMP_DIRECTORY_FD_PATH '$SUDO_TEMP_DIRECTORY_FD_PATH' is not a valid absolute path"
+    # If SUDO_SU_SUB_PROCESS__RECEIVE_COMM__FD_PATH is not a valid absolute path
+    if [[ ! "$SUDO_SU_SUB_PROCESS__RECEIVE_COMM__FD_PATH" =~ $valid_absolute_path_regex ]]; then
+        sudo_log_errors "The SUDO_SU_SUB_PROCESS__RECEIVE_COMM__FD_PATH '$SUDO_SU_SUB_PROCESS__RECEIVE_COMM__FD_PATH' is not a valid absolute path"
         return 1
     fi
 
@@ -4397,11 +4195,11 @@ sudo_setup_sudo_temp_directory() {
         return $return_value
     fi
 
-    # Write the value of SUDO_TEMP_DIRECTORY to SUDO_TEMP_DIRECTORY_FD
-    printf "%s" "$SUDO_TEMP_DIRECTORY" > "$SUDO_TEMP_DIRECTORY_FD_PATH"
+    # Write the value of SUDO_TEMP_DIRECTORY to SUDO_SU_SUB_PROCESS__RECEIVE_COMM__FD
+    printf "%s" "$SUDO_TEMP_DIRECTORY" > "$SUDO_SU_SUB_PROCESS__RECEIVE_COMM__FD_PATH"
     return_value=$?
     if [ $return_value -ne 0 ]; then
-        sudo_log_errors "Failure while writing SUDO_TEMP_DIRECTORY to SUDO_TEMP_DIRECTORY_FD_PATH '$SUDO_TEMP_DIRECTORY_FD_PATH'"
+        sudo_log_errors "Failure while writing SUDO_TEMP_DIRECTORY to SUDO_SU_SUB_PROCESS__RECEIVE_COMM__FD_PATH '$SUDO_SU_SUB_PROCESS__RECEIVE_COMM__FD_PATH'"
         return $return_value
     fi
 
@@ -4449,6 +4247,9 @@ sudo_trap() {
     trap - EXIT
 
     [ $sudo_exit_code -ne 0 ] && sudo_remove_sudo_temp_directory
+    [ $sudo_exit_code -ne 0 ] && sudo_close_command_fds
+    [ $sudo_exit_code -ne 0 ] && sudo_su_sub_process__receive_comm__stop
+    [ $sudo_exit_code -ne 0 ] && sudo_su_sub_process__receive_comm__cleanup
     sudo_remount_partitions_for_sudo_shell_homes "ro"
 
     [ -n "${1:-}" ] && trap - "$1"
@@ -4476,6 +4277,25 @@ sudo_remove_sudo_temp_directory() {
         sudo_set_post_su_variables
         { [ $return_value -ne 0 ] && [ -n "$su_output" ]; } && sudo_log_errors "$su_output"
         SUDO_TEMP_DIRECTORY=""
+    fi
+
+}
+
+sudo_close_command_fds() {
+
+    if [ -n "${SUDO_PATH_FD:-}" ]; then
+        exec {SUDO_PATH_FD}<&-
+        SUDO_PATH_FD=""
+    fi
+
+    if [ -n "${SUDO_SCRIPT_FD:-}" ]; then
+        exec {SUDO_SCRIPT_FD}<&-
+        SUDO_SCRIPT_FD=""
+    fi
+
+    if [ -n "${TEMP_FILE_FD:-}" ]; then
+        exec {TEMP_FILE_FD}<&-
+        TEMP_FILE_FD=""
     fi
 
 }
@@ -4557,6 +4377,114 @@ trap 'sudo_script__trap HUP' HUP
 trap 'sudo_script__trap QUIT' QUIT
 "
     return 0
+
+}
+
+##
+# Check https://github.com/agnostic-apollo/sudo/blob/master/site/pages/en/projects/docs/developer/guides/su-sub-process-communication/index.md
+# for more info on why `fd` with process substitution is used.
+##
+sudo_su_sub_process__receive_comm__start() {
+
+    local return_value
+
+    sudo_log 4 "Starting su sub processs receive communication"
+
+    SUDO_SU_SUB_PROCESS__RECEIVE_COMM__FD=""
+    SUDO_SU_SUB_PROCESS__RECEIVE_COMM__FD_PATH=""
+    SUDO_SU_SUB_PROCESS__RECEIVE_COMM__RELAY_PROCESS__PID=""
+    SUDO_SU_SUB_PROCESS__RECEIVE_COMM__RELAY_PROCESS__BG_PID=""
+
+    # Export for `su --preserve-environment` process.
+    export SUDO_SU_SUB_PROCESS__RECEIVE_COMM__FD_PATH
+
+    # Find an unused fd that can be used for communication with a `su` sub process,
+    # in case stdout cannot be used due to logging and possibly other output to stdout.
+    # Store the fd to close it when `sudo_su_sub_process__receive_comm__cleanup()`
+    # is called, either after receive data has been read, or in `sudo_trap`
+    # in case `sudo` exits early due to errors or kill signals.
+    sudo_get_unsed_file_descriptor_and_path SUDO_SU_SUB_PROCESS__RECEIVE_COMM__FD \
+        SUDO_SU_SUB_PROCESS__RECEIVE_COMM__FD_PATH "for su sub processs receive communication" || return $?
+
+    sudo_log 4 "SUDO_SU_SUB_PROCESS__RECEIVE_COMM__FD_PATH='$SUDO_SU_SUB_PROCESS__RECEIVE_COMM__FD_PATH'"
+
+    # Start a process with process substitution and attach its stdout to `SUDO_SU_SUB_PROCESS__RECEIVE_COMM__FD`.
+    eval "exec $SUDO_SU_SUB_PROCESS__RECEIVE_COMM__FD<" <(
+        sudo_su_subprocess_trap() {
+            local sudo_exit_code=$?
+            trap - EXIT
+
+            sudo_log 5 echo sudo_su_subprocess_trap 1>&2
+            if [ -n "${SUDO_SU_SUB_PROCESS__RECEIVE_COMM__RELAY_PROCESS__BG_PID:-}" ]; then
+                sudo_log 4 "Killing su sub processs receive communication relay process background process with pid $SUDO_SU_SUB_PROCESS__RECEIVE_COMM__RELAY_PROCESS__BG_PID" 1>&2
+                kill "$SUDO_SU_SUB_PROCESS__RECEIVE_COMM__RELAY_PROCESS__BG_PID"
+                SUDO_SU_SUB_PROCESS__RECEIVE_COMM__RELAY_PROCESS__BG_PID=""
+            fi
+
+            [ -n "${1:-}" ] && trap - "$1"
+            exit $sudo_exit_code
+
+        }
+
+        # Start a sleep process in background and wait on it to keep
+        # the current process substitution process alive until it is
+        # killed manually after `su` process ends and communication is
+        # no longer required by calling `sudo_su_sub_process__receive_comm__stop()`.
+        # Setup a trap to also kill the background sleep process when
+        # current process substitution process is sent a kill signal.
+        set_sudo_traps "sudo_su_subprocess_trap" || exit $?
+        sleep infinity &
+        # Store the pid of the background sleep process for wait and trap.
+        SUDO_SU_SUB_PROCESS__RECEIVE_COMM__RELAY_PROCESS__BG_PID="$!"
+        sudo_log 4 "SUDO_SU_SUB_PROCESS__RECEIVE_COMM__RELAY_PROCESS__BG_PID=$SUDO_SU_SUB_PROCESS__RECEIVE_COMM__RELAY_PROCESS__BG_PID (ppid=$BASHPID)" 1>&2
+        wait "$SUDO_SU_SUB_PROCESS__RECEIVE_COMM__RELAY_PROCESS__BG_PID"
+    )
+    return_value=$?
+    if [ $return_value -ne 0 ]; then
+        sudo_log_errors "Failure while opening SUDO_SU_SUB_PROCESS__RECEIVE_COMM__FD '$SUDO_SU_SUB_PROCESS__RECEIVE_COMM__FD' for su sub processs receive communication"
+        return $return_value
+    fi
+    # Store the pid of the process substitution process to kill it later
+    # when `sudo_su_sub_process__receive_comm__stop` is called.
+    SUDO_SU_SUB_PROCESS__RECEIVE_COMM__RELAY_PROCESS__PID="$!"
+    sudo_log 4 "SUDO_SU_SUB_PROCESS__RECEIVE_COMM__RELAY_PROCESS__PID=$SUDO_SU_SUB_PROCESS__RECEIVE_COMM__RELAY_PROCESS__PID (ppid=$$)"
+
+}
+
+sudo_su_sub_process__receive_comm__stop() {
+
+    local return_value
+
+    local output
+
+    if [ -n "${SUDO_SU_SUB_PROCESS__RECEIVE_COMM__RELAY_PROCESS__PID:-}" ]; then
+        # Kill the process substitution process.
+        sudo_log 4 "Killing su sub processs receive communication relay process with pid $SUDO_SU_SUB_PROCESS__RECEIVE_COMM__RELAY_PROCESS__PID"
+
+        output="$(kill "$SUDO_SU_SUB_PROCESS__RECEIVE_COMM__RELAY_PROCESS__PID" 2>&1)"
+        return_value=$?
+        if [ $return_value -ne 0 ]; then
+            sudo_log 4 "$output" 1>&2
+            sudo_log 4 "Failure while killing su sub processs receive communication relay process with pid $SUDO_SU_SUB_PROCESS__RECEIVE_COMM__RELAY_PROCESS__PID" 1>&2
+        fi
+        SUDO_SU_SUB_PROCESS__RECEIVE_COMM__RELAY_PROCESS__PID=""
+    fi
+
+    SUDO_SU_SUB_PROCESS__RECEIVE_COMM__RELAY_PROCESS__BG_PID=""
+
+}
+
+sudo_su_sub_process__receive_comm__cleanup() {
+
+    local return_value
+
+    # If SUDO_SU_SUB_PROCESS__RECEIVE_COMM__FD is set, then close it.
+    if [ -n "${SUDO_SU_SUB_PROCESS__RECEIVE_COMM__FD:-}" ]; then
+        exec {SUDO_SU_SUB_PROCESS__RECEIVE_COMM__FD}<&-
+        SUDO_SU_SUB_PROCESS__RECEIVE_COMM__FD=""
+    fi
+
+    SUDO_SU_SUB_PROCESS__RECEIVE_COMM__FD_PATH=""
 
 }
 
@@ -5390,42 +5318,84 @@ sudo_remount_partitions_for_sudo_shell_homes() {
 
 }
 
+
 ##
-# `sudo_get_unsed_file_descriptor` `<variable_name>`
+# `sudo_get_unsed_file_descriptor_and_path` `<fd_output_variable_name>` \
+#     `<fd_path_output_variable_name>` `<label>`
+##
+sudo_get_unsed_file_descriptor_and_path() {
+
+    local return_value
+
+    local fd_output_variable_name="${1:-}"
+    local fd_path_output_variable_name="${2:-}"
+    local label="${3:-}"
+
+    local valid_bash_variable_name_regex='^[a-zA-Z_][a-zA-Z0-9_]*(\[[0-9]+\])?$'
+
+    # If `fd_path_output_variable_name` does not equal "__fd" and is valid bash variable_name.
+    if [[ ! "$fd_path_output_variable_name" =~ $valid_bash_variable_name_regex ]]; then
+        sudo_log_errors "The fd_output_variable_name '$1' passed to 'sudo_get_unsed_file_descriptor_and_path' is not a valid bash variable name"
+        return 1
+    fi
+
+    return_value=0
+    sudo_get_unsed_file_descriptor "$fd_output_variable_name" || return_value=$?
+    if [ $return_value -ne 0 ]; then
+        sudo_log_errors "Failure while getting an unused file descriptor for $label"
+        return $return_value
+    fi
+
+    local __fd="${!fd_output_variable_name}" || return $?
+
+    if [[ ! "$__fd" =~ ^[0-9]+$ ]]; then
+        sudo_log_errors "The unused file descriptor${label:+" ${label:-}"} is not a valid number"
+        sudo_log_errors "$fd_output_variable_name='$__fd'"
+        return 1
+    fi
+
+    # Android fd directory is `/proc/self/fd`.
+    # Use `$BASHPID` instead of self so that `su` process can access it.
+    # Do not use `$$` as it may be invalid if running in a sub shell.
+    printf -v "$fd_path_output_variable_name" "%s" "/proc/$BASHPID/fd/$__fd"
+
+}
+
+##
+# `sudo_get_unsed_file_descriptor` `<fd_output_variable_name>`
 ##
 sudo_get_unsed_file_descriptor() {
 
     local return_value
 
-    local variable_name="$1"
+    local fd_output_variable_name="${1:-}"
 
-    local fd=2
+    local __fd=2
 
     # ulimit -n returns per-process max file descriptors that can be opened,
     # but not using it to reduce external call.
     # Instead using the default 256 set by most systems for compatibility.
-    # Real limit is likely to be higher like 1024, depending on android kernel version
+    # Real limit is likely to be higher like 1024, depending on android kernel version.
     # local max=$(ulimit -n || echo 256)
     local max=256
 
-    # Iterate over all fds and find one for which dupe fails and use that
-    while ((++fd < max)); do
-       ! true <&$fd && break
+    # Iterate over all fds and find one for which dupe fails and use that.
+    while ((++__fd < max)); do
+       ! true <&"$__fd" && break
     done 2>/dev/null
     return_value=$?
     if [ $return_value -ne 0 ]; then
-        sudo_log_errors "Failed to find an unused descriptor between 2-$max. last fd: '$fd'"
+        sudo_log_errors "Failed to find an unused descriptor between 2-$max. last __fd: '$__fd'"
         return $return_value
     fi
 
     local valid_bash_variable_name_regex='^[a-zA-Z_][a-zA-Z0-9_]*(\[[0-9]+\])?$'
 
-    # If variable_name does not equal "fd" and is valid bash variable_name
-    if [[ "$variable_name" != "fd" ]] && [[ "$variable_name" =~ $valid_bash_variable_name_regex ]]; then
-        # Set variable_name to fd
-        printf -v "$variable_name" "%s" "$fd"
+    # If `fd_output_variable_name` does not equal "__fd" and is valid bash variable_name.
+    if [[ "$fd_output_variable_name" != "__fd" ]] && [[ "$fd_output_variable_name" =~ $valid_bash_variable_name_regex ]]; then
+        printf -v "$fd_output_variable_name" "%s" "$__fd"
     else
-        sudo_log_errors "variable_name '$1' passed to 'sudo_get_unsed_file_descriptor' equals 'fd' or is not a valid bash variable name"
+        sudo_log_errors "The fd_output_variable_name '$1' passed to 'sudo_get_unsed_file_descriptor' equals '__fd' or is not a valid bash variable name"
         return 1
     fi
 
