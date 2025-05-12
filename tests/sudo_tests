@@ -340,6 +340,9 @@ sudo_tests_set_required_variables() {
     fi
 
 
+    # Set `SU_BIN_PATH` as its used in `ANDROID_PATH` when `sudo_set_path_priority_variables()` is called.
+    sudo_set_su_variables || return $?
+
 
     # Set SUDO_TESTS_WORKING_DIR to use for tests
     SUDO_TESTS_WORKING_DIR="$TERMUX_HOME"
