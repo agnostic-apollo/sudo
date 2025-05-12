@@ -806,6 +806,7 @@ sudo_set_su_variables() {
 
     SU=""
     SU_BIN_PATH=""
+    SU_INTERACTIVE_OPTION_SUPPORTED="0"
 
     local -a su_search_paths=()
 
@@ -856,6 +857,12 @@ sudo_set_su_variables() {
                 SU_BIN_PATH="${SU:0:${#SU} - ${#SU_BIN_PATH_BASENAME}}" # Substring from 0 to position of basename
                 case "$SU_BIN_PATH" in *[!/]*/) SU_BIN_PATH="${SU_BIN_PATH%"${SU_BIN_PATH##*[!/]}"}";; *[/]) SU_BIN_PATH="/";; esac # Remove trailing slashes if not root
 
+                # If '--interactive' option is supported.
+                # - https://github.com/topjohnwu/Magisk/commit/4864c1112
+                if [[ "$su_help" == *"--interactive"* ]]; then
+                    SU_INTERACTIVE_OPTION_SUPPORTED=1
+                fi
+
                 break
             fi
 
@@ -879,6 +886,7 @@ sudo_set_su_variables() {
 
     sudo_log 3 "SU='$SU'"
     sudo_log 3 "SU_BIN_PATH='$SU_BIN_PATH'"
+    sudo_log 3 "SU_INTERACTIVE_OPTION_SUPPORTED='$SU_INTERACTIVE_OPTION_SUPPORTED'"
 
     return 0
 
@@ -911,6 +919,14 @@ sudo_set_su_env_command() {
         printf -v "SUDO_SU_ENV_ADDITIONAL_COMMAND_OPTIONS_STRING" "%q " "${SUDO_SU_ENV_ADDITIONAL_COMMAND_OPTIONS[@]}"
         SU_ENV_COMMAND+=" $SUDO_SU_ENV_ADDITIONAL_COMMAND_OPTIONS_STRING"
         SU_ENV_COMMAND="${SU_ENV_COMMAND% }" # Remove trailing space
+    fi
+
+    # Explicitly pass `--interactive` option so that `su` allocates a tty with `-c`.
+    # - https://github.com/topjohnwu/Magisk/pull/8927
+    # - https://github.com/topjohnwu/Magisk/commit/9ddeab03
+    # - https://github.com/topjohnwu/Magisk/commit/4864c1112
+    if [[ "$SU_INTERACTIVE_OPTION_SUPPORTED" == "1" ]]; then
+        SU_ENV_COMMAND+=" --interactive"
     fi
 
     # We rely on termux to set up most of the environment since it will be dependent on android os and device,
@@ -955,6 +971,14 @@ sudo_set_su_run_command() {
         printf -v "SUDO_SU_RUN_ADDITIONAL_COMMAND_OPTIONS_STRING" "%q " "${SUDO_SU_RUN_ADDITIONAL_COMMAND_OPTIONS[@]}"
         SU_RUN_COMMAND+=" $SUDO_SU_RUN_ADDITIONAL_COMMAND_OPTIONS_STRING"
         SU_RUN_COMMAND="${SU_RUN_COMMAND% }" # Remove trailing space
+    fi
+
+    # Explicitly pass `--interactive` option so that `su` allocates a tty with `-c`.
+    # - https://github.com/topjohnwu/Magisk/pull/8927
+    # - https://github.com/topjohnwu/Magisk/commit/9ddeab03
+    # - https://github.com/topjohnwu/Magisk/commit/4864c1112
+    if [[ "$SU_INTERACTIVE_OPTION_SUPPORTED" == "1" ]]; then
+        SU_RUN_COMMAND+=" --interactive"
     fi
 
     # If DISABLE_PRESERVE_ENVIRONMENT_FOR_SU is not enabled, then use the option
