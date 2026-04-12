@@ -110,7 +110,7 @@ Available command_options:
   [ -H ]             Same sudo post shell home as sudo shell home.
   [ -i ]             Run interactive sudo post shell after running
                      core_script.
-  [ -l ]             Go to launcher activtiy after running core_script
+  [ -l ]             Go to launcher activity after running core_script
   [ -L ]             Export all existing paths in '$LD_LIBRARY_PATH'
                      variable.
   [ -n ]             Redirect stderr to /dev/null for core_script.
