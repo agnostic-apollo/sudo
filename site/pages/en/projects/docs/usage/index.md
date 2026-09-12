@@ -230,6 +230,9 @@ Available command_options:
   [ --su-run-options=<options> ]
                      Additional options to pass to su that runs the
                      final sudo command_type command.
+  [ --su-skip-options-check=0|1 ]
+                     Skip checking that su binary passed in
+                     '--su-path' supports the required options.
   [ --title=<title> ]
                      Title for sudo shell terminal.
   [ --work-dir=<path> ]
@@ -901,6 +904,12 @@ The `--su-path=<path>` option can be used to set the absolute path for `su` bina
 #### `--su-run-options`
 
 The `--su-run-options=<options>` option can be used to set the additional options to pass to `su` that runs the final `sudo` `command_type` command. The [`-c`](#-c) option and `user` argument is not supported. Use `sudo -p su [user]` command instead.
+
+
+
+#### `--su-skip-options-check`
+
+The `--su-bin-path-add=0|1` option can be used to skip checking that `su` binary exported in `$SUDO__SU_PATH` or passed in [`--su-path`](#--su-path) supports the required options. Check [`su` search paths](#su-search-paths) for more info and `su` binary options requirements.
 
 
 
@@ -2062,7 +2071,17 @@ For the `fish` shell, additional functions named `export` and `unset` are also a
 
 The `su` binary is searched at the following paths in order: `/system/bin/su`, `/debug_ramdisk/su`, `/system/xbin/su`, `/sbin/su`, `/sbin/bin/su`, `/system/sbin/su`, `/su/xbin/su`, `/su/bin/su`, `/magisk/.core/bin/su`
 
-If a `su` binary is not found at any of the paths or if no `su` found contains the `-c`, `--shell`, `--preserve-environment` and `--mount-master` options in its `--help` output, then `sudo` will error out. You can specify a custom path by exporting it in `$SUDO__SU_PATH` or passing the [`--su-path`](#--su-pathpath) option if the `su` binary does not exist at the default search paths or all paths in it should not be checked.
+Users can also specify a custom path instead by exporting it in `$SUDO__SU_PATH` or passing the [`--su-path`](#--su-pathpath) option if the `su` binary does not exist at the default search paths or if all paths should not be checked.
+
+`sudo` requires that the `su` binary supports the following `4` options: `--shell`, `--preserve-environment`, `--mount-master` and `-c`.
+
+If a `su` binary is not found at any of the paths or if no `su` found contains the `--shell` and `--preserve-environment` options in its `--help` output, then `sudo` will error out. The `--mount-master` and `-c` options should ideally exist in the help output as well, but if they are not, a fallback test `su --mount-master -c` command is run, and if it does not return the expected output, then `sudo` will error out.
+
+Some root implementations may not have `--mount-master` or `-c` option in the help output, like Magisk `>= 31.1`. Magisk `>= 31.1` does support the `--mount-master` flag, but internally maps it to `--target 0`, where `0` implies using magisk global mount namespace. The `-c` option is normally not provided by `su` binary, but the target shell like `/system/bin/sh` or `bash`, and it must be the last argument passed for `su` commands so that it can be forwarded to the shell. ([1](https://github.com/topjohnwu/Magisk/pull/10140), [2](https://github.com/topjohnwu/Magisk/commit/160fb3e40bb2daaaaeb2432673769591e26d5cf8))
+
+Note that the fallback test `su` command will have a performance impact as a root shell will be invoked. Normally, `sudo` runs 2 `su` root shell commands, one for setup, and one for the actual user command, and so running test command will result in an additional root shell. So it is advisable for `su` implementation providers to include all `4` required options in the help output to avoid the performance impact. For `-c`, it can be something like `-c COMMAND    Pass COMMAND to the invoked shell. The -c option should be the last option as it is not processed by su and must be supported by invoked shell, like it is supported by the default /system/bin/sh shell.`. Each `su` root shell executed normally takes `10ms` or more to start, depending on device.
+
+Users can also export `$SUDO__SU_SKIP_OPTIONS_CHECK=1` or pass [`--su-skip-options-check=1`](#--su-skip-options-check) option to skip checking that `su` binary exported in `$TUDO__SU_PATH` or passed in [`--su-path`](#--su-path) supports the required options to avoid the performance impact or if help output does not list all the required options.
 
 - `/system/bin/su`: Used by `Magisk` and its `avd_patch.sh` script which patch the boot image/emulator ramdisk.  
 

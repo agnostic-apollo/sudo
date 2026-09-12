@@ -146,8 +146,11 @@ SUDO_SHELLS_HISTORY_ENABLED="${SUDO__SHELLS_HISTORY_ENABLED:-1}" # Default: `1`
 # This can be used if path is not in search paths or all paths in it should not be checked.
 SUDO_SU_PATH="${SUDO__SU_PATH:-}" # Default: ``
 
+# Set to 1 to skip checking that su binary exported in `$SUDO__SU_PATH` supports the required options, otherwise 0
+SUDO_SU_SKIP_OPTIONS_CHECK="${SUDO__SU_SKIP_OPTIONS_CHECK:-0}" # Default: `0`
 
-# for f in SUDO_SHELL_HOME SUDO_POST_SHELL_HOME SUDO_SHELL_PS1 SUDO_POST_SHELL_PS1 SUDO_ADDITIONAL_PATHS_TO_EXPORT SUDO_EXPORT_ALL_EXISTING_PATHS_IN_PATH_VARIABLE SUDO_ADDITIONAL_LD_LIBRARY_PATHS_TO_EXPORT SUDO_EXPORT_ALL_EXISTING_PATHS_IN_LD_LIBRARY_PATH_VARIABLE SUDO_SHELLS_AUTOMATICALLY_CREATE_RC_FILES SUDO_SHELLS_AUTOMATICALLY_CREATE_HISTORY_FILES SUDO_SHELLS_HISTORY_ENABLED SUDO_SU_PATH; do echo "$f=\`${!f}\`"; done; echo $'\n'
+
+# for f in SUDO_SHELL_HOME SUDO_POST_SHELL_HOME SUDO_SHELL_PS1 SUDO_POST_SHELL_PS1 SUDO_ADDITIONAL_PATHS_TO_EXPORT SUDO_EXPORT_ALL_EXISTING_PATHS_IN_PATH_VARIABLE SUDO_ADDITIONAL_LD_LIBRARY_PATHS_TO_EXPORT SUDO_EXPORT_ALL_EXISTING_PATHS_IN_LD_LIBRARY_PATH_VARIABLE SUDO_SHELLS_AUTOMATICALLY_CREATE_RC_FILES SUDO_SHELLS_AUTOMATICALLY_CREATE_HISTORY_FILES SUDO_SHELLS_HISTORY_ENABLED SUDO_SU_PATH SUDO_SU_SKIP_OPTIONS_CHECK; do echo "$f=\`${!f}\`"; done; echo $'\n'
 
 ### Set User Modifiable Variables End
 
@@ -808,11 +811,13 @@ sudo_set_su_variables() {
     SU_INTERACTIVE_OPTION_SUPPORTED="0"
 
     local -a su_search_paths=()
+    local su_skip_options_check="$SUDO_SU_SKIP_OPTIONS_CHECK"
 
     # Check "`su` search paths" in README for more info.
     # If SUDO_SU_PATH is not a valid absolute path
     if [[ ! "$SUDO_SU_PATH" =~ $VALID_ABSOLUTE_PATH_REGEX ]]; then
         su_search_paths+=("/system/bin/su" "/debug_ramdisk/su" "/system/xbin/su" "/sbin/su" "/sbin/bin/su" "/system/sbin/su" "/su/xbin/su" "/su/bin/su" "/magisk/.core/bin/su")
+        su_skip_options_check="0"
     else
         su_search_paths+=("$SUDO_SU_PATH")
     fi
@@ -822,57 +827,92 @@ sudo_set_su_variables() {
     local su_help=""
 
     for su in "${su_search_paths[@]}"; do
-        if [ -x "$su" ]; then
-            sudo_log 3 "A su binary found at '$su'"
-            su_found=1
+        if [ ! -x "$su" ]; then
+            continue
+        fi
 
-            sudo_unset_pre_su_variables
-            # Redirect stderr to stdout since some su variants like
-            # Android debug build su at `/system/xbin/su` prints helps on stderr.
-            su_help="$($su --help 2>&1 < /dev/null)"
-            sudo_set_post_su_variables
+        sudo_log 3 "A su binary found at '$su'"
+        su_found=1
 
-            # If '-c' option is not supported, then continue searching
-            if [[ "$su_help" != *"-c,"* ]] && [[ "$su_help" != *"-c "* ]]; then
-                sudo_log 3 "The su binary found does not support '-c' option, continuing search"
-                continue
-            # If '--shell' option is not supported, then continue searching
-            elif [[ "$su_help" != *"--shell"* ]]; then
+        sudo_unset_pre_su_variables
+        # Redirect stderr to stdout since some su variants like
+        # Android debug build su at `/system/xbin/su` prints helps on stderr.
+        su_help="$("$su" --help 2>&1 < /dev/null)"
+        sudo_set_post_su_variables
+
+        if [[ "$su_skip_options_check" != "1" ]]; then
+            # If '--shell' option is not supported, then continue searching.
+            if [[ "$su_help" != *"--shell"* ]]; then
                 sudo_log 3 "The su binary found does not support '--shell' option, continuing search"
                 continue
-            # If '--preserve-environment' option is not supported, then continue searching
+            # If '--preserve-environment' option is not supported, then continue searching.
             elif [[ "$su_help" != *"--preserve-environment"* ]]; then
                 sudo_log 3 "The su binary found does not support '--preserve-environment' option, continuing search"
+                sudo_log 5 "su_help:"$'\n```\n'"$su_help"$'\n```'
                 continue
-            # If '--mount-master' option is not supported, then continue searching
-            elif [[ "$su_help" != *"--mount-master"* ]]; then
-                sudo_log 3 "The su binary found does not support '--mount-master' option, continuing search"
-                continue
-            # Else use the su
-            else
-                SU="$su"
+            # If '--mount-master' or '-c' options are not in help.
+            elif [[ "$su_help" != *"--mount-master"* ]] ||
+                    { [[ "$su_help" != *"-c,"* ]] && [[ "$su_help" != *"-c "* ]]; }; then
+                # Run a test command with the `--mount-master` and `-c` option.
+                # Some root implementations may not have
+                # `--mount-master` or `-c` option in the help output,
+                # like Magisk `>= 31.1`.
+                # Magisk `>= 31.1` does support the `--mount-master` flag,
+                # but internally maps it to `--target 0`, where `0`
+                # implies using magisk global mount namespace.
+                # The `-c` option is normally not provided by `su` binary,
+                # but the target shell like `/system/bin/sh` or `bash`,
+                # and it must be the last argument passed for `su`
+                # commands so that it can be forwarded to the shell.
+                # - https://github.com/topjohnwu/Magisk/pull/10140
+                # - https://github.com/topjohnwu/Magisk/commit/160fb3e40bb2daaaaeb2432673769591e26d5cf8
+                # Unlike `su --help`, this will invoke a root shell.
+                # Normally, `sudo` runs 2 `su` root shell commands,
+                # one for setup, and one for the actual user command,
+                # and so running test command will result in an
+                # additional root shell, which will have a performance
+                # impact, but only for `su` implementations that do
+                # not have above all the required options in help output.
+                # Each `su` root shell executed normally takes
+                # `10ms` or more to start, depending on device.
+                local su_options_test_output
+                sudo_unset_pre_su_variables
+                su_options_test_output="$("$su" --mount-master -c \
+                    'whoami; echo su-options-check;' 2>&1 < /dev/null)"
+                sudo_set_post_su_variables
 
-                SU_BIN_PATH_BASENAME="${SU##*/}" # Strip longest match of */ from start
-                SU_BIN_PATH="${SU:0:${#SU} - ${#SU_BIN_PATH_BASENAME}}" # Substring from 0 to position of basename
-                case "$SU_BIN_PATH" in *[!/]*/) SU_BIN_PATH="${SU_BIN_PATH%"${SU_BIN_PATH##*[!/]}"}";; *[/]) SU_BIN_PATH="/";; esac # Remove trailing slashes if not root
-
-                # If '--interactive' option is supported.
-                # - https://github.com/topjohnwu/Magisk/commit/4864c1112
-                if [[ "$su_help" == *"--interactive"* ]]; then
-                    SU_INTERACTIVE_OPTION_SUPPORTED=1
+                # If did not get expected output, then continue searching.
+                if [[ "$su_options_test_output" != $'root\nsu-options-check' ]]; then
+                    sudo_log 3 "The su binary found does not support '--mount-master' or '-c' option, continuing search"
+                    sudo_log 5 "su_help:"$'\n```\n'"$su_help"$'\n```'
+                    sudo_log 3 "su_options_test_output:"$'\n```\n'"$su_options_test_output"$'\n```'
+                    continue
+                else
+                    sudo_log 3 "The su binary found does support '--mount-master' and '-c' options even if they are not listed in help"
                 fi
-
-                break
             fi
+        else
+            sudo_log 3 "Skipping su options check"
+        fi
 
-            sudo_log 3 ""
+        # Else use the su.
+        SU="$su"
+
+        SU_BIN_PATH_BASENAME="${SU##*/}" # Strip longest match of */ from start
+        SU_BIN_PATH="${SU:0:${#SU} - ${#SU_BIN_PATH_BASENAME}}" # Substring from 0 to position of basename
+        case "$SU_BIN_PATH" in *[!/]*/) SU_BIN_PATH="${SU_BIN_PATH%"${SU_BIN_PATH##*[!/]}"}";; *[/]) SU_BIN_PATH="/";; esac # Remove trailing slashes if not root
+
+        # If '--interactive' option is supported.
+        # - https://github.com/topjohnwu/Magisk/commit/4864c1112
+        if [[ "$su_help" == *"--interactive"* ]]; then
+            SU_INTERACTIVE_OPTION_SUPPORTED=1
         fi
     done
 
     # If SU is not set
     if [ -z "$SU" ]; then
         # If su_found is not set to "1"
-        if [[ "$su_found" != "1" ]]; then
+        if [[ "$su_found" != "1" ]] || [[ "$su_skip_options_check" == "1" ]]; then
             sudo_log_errors "No 'su' binary found"
         else
             sudo_log_errors "No 'su' binary found that supports the '-c', '--shell', '--preserve-environment' and '--mount-master' options"
@@ -6614,6 +6654,19 @@ sudo_process_script_arguments() {
                         sudo_log_arg_errors "No argument set for arg option '--${OPTARG%=*}'."
                         sudo_exit_on_args_error || return $?
                         ;;
+                    su-skip-options-check=?*)
+                        val="$opt_arg"
+                        sudo_log_args "Parsing option: '--${OPTARG%=*}', value: '${opt_arg}'"
+                        if [[ "$val" == "1" ]]; then
+                            SUDO_SU_SKIP_OPTIONS_CHECK=1
+                        else
+                            SUDO_SU_SKIP_OPTIONS_CHECK=0
+                        fi
+                        ;;
+                    su-skip-options-check | su-skip-options-check=)
+                        sudo_log_arg_errors "No argument set for arg option '--${OPTARG%=*}'."
+                        sudo_exit_on_args_error || return $?
+                        ;;
                     title=?*)
                         val="$opt_arg"
                         sudo_log_args "Parsing option: '--${OPTARG%=*}', value: '${opt_arg}'"
@@ -7091,6 +7144,9 @@ Available command_options:
   [ --su-run-options=<options> ]
                      Additional options to pass to su that runs the
                      final sudo command_type command.
+  [ --su-skip-options-check=0|1 ]
+                     Skip checking that su binary passed in
+                     '--su-path' supports the required options.
   [ --title=<title> ]
                      Title for sudo shell terminal.
   [ --work-dir=<path> ]
