@@ -829,43 +829,72 @@ sudo_set_su_variables() {
             sudo_unset_pre_su_variables
             # Redirect stderr to stdout since some su variants like
             # Android debug build su at `/system/xbin/su` prints helps on stderr.
-            su_help="$($su --help 2>&1 < /dev/null)"
+            su_help="$("$su" --help 2>&1 < /dev/null)"
             sudo_set_post_su_variables
 
-            # If '-c' option is not supported, then continue searching
-            if [[ "$su_help" != *"-c,"* ]] && [[ "$su_help" != *"-c "* ]]; then
-                sudo_log 3 "The su binary found does not support '-c' option, continuing search"
-                continue
             # If '--shell' option is not supported, then continue searching
-            elif [[ "$su_help" != *"--shell"* ]]; then
+            if [[ "$su_help" != *"--shell"* ]]; then
                 sudo_log 3 "The su binary found does not support '--shell' option, continuing search"
                 continue
             # If '--preserve-environment' option is not supported, then continue searching
             elif [[ "$su_help" != *"--preserve-environment"* ]]; then
                 sudo_log 3 "The su binary found does not support '--preserve-environment' option, continuing search"
+                sudo_log 5 "su_help:"$'\n```\n'"$su_help"$'\n```'
                 continue
             # If '--mount-master' option is not supported, then continue searching
             elif [[ "$su_help" != *"--mount-master"* ]]; then
                 sudo_log 3 "The su binary found does not support '--mount-master' option, continuing search"
+                sudo_log 5 "su_help:"$'\n```\n'"$su_help"$'\n```'
                 continue
-            # Else use the su
-            else
-                SU="$su"
+            # If '-c' option is not in help
+            elif [[ "$su_help" != *"-c,"* ]] && [[ "$su_help" != *"-c "* ]]; then
+                # Run a test command with the `-c` option.
+                # Some root implementations may not have `-c` option
+                # in the help output as its implementation is not
+                # provided by `su` binary, but the target shell like
+                # `/system/bin/sh` or `bash`, and it must be the
+                # last argument passed for `su` commands as it is
+                # forwarded to the shell.
+                # Unlike `su --help`, this will start a root shell.
+                # Normally, `sudo` runs 2 `su` root shell commands,
+                # one for setup, and one for the actual user command,
+                # and so running test command will result in an
+                # additional root shell, which will have a performance
+                # impact, but only for `su` implementations that do
+                # have above 3 options in help output, but not `-c`
+                # option.
+                # Each `su` root shell executed normally takes
+                # `10ms` or more to start, depending on device.
+                local su_c_option_test_output
+                sudo_unset_pre_su_variables
+                su_c_option_test_output="$("$su" -c "whoami; echo su-test-command;" 2>&1 < /dev/null)"
+                sudo_set_post_su_variables
 
-                SU_BIN_PATH_BASENAME="${SU##*/}" # Strip longest match of */ from start
-                SU_BIN_PATH="${SU:0:${#SU} - ${#SU_BIN_PATH_BASENAME}}" # Substring from 0 to position of basename
-                case "$SU_BIN_PATH" in *[!/]*/) SU_BIN_PATH="${SU_BIN_PATH%"${SU_BIN_PATH##*[!/]}"}";; *[/]) SU_BIN_PATH="/";; esac # Remove trailing slashes if not root
-
-                # If '--interactive' option is supported.
-                # - https://github.com/topjohnwu/Magisk/commit/4864c1112
-                if [[ "$su_help" == *"--interactive"* ]]; then
-                    SU_INTERACTIVE_OPTION_SUPPORTED=1
+                # If did not get expected output, then continue searching
+                if [[ "$su_c_option_test_output" != "root"$'\n'"su-test-command" ]]; then
+                    sudo_log 3 "The su binary found does not support '-c' option, continuing search"
+                    sudo_log 5 "su_help:"$'\n```\n'"$su_help"$'\n```'
+                    sudo_log 5 "su_c_option_test_output:"$'\n```\n'"$su_c_option_test_output"$'\n```'
+                    continue
+                else
+                    sudo_log 3 "The su binary found does support '-c' option even though it is not listed in help"
                 fi
-
-                break
             fi
 
-            sudo_log 3 ""
+            # Else use the su
+            SU="$su"
+
+            SU_BIN_PATH_BASENAME="${SU##*/}" # Strip longest match of */ from start
+            SU_BIN_PATH="${SU:0:${#SU} - ${#SU_BIN_PATH_BASENAME}}" # Substring from 0 to position of basename
+            case "$SU_BIN_PATH" in *[!/]*/) SU_BIN_PATH="${SU_BIN_PATH%"${SU_BIN_PATH##*[!/]}"}";; *[/]) SU_BIN_PATH="/";; esac # Remove trailing slashes if not root
+
+            # If '--interactive' option is supported.
+            # - https://github.com/topjohnwu/Magisk/commit/4864c1112
+            if [[ "$su_help" == *"--interactive"* ]]; then
+                SU_INTERACTIVE_OPTION_SUPPORTED=1
+            fi
+
+            break
         fi
     done
 
